@@ -16,7 +16,7 @@
 use strict;
 use Term::ANSIColor;
 
-my $program_ueb = "eva_ueb_v01.pl";
+my $program_ueb = "eva_ueb.pl";
 my $step_n = 0; # Step number for the loop inside each file to process
 my $file_n = 0; # File number for the loop of file to process
 my $step_tmp = $step_n; # dummy counter for the number of step when inside the files loop
@@ -26,24 +26,27 @@ my $now = nownice(time);
 
 ## Header shown at program execution
 print_doc("##############################################################################");
-print_doc("### $program_ueb: Pipeline for 'Exome Variant Analysis' (EVA) at the UEB ###");
+print_doc("### $program_ueb: Pipeline for 'Exome Variant Analysis' (EVA) at the UEB     ###");
 print_doc("###                                                                        ###");
 print_doc("### (c) 2011 UEB - GPL licensed - http://ueb.ir.vhebron.net/tools          ###");
 print_doc("##############################################################################\n");
 
+print_doc("\nThis program $program_ueb accepts 3 arguments passed to the program call:
+  1) directory with source .fastq files 	(required)
+  2) directory to save output files     	(required)
+  3) -index (indexing of the reference genome)  [optional, not indexed by default]\n
+  Example1: perl $program_ueb ./dir_in ./dir_out
+  Example2: perl $program_ueb ./dir_in ./dir_out -index\n");
+
 ## Step 1. Fetch the directory name
 $step_n = 1;
-my ($directory_in,$directory_out,$n_arguments);
-
+my ($directory_in,$directory_out,$indexing,$n_arguments);
+$indexing = 0;
 $n_arguments = scalar(@ARGV);
-if ($n_arguments != 1 && $n_arguments != 2) {
-	print_doc("This program $program_ueb accepts 2 arguments passed to the program call:
-  1) directory with source .fastq files (required)
-  2) directory to save output files     [optional]\n
-  Example: perl $program_ueb ./dir_in ./dir_out\n");
-	print_error("Wrong number of parameters: at least source directory is needed");
+if ($n_arguments < 2 || $n_arguments >= 3) {
+	print_error("Wrong number of parameters: source and destination directories missing");
 }
-($directory_in,$directory_out) = @ARGV;
+($directory_in,$directory_out,$indexing) = @ARGV;
 print_ok("$now - Step $step_n. Reading parameters");
 
 ## Step 2. Accesing directory
@@ -58,50 +61,62 @@ print_ok("$now - Step $step_n. Accesing directory: $directory_in");
 
 while ($file = readdir(DIR))
 {
-	## Control sobre los directories . y ..
+	## Control over directories . & ..
 	next if ($file =~ /^\./);
+	## Skip files without .fastq extension
+	next if ($file !~ /\.fastq/);
 	$file_n = $file_n + 1;
 	$step_n = $step_n+1;
 	$step_tmp = 0;
-	print_doc("$now - Step $step_n. Processing file #$file_n ($file) ...");
+	print_doc("$now - ########## Step $step_n. Processing file #$file_n ($file) ... ##########");
 
 	## Step 3. Quality Control and Preprocessing (using fastqc)
 	# See http://www.bioinformatics.bbsrc.ac.uk/projects/fastqc/INSTALL.txt
 	$step_tmp = $step_tmp + 1;
+	# Remove .fastq (substitute it with nothing) from file names
 	($name = $file) =~ s/\.fastq//;
 	print_doc("$now -   Step $step_n.$step_tmp Quality Control and Preprocessing: $name ...");
 	$file_in = "$directory_in/$file";
-##	$file_out = "$directory_out/$name.txt";
-#	$options = "--outdir=$directory_out";
-#	$command00 = "~/fastqc/fastqc"; # path to fastqc binary; adapt to your case.
-	$command00 = "ls"; # next command.
+#	$file_out = "$directory_out/$name.txt";
+	$options = "--outdir=$directory_out";
+	$command00 = "/home/ueb/fastqc/fastqc"; # path to fastqc binary; adapt to your case.
+#	$command00 = "ls"; # next command.
 	$options = "$file_in";
 	$command = "$command00 $options";
 	system($command);
-	print_ok("$now -   Step $step_n.$step_tmp Quality Control and Preprocessing: $name");
+	print_ok("$now -\t\t\t\t\t");
+
 
 	## Next Step. Map against reference genome: Index the reference genome (if needed)
 	$step_tmp = $step_tmp + 1;
 	print_doc("$now -   Step $step_n.$step_tmp Map against reference genome: Index the reference genome (if needed): $name ...");
-#	$file_in = "$directory_in/$name";
-#	$file_out = "$directory_out/$name.txt";
-	$command00 = "bwa index"; # next command.
-	$options = " -a bwtsw hg19.fa";
+	# Index the reference genome, if requested with param "-index"
+#	if (($ARGV[2] eq '-index') || ($ARGV[3] eq '-index')) { # index the reference genome
+	if (($indexing eq '-index') || ($indexing eq '-Index')) { # index the reference genome
+	#	$file_in = "$directory_in/$name";
+	#	$file_out = "$directory_out/$name.txt";
+		$command00 = "bwa index"; # next command.
+		$options = " -a bwtsw /home/xavi/Data/Data_Genomes/hg19/hg19.fa";
+	}
+	else { # skip the indexing of the reference genome
+		$command00 = "echo '  ...skipped...'"; # next command.
+		$options = "";
+	}
 	$command = "$command00 $options";
 	system($command);
-	print_ok("$now -   Step $step_n.$step_tmp Map against reference genome: Index the reference genome (if needed): $name");
+	print_ok("$now -\t\t\t\t\t");
 
 
 	## Next Step. Map against reference genome: do the mapping
 	$step_tmp = $step_tmp + 1;
 	print_doc("$now -   Step $step_n.$step_tmp Map against reference genome: do the mapping: $name ...");
-	$file_in = "$directory_in/$name";
+	$file_in = "$directory_in/$file";
 	$file_out = "$directory_out/$name.sam";
 	$command00 = "bwa bwasw"; # next command.
 	$options = " /home/xavi/Data/Data_Genomes/hg19/hg19.fa $file_in > $file_out";
 	$command = "$command00 $options";
 	system($command);
-	print_ok("$now -");
+	print_ok("$now -\t\t\t\t\t");
 
 
 	## Next Step. Convert sam to bam and sort it
@@ -113,7 +128,7 @@ while ($file = readdir(DIR))
 	$options = " view -bS $file_in | samtools sort - $file_out"; # Attention: it seems that the real file generated is a .bam file
 	$command = "$command00 $options";
 	system($command);
-	print_ok("$now -");
+	print_ok("$now -\t\t\t\t\t");
 
 
 	## Next Step. Remove possible PCR duplicates
@@ -125,7 +140,8 @@ while ($file = readdir(DIR))
 	$options = " rmdup -s $file_in $file_out";
 	$command = "$command00 $options";
 	system($command);
-	print_ok("$now -");
+	print_ok("$now -\t\t\t\t\t");
+
 
 
 	## Next Step. Index the bam file
@@ -137,7 +153,8 @@ while ($file = readdir(DIR))
 	$options = " index $file_in";
 	$command = "$command00 $options";
 	system($command);
-	print_ok("$now -");
+	print_ok("$now -\t\t\t\t\t");
+
 
 
 	## Next Step. Get some stats using the samtools [optional]
@@ -149,7 +166,8 @@ while ($file = readdir(DIR))
 	$options = " flagstat $file_in";
 	$command = "$command00 $options";
 	system($command);
-	print_ok("$now -");
+	print_ok("$now -\t\t\t\t\t");
+
 
 
 	## Next Step. Variant calling
@@ -161,7 +179,9 @@ while ($file = readdir(DIR))
 	$options = " mpileup -uf /home/xavi/Data/Data_Genomes/hg19/hg19.fa $file_in | bcftools view -vcg - > $file_out";
 	$command = "$command00 $options";
 	system($command);
-	print_ok("$now -");
+	print_ok("$now -\t\t\t\t\t");
+# testing
+# samtools mpileup -uf /home/xavi/Data/Data_Genomes/hg19/hg19.fa ./dir_out/prova1.sam.sorted.noDup.bam | bcftools view -vcg - > ./dir_out/prova1.sam.sorted.noDup.bam.samtools.var.raw.vcf
 
 
 	## Next Step. Variant Filtering
@@ -173,7 +193,8 @@ while ($file = readdir(DIR))
 	$options = " varFilter -Q 10 -d 15 -a 5 $file_in > $file_out";
 	$command = "$command00 $options";
 	system($command);
-	print_ok("$now -");
+	print_ok("$now -\t\t\t\t\t");
+
 
 
 	## Next Step. Variant Annotation
@@ -185,7 +206,8 @@ while ($file = readdir(DIR))
 	$options = " $file_in -format vcf4 > $file_out";
 	$command = "$command00 $options";
 	system($command);
-	print_ok("$now -");
+	print_ok("$now -\t\t\t\t\t");
+
 
 
 	## Next Step. Visualization of Variants
@@ -197,7 +219,8 @@ while ($file = readdir(DIR))
 	$options = "";
 	$command = "$command00 $options";
 	system($command);
-	print_ok("$now -");
+	print_ok("$now -\t\t\t\t\t");
+
 
 
 	## Step N. Template for the next step. Clone this section before adding a new section
@@ -209,7 +232,8 @@ while ($file = readdir(DIR))
 	$options = "";
 	$command = "$command00 $options";
 	system($command);
-	print_ok("$now -");
+	print_ok("$now -\t\t\t\t\t");
+
 }
 
 # Cerrar el directory
