@@ -1,0 +1,11 @@
+PASS	Basic Statistics	prova3.fastq_prova.txt
+FAIL	Per base sequence quality	prova3.fastq_prova.txt
+FAIL	Per sequence quality scores	prova3.fastq_prova.txt
+FAIL	Per base sequence content	prova3.fastq_prova.txt
+FAIL	Per base GC content	prova3.fastq_prova.txt
+FAIL	Per sequence GC content	prova3.fastq_prova.txt
+PASS	Per base N content	prova3.fastq_prova.txt
+WARN	Sequence Length Distribution	prova3.fastq_prova.txt
+PASS	Sequence Duplication Levels	prova3.fastq_prova.txt
+FAIL	Overrepresented sequences	prova3.fastq_prova.txt
+FAIL	Kmer Content	prova3.fastq_prova.txt
