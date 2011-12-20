@@ -23,7 +23,9 @@ my $file_n = 0; # File number for the loop of file to process
 my $step_tmp = $step_n; # dummy counter for the number of step when inside the files loop
 my $command00;
 my $now = nownice(time);
-my $genome_dir = "/home/xavi/Data/Data_Genomes/hg19/hg19.fa";
+my $path_genome = "/home/xavi/Data/Data_Genomes/hg19/hg19.fa";
+my $path_vcfutils = "/usr/share/samtools/vcfutils.pl";
+my $path_convert2annovar = "/home/ueb/annovar/convert2annovar.pl";
 
 
 ## Header shown at program execution
@@ -104,7 +106,7 @@ while ($file = readdir(DIR))
 		#	$file_in = "$directory_in/$name";
 		#	$file_out = "$directory_out/$name.txt";
 			$command00 = "bwa index"; # next command.
-			$options = " -a bwtsw $genome_dir";
+			$options = " -a bwtsw $path_genome";
 		}
 		else { # skip the indexing of the reference genome
 			$command00 = "echo '  ...skipped...'"; # next command.
@@ -132,7 +134,7 @@ while ($file = readdir(DIR))
 	$file_in = "$directory_in/$file";
 	$file_out = "$directory_out/$name.sam";
 	$command00 = "bwa bwasw"; # next command.
-	$options = " /home/xavi/Data/Data_Genomes/hg19/hg19.fa $file_in > $file_out";
+	$options = " $path_genome $file_in > $file_out";
 	$command = "$command00 $options";
 	system($command);
 	print_done("$now -\t\t\t\t\t");
@@ -195,12 +197,12 @@ while ($file = readdir(DIR))
 	$file_in = "$directory_out/$name.sam.sorted.noDup.bam";
 	$file_out = "$directory_out/$name.sam.sorted.noDup.bam.samtools.var.raw.vcf";
 	$command00 = "samtools"; # next command.
-	$options = " mpileup -uf /home/xavi/Data/Data_Genomes/hg19/hg19.fa $file_in | bcftools view -vcg - > $file_out";
+	$options = " mpileup -uf $path_genome $file_in | bcftools view -vcg - > $file_out";
 	$command = "$command00 $options";
 	system($command);
 	print_done("$now -\t\t\t\t\t");
 # testing
-# samtools mpileup -uf /home/xavi/Data/Data_Genomes/hg19/hg19.fa ./dir_out/prova1.sam.sorted.noDup.bam | bcftools view -vcg - > ./dir_out/prova1.sam.sorted.noDup.bam.samtools.var.raw.vcf
+# samtools mpileup -uf $path_genome ./dir_out/prova1.sam.sorted.noDup.bam | bcftools view -vcg - > ./dir_out/prova1.sam.sorted.noDup.bam.samtools.var.raw.vcf
 
 
 	## Next Step. Variant Filtering
@@ -208,7 +210,7 @@ while ($file = readdir(DIR))
 	print_doc("$now -   Step $step_n.$step_tmp Variant Filtering: $name ...");
 	$file_in = $file_out; # get the previous output file as input for this step
 	$file_out = "$directory_out/$name.sam.sorted.noDup.bam.samtools.var.filtered.vcf";
-	$command00 = "/usr/share/samtools/vcfutils.pl"; # next command.
+	$command00 = "$path_vcfutils"; # next command.
 	$options = " varFilter -Q 10 -d 15 -a 5 $file_in > $file_out";
 	$command = "$command00 $options";
 	system($command);
@@ -221,7 +223,7 @@ while ($file = readdir(DIR))
 	print_doc("$now -   Step $step_n.$step_tmp Variant Annotation: $name ...");
 	$file_in = $file_out; # get the previous output file as input for this step
 	$file_out = "$directory_out/$name.sam.sorted.noDup.bam.samtools.var.filtered.vcf.annovar";
-	$command00 = "/home/ueb/annovar/convert2annovar.pl"; # next command.
+	$command00 = "$path_convert2annovar"; # next command.
 	$options = " $file_in -format vcf4 > $file_out";
 	$command = "$command00 $options";
 	system($command);
