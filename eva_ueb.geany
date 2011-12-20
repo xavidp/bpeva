@@ -9,6 +9,7 @@ indent_mode=2
 [project]
 name=eva_ueb_projecte
 base_path=/home/xavi/Documents/Desenvolupaments/EVA_Exon_Variant_Analysis
+description=
 
 [long line marker]
 long_line_behaviour=1
@@ -16,3 +17,4 @@ long_line_column=72
 
 [files]
 current_page=0
+FILE_NAME_0=242;Perl;0;16;1;1;0;/home/xavi/Documents/Desenvolupaments/EVA_Exon_Variant_Analysis/eva_ueb.pl;0;4
