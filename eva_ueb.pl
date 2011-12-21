@@ -40,7 +40,10 @@ print_doc("\nThis program $program_ueb accepts 3 arguments passed to the program
   2) directory to save output files     	(required)
   3) -index (indexing of the reference genome)  [optional, not indexed by default]\n
   Example1: perl $program_ueb ./dir_in ./dir_out
-  Example2: perl $program_ueb ./dir_in ./dir_out -index\n");
+  Example2: perl $program_ueb ./dir_in ./dir_out -index
+  Example3: perl $program_ueb ./test_in ./test_out > log_stdout.txt 2> log_stderr.txt
+  Example4: perl $program_ueb ./test_in ./test_out > log_both.txt 2>&1
+  Example5: perl $program_ueb ./test_in ./test_out | tee /dev/tty log_both.txt\n");
 
 ## Step 1. Fetch the directory name
 $step_n = 1;
@@ -102,10 +105,10 @@ while ($file = readdir(DIR))
 	# Index the reference genome, if requested with param "-index"
 #	if (($ARGV[2] eq '-index') || ($ARGV[3] eq '-index')) { # index the reference genome
 #	if ($n_arguments == 3) { # only when there are 3 arguments use $indexing; otherwise,  a warning of uninitialized $indexing is shown 
-		if (($indexing eq '-index') || ($indexing eq '-Index')) { # index the reference genome
+		if (($indexing eq '-index') || ($indexing eq '-Index') && ($file_n == 1)) { # index the reference genome when requested by the -index param but only once if more than one sample to process
 		#	$file_in = "$directory_in/$name";
 		#	$file_out = "$directory_out/$name.txt";
-			$command00 = "bwa index"; # next command.
+			$command00 = "bwa index"; # next command
 			$options = " -a bwtsw $path_genome";
 		}
 		else { # skip the indexing of the reference genome
@@ -273,9 +276,9 @@ sub print_doc
 	$mess = $_[0];
 	$now = nownice(time);
 
-	print STDERR color("bold cyan"),
+	print STDOUT color("bold cyan"),
 		"$mess\n";
-	print STDERR color(" reset ");
+	print STDOUT color(" reset ");
 }
 
 sub print_done
@@ -284,9 +287,9 @@ sub print_done
 	$mess = $_[0];
 	$now = nownice(time);
 
-	print STDERR color("bold green"),
+	print STDOUT color("bold green"),
 		"$mess\t\t[DONE]\n\n";
-	print STDERR color(" reset ");
+	print STDOUT color(" reset ");
 
 }
 
