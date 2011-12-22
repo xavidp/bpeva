@@ -48,7 +48,8 @@ print_doc("\nThis program $program_ueb accepts 3 arguments passed to the program
 ## Step 1. Fetch the directory name
 $step_n = 1;
 my ($directory_in,$directory_out,$indexing,$n_arguments);
-$n_arguments = scalar(keys @ARGV); # with 'scalar(keys @ARGV);' I was misscounting 3 when 3 arguments where passed 
+#$n_arguments = scalar(keys @ARGV); # with 'scalar(@ARGV);' I was misscounting 3 when 3 arguments where passed; however, only working in perl 5.12 (ubuntu 11.10), not on perl 5.10 (ubuntu 10.04) 
+$n_arguments = scalar(@ARGV); # misscounts argumetns, but at least it works on perl 5.10 on ubuntu 10.04
 
 if ($n_arguments < 2 || $n_arguments > 3) {
 	print_error("Wrong number of parameters: source and destination directories missing");
