@@ -7,6 +7,10 @@
 #        xavier.depedro@vhir.org
 ###################################################
 
+# Command to run on Debian machines to install some of the requriements
+# ---------------------------------------------------------------------
+# sudo apt-get install perl perl-suid
+
 
 ##########################
 ### Main Program
@@ -23,10 +27,13 @@ my $file_n = 0; # File number for the loop of file to process
 my $step_tmp = $step_n; # dummy counter for the number of step when inside the files loop
 my $command00;
 my $now = nownice(time);
+my $path_fastq = "/home/ueb/fastqc/fastqc";
 my $path_genome = "/home/xavi/Data/Data_Genomes/hg19/hg19.fa";
 my $path_vcfutils = "/usr/share/samtools/vcfutils.pl";
 my $path_convert2annovar = "/home/ueb/annovar/convert2annovar.pl";
 
+# Data in MainHead is at:
+# 
 
 ## Header shown at program execution
 print_doc("##############################################################################");
@@ -91,7 +98,7 @@ while ($file = readdir(DIR))
 	print_doc("$now -   Step $step_n.$step_tmp Quality Control and Preprocessing: $name ...");
 	$file_in = "$directory_in/$file";
 #	$file_out = "$directory_out/$name.txt";
-	$command00 = "/home/ueb/fastqc/fastqc"; # path to fastqc binary; adapt to your case.
+	$command00 = "$path_fastq"; # path to fastqc binary; adapt to your case.
 #	$command00 = "ls"; # next command.
 	$options = "$file_in --outdir=$directory_out ";
 	$command = "$command00 $options";
