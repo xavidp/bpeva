@@ -31,6 +31,8 @@ my $path_fastq = "/home/ueb/fastqc/fastqc";
 my $path_genome = "/home/xavi/Data/Data_Genomes/hg19/hg19.fa";
 my $path_vcfutils = "/usr/share/samtools/vcfutils.pl";
 my $path_convert2annovar = "/home/ueb/annovar/convert2annovar.pl";
+my $path_annotate_variation = "/home/ueb/annovar/annotate_variation.pl";
+my $path_annotate_humandb = "/home/ueb/annovar/humandb/";
 
 # Data in MainHead is at:
 # 
@@ -229,9 +231,9 @@ while ($file = readdir(DIR))
 
 
 
-	## Next Step. Variant Annotation
+	## Next Step. Convert files to Annnovar vcf4 format
 	$step_tmp = $step_tmp + 1;
-	print_doc("$now -   Step $step_n.$step_tmp Variant Annotation: $name ...");
+	print_doc("$now -   Step $step_n.$step_tmp Convert files to Annnovar vcf4 format: $name ...");
 	$file_in = $file_out; # get the previous output file as input for this step
 	$file_out = "$directory_out/$name.sam.sorted.noDup.bam.samtools.var.filtered.vcf.annovar";
 	$command00 = "$path_convert2annovar"; # next command.
@@ -239,8 +241,28 @@ while ($file = readdir(DIR))
 	$command = "$command00 $options";
 	system($command);
 	print_done("$now -\t\t\t\t\t");
+	
+	## Next Step. Variant Annotation
+		## Alternative annotation 1: SeattleSeq Website
+		# See: http://snp.gs.washington.edu/SeattleSeqAnnotation134/
 
+		## Alternative annotation 2: VariantAnnotation Bioconductor package for R 2.14
+		# See: http://www.bioconductor.org/packages/devel/bioc/html/VariantAnnotation.html
+		
+	$step_tmp = $step_tmp + 1;
+	print_doc("$now -   Step $step_n.$step_tmp Variant Annotation: $name ...");
+	$file_in = $file_out; # get the previous output file as input for this step
+	$file_out = "";
+	$command00 = "perl $path_annotate_variation"; # next command.
+	$options = " -geneanno --buildver hg19 $file_in $path_annotate_humandb";
+	$command = "$command00 $options";
+	system($command);
+	print_done("$now -\t\t\t\t\t");
 
+# a mà la instrucció al mainhead és:
+# perl /home/ueb/annovar/annotate_variation.pl -geneanno --buildver hg19 /home/xavi/repo/peeva/dir_out/Gutierrez_B_Sure.sequence_m50.sam.sorted.noDup.bam.samtools.var.filtered.vcf.annovar /home/ueb/annovar/humandb/
+
+# perl /home/ueb/annovar/annotate_variation.pl -geneanno --buildver hg19 /home/ueb/estudis/ngs/2011-08-SGutierrez-VHIO-207/111224_peeva_dir_out/Gutierrez_B_Sure.sequence.sam.sorted.noDup.bam.samtools.var.filtered.vcf.annovar /home/ueb/annovar/humandb/
 
 	## Next Step. Visualization of Variants
 	$step_tmp = $step_tmp + 1;
@@ -268,7 +290,7 @@ while ($file = readdir(DIR))
 
 }
 
-# Cerrar el directory
+# Close directory
 closedir(DIR);
 
 $step_n = $step_n+1;
@@ -276,7 +298,7 @@ print_done("$now - Step $step_n. End of EVA UEB pipeline");
 exit(0);
 
 ##########################
-### FUNCIONES
+### FUNCTIONS
 ##########################
 sub print_doc
 {
@@ -318,5 +340,5 @@ sub nownice
 	my $mess;
 	$mess = $_[0];
 	my( $year, $month, $day, $hour, $minute ) = (localtime)[5,4,3,2,1];
-	sprintf '%2d-%02d-%02d %02d:%02d', $year, $month, $day, $hour, $minute;
+	sprintf '%4d-%02d-%02d %02d:%02d', $year, $month, $day, $hour, $minute;
 }
