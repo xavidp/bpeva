@@ -19,8 +19,12 @@
 # Activar la declaracion estricta de variables
 use strict;
 use Term::ANSIColor;
+use Getopt::Std; # to allow using 'getopts' for argument handling in perl from the command line call
+				# For more info, see: http://www.devdaily.com/perl/perl-getopts-command-line-options-flags-in-perl
+				#  or http://www.vromans.org/johan/articles/getopt.html
 
 my $program_ueb = "eva_ueb.pl";
+my %options=();
 my $step_n = 0; # Step number for the loop inside each file to process
 my $file_n = 0; # File number for the loop of file to process
 #my $indexing = 0; # Param to indicate whether indexing the reference gnome is needed or not 
@@ -33,6 +37,43 @@ my $path_vcfutils = "/usr/share/samtools/vcfutils.pl";
 my $path_convert2annovar = "/home/ueb/annovar/convert2annovar.pl";
 my $path_annotate_variation = "/home/ueb/annovar/annotate_variation.pl";
 my $path_annotate_humandb = "/home/ueb/annovar/humandb/";
+my $targetgenes = "";
+
+# # declare the perl command line flags/options we want to allow
+getopts("i:o:nt:l", \%options);
+# Arguments
+# i: Directory with __I__nput data files
+# o: Directory for __O__utput data files
+# n: i__N__dex the reference genome
+# t: __T__arget genes to search for
+# l: __L__og info about the process into a log file
+
+# test for the existence of the options on the command line.
+# in a normal program you'd do more than just print these.
+print "-i $options{i}\n" if defined $options{i};
+print "-o $options{o}\n" if defined $options{o};
+print "-n $options{n}\n" if defined $options{n};
+print "-t $options{t}\n" if defined $options{t};
+print "-l $options{l}\n" if defined $options{l};
+
+# other things found on the command line
+print "Other things found on the command line:\n" if $ARGV[0];
+foreach (@ARGV)
+{
+  print "$_\n";
+}
+
+if ($options{n}) # case to index the reference genome (time consuming, do only when really needed as requested)
+{
+  index_ref_gnome();
+}
+
+sub index_ref_gnome {
+  print "Would index the reference gnome here.";
+}
+
+die();
+
 
 # Data in MainHead is at:
 # 
@@ -115,7 +156,7 @@ while ($file = readdir(DIR))
 	# Index the reference genome, if requested with param "-index"
 #	if (($ARGV[2] eq '-index') || ($ARGV[3] eq '-index')) { # index the reference genome
 #	if ($n_arguments == 3) { # only when there are 3 arguments use $indexing; otherwise,  a warning of uninitialized $indexing is shown 
-		if (($indexing eq '-index') || ($indexing eq '-Index') && ($file_n == 1)) { # index the reference genome when requested by the -index param but only once if more than one sample to process
+		if ((($indexing eq '-index') || ($indexing eq '-Index')) && ($file_n == 1)) { # index the reference genome when requested by the -index param but only once if more than one sample to process
 		#	$file_in = "$directory_in/$name";
 		#	$file_out = "$directory_out/$name.txt";
 			$command00 = "bwa index"; # next command
@@ -252,7 +293,7 @@ while ($file = readdir(DIR))
 	$step_tmp = $step_tmp + 1;
 	print_doc("$now -   Step $step_n.$step_tmp Variant Annotation: $name ...");
 	$file_in = $file_out; # get the previous output file as input for this step
-	$file_out = "";
+	$file_out = "$directory_out/$name.sam.sorted.noDup.bam.samtools.var.filtered.vcf.exonic_variant_function"; # this extension ".exonic_variant_function" is hardcoded in annovar. It's written here to be given for the next steep as input file name 
 	$command00 = "perl $path_annotate_variation"; # next command.
 	$options = " -geneanno --buildver hg19 $file_in $path_annotate_humandb";
 	$command = "$command00 $options";
@@ -263,6 +304,17 @@ while ($file = readdir(DIR))
 # perl /home/ueb/annovar/annotate_variation.pl -geneanno --buildver hg19 /home/xavi/repo/peeva/dir_out/Gutierrez_B_Sure.sequence_m50.sam.sorted.noDup.bam.samtools.var.filtered.vcf.annovar /home/ueb/annovar/humandb/
 
 # perl /home/ueb/annovar/annotate_variation.pl -geneanno --buildver hg19 /home/ueb/estudis/ngs/2011-08-SGutierrez-VHIO-207/111224_peeva_dir_out/Gutierrez_B_Sure.sequence.sam.sorted.noDup.bam.samtools.var.filtered.vcf.annovar /home/ueb/annovar/humandb/
+
+	## Next Step. Filter variants for the target genes
+	$step_tmp = $step_tmp + 1;
+	print_doc("$now -   Step $step_n.$step_tmp Filter variants for the target genes: $name ...");
+	$file_in =  $file_out; # get the previous output file as input for this step
+	$file_out = "$directory_out/00_$name.results".get_timestamp()."txt";
+	$command00 = "grep"; # next command.
+	$options = "  $targetgenes $file_in > $file_out";
+	$command = "$command00 $options";
+	system($command);
+	print_done("$now -\t\t\t\t\t");
 
 	## Next Step. Visualization of Variants
 	$step_tmp = $step_tmp + 1;
