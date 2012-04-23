@@ -11,6 +11,9 @@
 # ---------------------------------------------------------------------
 # sudo apt-get install perl perl-suid
 
+# ToDo: check
+# http://www.bioconductor.org/help/workflows/variants/
+
 
 ##########################
 ### Main Program
