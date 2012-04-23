@@ -463,7 +463,7 @@ sub show_help {
       with this syntax for one gene:
        -t BRCA1 
       or
-       -t 'BRCA1\|BRCA2' 
+       -t 'BRCA1\|BRCA2\|unknown' 
       for more than one gene or string to filter results
   -h: show this help text \t\t\t[optional]\n
   -l: log results (optional, to be coded ;-). In the mean time, use the standard unix utilities such as:
