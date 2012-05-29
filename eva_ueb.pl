@@ -14,12 +14,14 @@
 #
 # For annovar to work, you need to download many annotation db to your hard disk
 # with commands like:
-#perl /home/ueb/annovar/annotate_variation.pl -downdb ljb_all -webfrom annovar -buildver hg19 /home/ueb/annovar/humandb/
-#perl /home/ueb/annovar/annotate_variation.pl -downdb ljb_pp2 -webfrom annovar -buildver hg19 /home/ueb/annovar/humandb/
-#perl /home/ueb/annovar/annotate_variation.pl -downdb ljb_all -webfrom annovar -buildver hg19 /home/ueb/annovar/humandb/
-#perl /home/ueb/annovar/annotate_variation.pl -downdb -buildver hg19 ljb /home/ueb/annovar/humandb/
-#perl /home/ueb/annovar/annotate_variation.pl -downdb -buildver hg19 1000g2011may /home/ueb/annovar/humandb/
-#perl /home/ueb/annovar/annotate_variation.pl -downdb -buildver hg19 avsift /home/ueb/annovar/humandb/
+#perl /home/ueb/annovar/annotate_variation.pl -webfrom annovar -downdb ljb_all -buildver hg19 /home/ueb/annovar/humandb/
+#perl /home/ueb/annovar/annotate_variation.pl -webfrom annovar -downdb ljb_pp2 -buildver hg19 /home/ueb/annovar/humandb/
+#perl /home/ueb/annovar/annotate_variation.pl -webfrom annovar -downdb ljb_mt -buildver hg19 /home/ueb/annovar/humandb/
+#perl /home/ueb/annovar/annotate_variation.pl -webfrom annovar -downdb ljb_phylop -buildver hg19 /home/ueb/annovar/humandb/
+#perl /home/ueb/annovar/annotate_variation.pl -downdb esp5400_all -buildver hg19 /home/ueb/annovar/humandb/
+#perl /home/ueb/annovar/annotate_variation.pl -downdb ljb -buildver hg19 /home/ueb/annovar/humandb/
+#perl /home/ueb/annovar/annotate_variation.pl -downdb 1000g2011may -buildver hg19 /home/ueb/annovar/humandb/
+#perl /home/ueb/annovar/annotate_variation.pl -downdb avsift -buildver hg19 /home/ueb/annovar/humandb/
 # ...
 
 # ToDo: check
