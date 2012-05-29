@@ -10,10 +10,22 @@
 # Command to run on Debian machines to install some of the requriements
 # ---------------------------------------------------------------------
 # sudo apt-get install perl perl-suid
+# sudo wget http://bioinform.usc.edu/annovar/xmpVO9ISYx/annovar.tar.gz (Versión from May 2012)
+#
+# For annovar to work, you need to download many annotation db to your hard disk
+# with commands like:
+#perl /home/ueb/annovar/annotate_variation.pl -downdb ljb_all -webfrom annovar -buildver hg19 /home/ueb/annovar/humandb/
+#perl /home/ueb/annovar/annotate_variation.pl -downdb ljb_pp2 -webfrom annovar -buildver hg19 /home/ueb/annovar/humandb/
+#perl /home/ueb/annovar/annotate_variation.pl -downdb ljb_all -webfrom annovar -buildver hg19 /home/ueb/annovar/humandb/
+#perl /home/ueb/annovar/annotate_variation.pl -downdb -buildver hg19 ljb /home/ueb/annovar/humandb/
+#perl /home/ueb/annovar/annotate_variation.pl -downdb -buildver hg19 1000g2011may /home/ueb/annovar/humandb/
+#perl /home/ueb/annovar/annotate_variation.pl -downdb -buildver hg19 avsift /home/ueb/annovar/humandb/
+# ...
 
 # ToDo: check
 # http://www.bioconductor.org/help/workflows/variants/
-
+# log file param: implement it.
+# add new optional param: make colors of log files
 
 ##########################
 ### Main Program
@@ -47,12 +59,13 @@ my $path_vcfutils = "/usr/share/samtools/vcfutils.pl";
 my $path_convert2annovar = "/home/ueb/annovar/convert2annovar.pl";
 my $path_annotate_variation = "/home/ueb/annovar/annotate_variation.pl";
 my $path_annotate_humandb = "/home/ueb/annovar/humandb/";
+my $path_summarize_annovar = "/home/ueb/annovar/summarize_annovar.pl";
 #my $targetgenes = ""; # not used as such; fetched directly from the argument value
 
 # Argument handling of the program call
 # ---------------------------------------------------------------------
 # # declare the perl command line flags/options we want to allow
-getopts("hi:o:nf:l", \%options);
+getopts("hi:o:nf:l:sk", \%options);
 # Arguments
 # h: show help on usage # Optional
 # i: Directory with __I__nput data files # Compulsory
@@ -60,6 +73,8 @@ getopts("hi:o:nf:l", \%options);
 # n: i__N__dex the reference genome # Optional
 # f: __F__ilter results for these target genes # Optional
 # l: __L__og info about the process into a log file # Optional
+# s: __S__summarize results in a single .csv file with annotations # Optional
+# k: __K__eep temporal dummy files after they have been used # Optional
 
 # test for the existence of the options on the command line.
 # in a normal program you'd do more than just print these.
@@ -69,6 +84,8 @@ print "-o $options{o}\n" if defined $options{o};
 print "-n $options{n}\n" if defined $options{n};
 print "-f $options{f}\n" if defined $options{f};
 print "-l $options{l}\n" if defined $options{l};
+print "-s $options{l}\n" if defined $options{s};
+print "-k $options{k}\n" if defined $options{c};
 
 # other things found on the command line
 print "Other things found on the command line:\n" if $ARGV[0];
@@ -82,7 +99,8 @@ foreach (@ARGV)
 print_doc("##############################################################################");
 print_doc("### $program_ueb: Pipeline for 'Exome Variant Analysis' (EVA) at the UEB     ###");
 print_doc("###   r$revision###                                                                        ###");
-print_doc("### (c) 2011-12 UEB - GPL licensed - http://ueb.ir.vhebron.net/tools       ###");
+print_doc("###   ( using dbSNP 132 & hg 19 )									      ###");
+print_doc("### (c) 2011-12 UEB - GPL licensed - http://ueb.vhir.org/tools 		      ###");
 print_doc("##############################################################################\n");
 
 # Manage showing help if requested
@@ -110,18 +128,18 @@ if ($options{o}) # there is some output directory
 	print_error("Missing directory for ourput files (-o)");
 }
 
-#my ($directory_in,$directory_out,$indexing,$n_arguments);
-##$n_arguments = scalar(keys @ARGV); # with 'scalar(@ARGV);' I was misscounting 3 when 3 arguments where passed; however, only working in perl 5.12 (ubuntu 11.10), not on perl 5.10 (ubuntu 10.04) 
-#$n_arguments = scalar(@ARGV); # misscounts argumetns, but at least it works on perl 5.10 on ubuntu 10.04
-
-#if ($n_arguments < 2 || $n_arguments > 3) {
-	#print_error("Wrong number of parameters: source and destination directories missing");
-#} elsif ($n_arguments == 2) {
-	#($directory_in,$directory_out) = @ARGV;
-	#$indexing = "off"; # Set indexing to 0 (off)
-#}else{ # case when there are 3 arguments
-	#($directory_in,$directory_out,$indexing) = @ARGV;
-#}
+			#my ($directory_in,$directory_out,$indexing,$n_arguments);
+			##$n_arguments = scalar(keys @ARGV); # with 'scalar(@ARGV);' I was misscounting 3 when 3 arguments where passed; however, only working in perl 5.12 (ubuntu 11.10), not on perl 5.10 (ubuntu 10.04) 
+			#$n_arguments = scalar(@ARGV); # misscounts argumetns, but at least it works on perl 5.10 on ubuntu 10.04
+			
+			#if ($n_arguments < 2 || $n_arguments > 3) {
+				#print_error("Wrong number of parameters: source and destination directories missing");
+			#} elsif ($n_arguments == 2) {
+				#($directory_in,$directory_out) = @ARGV;
+				#$indexing = "off"; # Set indexing to 0 (off)
+			#}else{ # case when there are 3 arguments
+				#($directory_in,$directory_out,$indexing) = @ARGV;
+			#}
 
 print_doc("Step $step_n. Reading parameters");
 print_done();
@@ -129,12 +147,13 @@ print_done();
 ## Step 2. Accesing directory
 # ---------------------------------------------------------------------
 $step_n = $step_n+1;
-my ($file,$file_in,$file_out);
-my ($name,$filter,$command,$options);
+# Definition of internal variables
+my ($file,$file_in,$file_out,$sum_file_in,$sum_file_out);
+my ($name,$filter,$command,$options00,$options01);
 
 opendir(DIR,$directory_in);
-#opendir(DIR,$directory_in) or die "Cannot open $directory_in: !";
-#opendir my $dh, $dir_to_process or die "Cannot open $dir_to_process: $!";
+			#opendir(DIR,$directory_in) or die "Cannot open $directory_in: !";
+			#opendir my $dh, $dir_to_process or die "Cannot open $dir_to_process: $!";
 print_doc("Step $step_n. Accesing directory: $directory_in");
 print_done();
 
@@ -160,8 +179,8 @@ while ($file = readdir(DIR))
 #	$file_out = "$directory_out/$name.txt";
 	$command00 = "$path_fastq"; # path to fastqc binary; adapt to your case.
 #	$command00 = "ls"; # next command.
-	$options = "$file_in --outdir=$directory_out ";
-	$command = "$command00 $options";
+	$options00 = "$file_in --outdir=$directory_out ";
+	$command = "$command00 $options00";
 	system($command);
 	print_done();
 
@@ -171,20 +190,20 @@ while ($file = readdir(DIR))
 	# ---------------------------------------------------------------------
 	$step_tmp = $step_tmp + 1;
 	print_doc("$now -   Step $step_n.$step_tmp Map against reference genome: Index the reference genome (if needed): $name ...");
-#	# Index the reference genome, if requested with param "-index"
-##	if (($ARGV[2] eq '-index') || ($ARGV[3] eq '-index')) { # index the reference genome
-##	if ($n_arguments == 3) { # only when there are 3 arguments use $indexing; otherwise,  a warning of uninitialized $indexing is shown 
-#		if ((($indexing eq '-index') || ($indexing eq '-Index')) && ($file_n == 1)) { # index the reference genome when requested by the -index param but only once if more than one sample to process
-#		#	$file_in = "$directory_in/$name";
-#		#	$file_out = "$directory_out/$name.txt";
-#			$command00 = "bwa index"; # next command
-#			$options = " -a bwtsw $path_genome";
-#		}
-#		else { # skip the indexing of the reference genome
-#			$command00 = "echo '  ...skipped...'"; # next command.
-#			$options = "";
-#		}
-##	} # end of condition for when there are 3 arguments
+			#	# Index the reference genome, if requested with param "-index"
+			##	if (($ARGV[2] eq '-index') || ($ARGV[3] eq '-index')) { # index the reference genome
+			##	if ($n_arguments == 3) { # only when there are 3 arguments use $indexing; otherwise,  a warning of uninitialized $indexing is shown 
+			#		if ((($indexing eq '-index') || ($indexing eq '-Index')) && ($file_n == 1)) { # index the reference genome when requested by the -index param but only once if more than one sample to process
+			#		#	$file_in = "$directory_in/$name";
+			#		#	$file_out = "$directory_out/$name.txt";
+			#			$command00 = "bwa index"; # next command
+			#			$options00 = " -a bwtsw $path_genome";
+			#		}
+			#		else { # skip the indexing of the reference genome
+			#			$command00 = "echo '  ...skipped...'"; # next command.
+			#			$options00 = "";
+			#		}
+			##	} # end of condition for when there are 3 arguments
 	
 	print $options{n};
 	
@@ -192,26 +211,26 @@ while ($file = readdir(DIR))
 	{
 		# Index the reference genome, if requested with argument -n and only for the first file if more than one sample to process
 		$command00 = "bwa index"; # next command
-		$options = " -a bwtsw $path_genome";
+		$options00 = " -a bwtsw $path_genome";
 #		$command00 = "echo '  ...fake indexing XXX...'"; # next command.
 	} else 	{ # skip the indexing of the reference genome
 		$command00 = "echo '  ...skipped...'"; # next command.
-		$options = "";
+		$options00 = "";
 	}
-	$command = "$command00 $options";
+	$command = "$command00 $options00";
 	system($command);
 	print_done();
 
-#die(); #### For Debuging only XXXX
-
-## XXX debugging ini...
-##print_doc("@ARGV"); # xxx debug
-#print_doc("@ARGV[0]"); # xxx debug
-#print_doc("@ARGV[1]"); # xxx debug
-#print_doc("@ARGV[2]"); # xxx debug
-##$n_arguments = scalar(keys @ARGV); # xxx debug
-#print_doc("$n_arguments") ; # xxx debug
-#exit(0); # XXX debugging end...
+			#die(); #### For Debuging only XXXX
+			
+			## XXX debugging ini...
+			##print_doc("@ARGV"); # xxx debug
+			#print_doc("@ARGV[0]"); # xxx debug
+			#print_doc("@ARGV[1]"); # xxx debug
+			#print_doc("@ARGV[2]"); # xxx debug
+			##$n_arguments = scalar(keys @ARGV); # xxx debug
+			#print_doc("$n_arguments") ; # xxx debug
+			#exit(0); # XXX debugging end...
 
 
 	## Next Step. Map against reference genome: do the mapping
@@ -221,10 +240,11 @@ while ($file = readdir(DIR))
 	$file_in = "$directory_in/$file";
 	$file_out = "$directory_out/$name.sam";
 	$command00 = "bwa bwasw"; # next command.
-	$options = " $path_genome $file_in > $file_out";
-	$command = "$command00 $options";
+	$options00 = " $path_genome $file_in > $file_out";
+	$command = "$command00 $options00";
 	system($command);
 	print_done();
+	# At this step we don't do check2clean since that is the input file, and not temporary output files.
 
 
 	## Next Step. Convert sam to bam and sort it
@@ -234,10 +254,12 @@ while ($file = readdir(DIR))
 	$file_in = $file_out;
 	$file_out = "$directory_out/$name.sam.sorted";
 	$command00 = "samtools"; # next command.
-	$options = " view -bS $file_in | samtools sort - $file_out"; # Attention: it seems that the real file generated is a .bam file
-	$command = "$command00 $options";
+	$options00 = " view -bS $file_in | samtools sort - $file_out"; # Attention: it seems that the real file generated is a .bam file
+	$command = "$command00 $options00";
 	system($command);
 	print_done();
+	check2clean("$file_in");
+
 
 
 	## Next Step. Remove possible PCR duplicates
@@ -247,10 +269,11 @@ while ($file = readdir(DIR))
 	$file_in = "$directory_out/$name.sam.sorted.bam";
 	$file_out = "$directory_out/$name.sam.sorted.noDup.bam";
 	$command00 = "samtools"; # next command.
-	$options = " rmdup -s $file_in $file_out";
-	$command = "$command00 $options";
+	$options00 = " rmdup -s $file_in $file_out";
+	$command = "$command00 $options00";
 	system($command);
 	print_done();
+	check2clean("$file_in");
 
 
 
@@ -261,10 +284,11 @@ while ($file = readdir(DIR))
 	$file_in = "$directory_out/$name.sam.sorted.noDup.bam";
 #	$file_out = "";
 	$command00 = "samtools"; # next command.
-	$options = " index $file_in";
-	$command = "$command00 $options";
+	$options00 = " index $file_in";
+	$command = "$command00 $options00";
 	system($command);
 	print_done();
+	check2clean("$file_in");
 
 
 
@@ -275,10 +299,11 @@ while ($file = readdir(DIR))
 	$file_in = "$directory_out/$name.sam.sorted.noDup.bam";
 	$file_out = "";
 	$command00 = "samtools"; # next command.
-	$options = " flagstat $file_in";
-	$command = "$command00 $options";
+	$options00 = " flagstat $file_in";
+	$command = "$command00 $options00";
 	system($command);
 	print_done();
+	check2clean("$file_in");
 
 
 
@@ -289,12 +314,14 @@ while ($file = readdir(DIR))
 	$file_in = "$directory_out/$name.sam.sorted.noDup.bam";
 	$file_out = "$directory_out/$name.sam.sorted.noDup.bam.samtools.var.raw.vcf";
 	$command00 = "samtools"; # next command.
-	$options = " mpileup -uf $path_genome $file_in | bcftools view -vcg - > $file_out";
-	$command = "$command00 $options";
+	$options00 = " mpileup -uf $path_genome $file_in | bcftools view -vcg - > $file_out";
+	$command = "$command00 $options00";
 	system($command);
 	print_done();
-# testing
-# samtools mpileup -uf $path_genome ./dir_out/prova1.sam.sorted.noDup.bam | bcftools view -vcg - > ./dir_out/prova1.sam.sorted.noDup.bam.samtools.var.raw.vcf
+	check2clean("$file_in");
+	
+			# testing
+			# samtools mpileup -uf $path_genome ./dir_out/prova1.sam.sorted.noDup.bam | bcftools view -vcg - > ./dir_out/prova1.sam.sorted.noDup.bam.samtools.var.raw.vcf
 
 
 	## Next Step. Variant Filtering
@@ -304,10 +331,11 @@ while ($file = readdir(DIR))
 	$file_in = $file_out; # get the previous output file as input for this step
 	$file_out = "$directory_out/$name.sam.sorted.noDup.bam.samtools.var.filtered.vcf";
 	$command00 = "$path_vcfutils"; # next command.
-	$options = " varFilter -Q 10 -d 15 -a 5 $file_in > $file_out";
-	$command = "$command00 $options";
+	$options00 = " varFilter -Q 10 -d 15 -a 5 $file_in > $file_out";
+	$command = "$command00 $options00";
 	system($command);
 	print_done();
+	check2clean("$file_in");
 
 
 
@@ -318,32 +346,87 @@ while ($file = readdir(DIR))
 	$file_in = $file_out; # get the previous output file as input for this step
 	$file_out = "$directory_out/$name.sam.sorted.noDup.bam.samtools.var.filtered.vcf.annovar";
 	$command00 = "$path_convert2annovar"; # next command.
-	$options = " $file_in -format vcf4 > $file_out";
-	$command = "$command00 $options";
+	$options00 = " $file_in -format vcf4 > $file_out";
+	$command = "$command00 $options00";
 	system($command);
 	print_done();
+	check2clean("$file_in");
 	
 	## Next Step. Variant Annotation
-		## Alternative annotation 1: SeattleSeq Website
+	# ---------------------------------------------------------------------
+		## Alternative annotation procedure 1: SeattleSeq Website
 		# See: http://snp.gs.washington.edu/SeattleSeqAnnotation134/
 
-		## Alternative annotation 2: VariantAnnotation Bioconductor package for R 2.14
+		## Alternative annotation procedure 2: VariantAnnotation Bioconductor package for R 2.14
 		# See: http://www.bioconductor.org/packages/devel/bioc/html/VariantAnnotation.html
 		
+	# We will be mainly annotating by (1) gene, (2) region or (3) filtering specific nucleotide changes (the 3 methos of annovar)
+	# See: http://www.openbioinformatics.org/annovar/
+
+	# (1) Variant Annotation with Annovar: Gene-based
+	#     Identify whether SNPs or CNVs cause protein coding changes and the amino acids that are affected. Users can flexibly use RefSeq genes, UCSC genes, ENSEMBL genes, GENCODE genes, or many other gene definition systems.
+	#     http://www.openbioinformatics.org/annovar/annovar_gene.html
 	$step_tmp = $step_tmp + 1;
-	print_doc("$now -   Step $step_n.$step_tmp Variant Annotation: $name ...");
+	print_doc("$now -   Step $step_n.$step_tmp Variant Annotation (gene-based): $name ...");
 	$file_in = $file_out; # get the previous output file as input for this step
-	$file_out = "$directory_out/$name.sam.sorted.noDup.bam.samtools.var.filtered.vcf.exonic_variant_function"; # this extension ".exonic_variant_function" is hardcoded in annovar. It's written here to be given for the next steep as input file name 
+	$file_out = "$directory_out/$name.sam.sorted.noDup.bam.samtools.var.filtered.vcf.exonic_variant_function_gene"; # XXX this extension ".exonic_variant_function" is hardcoded in annovar. It's written here to be given for the next steep as input file name 
 	$command00 = "perl $path_annotate_variation"; # next command.
-	$options = " -geneanno --buildver hg19 $file_in $path_annotate_humandb";
-	$command = "$command00 $options";
+	$options00 = " -geneanno --buildver hg19 $file_in $path_annotate_humandb";
+	$command = "$command00 $options00";
 	system($command);
 	print_done();
+	# We don't do check2clean here  either since we will still use the .vcf.annovar file in the next steps
 
-# a mà la instrucció al mainhead és:
-# perl /home/ueb/annovar/annotate_variation.pl -geneanno --buildver hg19 /home/xavi/repo/peeva/dir_out/Gutierrez_B_Sure.sequence_m50.sam.sorted.noDup.bam.samtools.var.filtered.vcf.annovar /home/ueb/annovar/humandb/
+			# a mà la instrucció al mainhead és:
+			# perl /home/ueb/annovar/annotate_variation.pl -geneanno --buildver hg19 /home/xavi/repo/peeva/dir_out/Gutierrez_B_Sure.sequence_m50.sam.sorted.noDup.bam.samtools.var.filtered.vcf.annovar /home/ueb/annovar/humandb/
+			# perl /home/ueb/annovar/annotate_variation.pl -geneanno --buildver hg19 /home/ueb/estudis/ngs/2011-08-SGutierrez-VHIO-207/111224_peeva_dir_out/Gutierrez_B_Sure.sequence.sam.sorted.noDup.bam.samtools.var.filtered.vcf.annovar /home/ueb/annovar/humandb/
 
-# perl /home/ueb/annovar/annotate_variation.pl -geneanno --buildver hg19 /home/ueb/estudis/ngs/2011-08-SGutierrez-VHIO-207/111224_peeva_dir_out/Gutierrez_B_Sure.sequence.sam.sorted.noDup.bam.samtools.var.filtered.vcf.annovar /home/ueb/annovar/humandb/
+	# (2) Variant Annotation with Annovar: Region-based
+	# 	  Identify variants in specific genomic regions, for example, conserved regions among 44 species, predicted transcription factor binding sites, segmental duplication regions, GWAS hits, database of genomic variants, DNAse I hypersensitivity sites, ENCODE H3K4Me1/H3K4Me3/H3K27Ac/CTCF sites, ChIP-Seq peaks, RNA-Seq peaks, or many other annotations on genomic intervals
+	#     Skipped so far (May 2012)
+	#     http://www.openbioinformatics.org/annovar/annovar_region.html
+
+	# (3) Variant Annotation with Annovar: Filter-based
+	#     Identify variants that are reported in dbSNP, or identify the subset of common SNPs (MAF>1%) in the 1000 Genome Project, or identify subset of non-synonymous SNPs with SIFT score>0.05, or many other annotations on specific mutations
+	#     http://www.openbioinformatics.org/annovar/annovar_filter.html
+	$step_tmp = $step_tmp + 1;
+	print_doc("$now -   Step $step_n.$step_tmp Variant Annotation (filter based): $name ...");
+	$file_in = "$directory_out/$name.sam.sorted.noDup.bam.samtools.var.filtered.vcf.annovar"; 
+	$file_out = "$directory_out/$name.sam.sorted.noDup.bam.samtools.var.filtered.vcf.exonic_variant_function_filter"; # XXX this extension ".exonic_variant_function" is hardcoded in annovar. It's written here to be given for the next steep as input file name 
+	$command00 = "perl $path_annotate_variation"; # next command.
+	$options00 = " -filter --buildver hg19  -dbtype snp132 $file_in $path_annotate_humandb";
+	$command = "$command00 $options00";
+	system($command);
+	print_done();
+	# We don't do check2clean here  either since we will still use the .vcf.annovar file in the next steps (summarizing annotations and filtering)
+
+
+		# a mà la instrucció al mainhead és:
+		# perl /home/ueb/annovar/annotate_variation.pl -filter --buildver hg19 -dbtype snp132 /home/xavi/repo/peeva/dir_out/vhir_sample_a_sure_1e6.sam.sorted.noDup.bam.samtools.var.filtered.vcf.annovar /home/ueb/annovar/humandb/
+
+	# (extra) Variant Annotation with Annovar: summarize_annovar.pl
+	#     Given a list of variants from whole-exome or whole-genome sequencing, it will generate an Excel-compatible file with gene annotation, amino acid change annotation, SIFT scores, PolyPhen scores, LRT scores, MutationTaster scores, PhyloP conservation scores, GERP++ conservation scores, dbSNP identifiers, 1000 Genomes Project allele frequencies, NHLBI-ESP 5400 exome project allele frequencies and other information.
+	#     http://www.openbioinformatics.org/annovar/annovar_accessary.html#excel
+	$step_tmp = $step_tmp + 1;
+	print_doc("$now -   Step $step_n.$step_tmp Variant Annotation (summarize annotations in .csv): $name ...");
+	if ($options{s}) # case to summarize annotation results in a single .csv file 
+		{
+			$file_in = "$directory_out/$name.sam.sorted.noDup.bam.samtools.var.filtered.vcf.annovar"; 
+			$sum_file_out = "$directory_out/$name.sum"; # summarize_annovar.pl adds the extension .exome_summary (hardcoded in annovar). 
+			$command00 = "perl $path_summarize_annovar"; # next command.
+			$options00 = " --buildver hg19 --verdbsnp 132 $file_in $path_annotate_humandb --outfile $file_out";
+		} else { # skip 
+			$command00 = "echo '  ...skipped...'"; # next command.
+			$options00 = "";
+		}
+	$command = "$command00 $options00";
+	system($command);
+	print_done();
+	# We don't do check2clean here  either since we will still use the .vcf.annovar file in the next steps (filtering)
+
+
+		# a mà la instrucció al mainhead és:
+		# perl /home/ueb/annovar/summarize_annovar.pl --buildver hg19  --verdbsnp 132 /home/xavi/repo/peeva/dir_out/vhir_sample_a_sure_1e6.sam.sorted.noDup.bam.samtools.var.filtered.vcf.annovar /home/ueb/annovar/humandb/ --outfile sum
 
 	## Next Step. Filter variants for the target genes
 	# ---------------------------------------------------------------------
@@ -354,19 +437,30 @@ while ($file = readdir(DIR))
 			$file_in =  $file_out; # get the previous output file as input for this step
 			$file_out = "$directory_out/00_$name.results".get_timestamp()."txt";
 			$command00 = "grep"; # next command.
-			$options = "  '$options{f}' $file_in > $file_out";
+			$options00 = "  '$options{f}' $file_in > $file_out";
 			# Remember that the values in the previous $options{f} variable needs to be like: 'BRCA1\|BRCA2' 
 			# in order to end up performing a command like:
 			# grep 'BRCA1\|BRCA2' dir_out/Gutierrez_A_*.exonic* 
+			if ($options{s}) # case to have a file with summarized annotations to search also for specific target genes 
+				{
+					$sum_file_in = $sum_file_out;  # get the previous summary output file as input for this step
+					$sum_file_out = "$directory_out/00_$name.sum_results".get_timestamp()."txt";
+					$options01 = "  '$options{f}' $sum_file_in > $sum_file_out";
+				}
 		} else { # skip the searching for specific target genes 
 			$command00 = "echo '  ...skipped...'"; # next command.
-			$options = "";
+			$options00 = "";
 		}
-	$command = "$command00 $options";
-	 
-
+	$command = "$command00 $options00";
 	system($command);
+	if ($options{s}) # case to have a file with summarized annotations to search also for specific target genes 
+		{
+			$command = "$command00 $options01";
+			system($command);
+		}
 	print_done();
+	check2clean("$file_in"); # here we check if the user requested to clean the .vcf.annovar nowadays that it's not being used any more.
+
 
 	## Next Step. Visualization of Variants
 	# ---------------------------------------------------------------------
@@ -375,8 +469,8 @@ while ($file = readdir(DIR))
 	$file_in = "";
 	$file_out = "";
 	$command00 = "echo '  ...skipped...'"; # next command.
-	$options = "";
-	$command = "$command00 $options";
+	$options00 = "";
+	$command = "$command00 $options00";
 	system($command);
 	print_done();
 
@@ -388,8 +482,8 @@ while ($file = readdir(DIR))
 	#$file_in = "";
 	#$file_out = "";
 	#$command00 = "echo '  ...skipped...'"; # next command.
-	#$options = "";
-	#$command = "$command00 $options";
+	#$options00 = "";
+	#$command = "$command00 $options00";
 	#system($command);
 	#print_done("$now -\t\t\t\t\t");
 
@@ -451,9 +545,22 @@ sub nownice
 	my $mess;
 	$mess = $_[0];
 	my( $year, $month, $day, $hour, $minute ) = (localtime)[5,4,3,2,1];
-	sprintf '%4d-%02d-%02d %02d:%02d', $year, $month, $day, $hour, $minute;
+	sprintf '%2d-%02d-%02d %02d:%02d', $year, $month, $day, $hour, $minute;
 }
 
+sub check2clean
+{
+	# ---------------------------------------------------------------------
+	my $var;
+	$var = $_[0];
+	if ($options{k}) # keep temporary files if requested by the user 
+	{ 
+		# do nothing
+	} else { # clean temporary files not from this but from the previous step
+		$commandclean = "rm  $var";
+		system($commandclean);
+	}
+}
 
 sub show_help {
   # ---------------------------------------------------------------------
@@ -462,17 +569,19 @@ sub show_help {
   -i: directory with source .fastq files 	(required)
   -o: directory to save output files     	(required)
   -n: -index (indexing of the reference genome)\t\t\t [optional, not indexed by default]
+  -s: summarize results with annotations in a single .csv file
   -f: filter results for these target genes \t\t\t[optional]
       with this syntax for one gene:
-       -t BRCA1 
+       -f BRCA1 
       or
-       -t 'BRCA1\|BRCA2\|unknown' 
+       -f 'BRCA1\|BRCA2\|unknown' 
       for more than one gene or string to filter results
+  -k: keep temporary files after they have been used \t\t\t[optional] 
   -h: show this help text \t\t\t[optional]\n
   -l: log results (optional, to be coded ;-). In the mean time, use the standard unix utilities such as:
-  Example1: perl $program_ueb -i ./test_in -o ./test_out > log_stdout.txt 2> log_stderr.txt
-  Example2: perl $program_ueb -i ./test_in -o ./test_out > log_both.txt 2>&1
-  Example3: perl $program_ueb -i ./test_in -o ./test_out | tee /dev/tty log_both.txt\n");
+  Example1: perl $program_ueb -i ./dir_in -o ./dir_out -s -f 'BRCA1\|BRCA2\|unknown' > ./logs/log_stdout.txt 2> ./logs/log_stderr.txt
+  Example2: perl $program_ueb -i ./test_in -o ./test_out -s -k > ./logs/log_both.txt 2>&1
+  Example3: perl $program_ueb -i ./test_in -o ./test_out -s -k | tee /dev/tty ./logs/log_both.txt\n");
   print_doc("##############################################################################\n");
 }
 	
