@@ -86,8 +86,8 @@ print "-o $options{o}\n" if defined $options{o};
 print "-n $options{n}\n" if defined $options{n};
 print "-f $options{f}\n" if defined $options{f};
 print "-l $options{l}\n" if defined $options{l};
-print "-s $options{l}\n" if defined $options{s};
-print "-k $options{k}\n" if defined $options{c};
+print "-s $options{s}\n" if defined $options{s};
+print "-k $options{k}\n" if defined $options{k};
 
 # other things found on the command line
 print "Other things found on the command line:\n" if $ARGV[0];
@@ -101,8 +101,8 @@ foreach (@ARGV)
 print_doc("##############################################################################");
 print_doc("### $program_ueb: Pipeline for 'Exome Variant Analysis' (EVA) at the UEB     ###");
 print_doc("###   r$revision###                                                                        ###");
-print_doc("###   ( using dbSNP 132 & hg 19 )									      ###");
-print_doc("### (c) 2011-12 UEB - GPL licensed - http://ueb.vhir.org/tools 		      ###");
+print_doc("###   ( using dbSNP 132 & hg 19 )                                          ###");
+print_doc("### (c) 2011-12 UEB - GPL licensed - http://ueb.vhir.org/tools             ###");
 print_doc("##############################################################################\n");
 
 # Manage showing help if requested
@@ -207,7 +207,7 @@ while ($file = readdir(DIR))
 			#		}
 			##	} # end of condition for when there are 3 arguments
 	
-	print $options{n};
+	#print $options{n};
 	
 	if (($options{n}) && ($file_n == 1)) # case to index the reference genome (time consuming, do only when really needed as requested)
 	{
@@ -290,7 +290,7 @@ while ($file = readdir(DIR))
 	$command = "$command00 $options00";
 	system($command);
 	print_done();
-	check2clean("$file_in");
+	# Don't check for check2clean("$file_in") since we still need it to do some stats upon it
 
 
 
@@ -305,7 +305,7 @@ while ($file = readdir(DIR))
 	$command = "$command00 $options00";
 	system($command);
 	print_done();
-	check2clean("$file_in");
+	# Don't check for check2clean("$file_in") since we still need it for the variant calling
 
 
 
@@ -437,7 +437,7 @@ while ($file = readdir(DIR))
 	if ($options{f}) # case to search for specific target genes 
 		{
 			$file_in =  $file_out; # get the previous output file as input for this step
-			$file_out = "$directory_out/00_$name.results".get_timestamp()."txt";
+			$file_out = "$directory_out/$name.results_".get_timestamp().".txt";
 			$command00 = "grep"; # next command.
 			$options00 = "  '$options{f}' $file_in > $file_out";
 			# Remember that the values in the previous $options{f} variable needs to be like: 'BRCA1\|BRCA2' 
@@ -446,7 +446,7 @@ while ($file = readdir(DIR))
 			if ($options{s}) # case to have a file with summarized annotations to search also for specific target genes 
 				{
 					$sum_file_in = $sum_file_out;  # get the previous summary output file as input for this step
-					$sum_file_out = "$directory_out/00_$name.sum_results".get_timestamp()."txt";
+					$sum_file_out = "$directory_out/$name.sum_results_".get_timestamp().".txt";
 					$options01 = "  '$options{f}' $sum_file_in > $sum_file_out";
 				}
 		} else { # skip the searching for specific target genes 
@@ -455,7 +455,7 @@ while ($file = readdir(DIR))
 		}
 	$command = "$command00 $options00";
 	system($command);
-	if ($options{s}) # case to have a file with summarized annotations to search also for specific target genes 
+	if ($options{f} && $options{s}) # case to have a file with summarized annotations to search also for specific target genes 
 		{
 			$command = "$command00 $options01";
 			system($command);
@@ -463,7 +463,7 @@ while ($file = readdir(DIR))
 	print_done();
 	check2clean("$file_in"); # here we check if the user requested to clean the .vcf.annovar nowadays that it's not being used any more.
 
-
+exi
 	## Next Step. Visualization of Variants
 	# ---------------------------------------------------------------------
 	$step_tmp = $step_tmp + 1;
@@ -503,6 +503,21 @@ exit(0);
 ##########################
 ### FUNCTIONS
 ##########################
+sub get_timestamp 
+{
+	# ---------------------------------------------------------------------
+   my($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
+   if ($mon < 10) { $mon = "0$mon"; }
+   if ($hour < 10) { $hour = "0$hour"; }
+   if ($min < 10) { $min = "0$min"; }
+   if ($sec < 10) { $sec = "0$sec"; }
+   $year=$year+1900;
+
+#   return $year . '_' . $mon . '_' . $mday . '__' . $hour . '_' . $min . '_' . $sec;
+   sprintf '%04d-%02d-%02d_%02d-%02d-%02d', $year, $mon, $mday, $hour, $min, $sec;
+
+}
+
 sub print_doc
 {
 	# ---------------------------------------------------------------------
@@ -544,10 +559,11 @@ sub print_error
 sub nownice
 {
 	# ---------------------------------------------------------------------
-	my $mess;
+	my ($mess, $yearcurrent);
 	$mess = $_[0];
 	my( $year, $month, $day, $hour, $minute ) = (localtime)[5,4,3,2,1];
-	sprintf '%2d-%02d-%02d %02d:%02d', $year, $month, $day, $hour, $minute;
+	$yearcurrent = 1900 + $year;
+	sprintf '%04d-%02d-%02d %02d:%02d', $yearcurrent, $month, $day, $hour, $minute;
 }
 
 sub check2clean
@@ -559,8 +575,7 @@ sub check2clean
 	{ 
 		# do nothing
 	} else { # clean temporary files not from this but from the previous step
-		$commandclean = "rm  $var";
-		system($commandclean);
+		system("rm  $var");
 	}
 }
 
@@ -568,19 +583,19 @@ sub show_help {
   # ---------------------------------------------------------------------
   print "The help info needs to be updated to the new argument system for calls to the $program_ueb.\n";
   print_doc("\nThis program $program_ueb accepts 3 arguments passed to the program call:
-  -i: directory with source .fastq files 	(required)
-  -o: directory to save output files     	(required)
-  -n: -index (indexing of the reference genome)\t\t\t [optional, not indexed by default]
-  -s: summarize results with annotations in a single .csv file
-  -f: filter results for these target genes \t\t\t[optional]
+  -i: directory with source .fastq files \t\t\t *** required ***
+  -o: directory to save output files \t\t\t\t *** required ***
+  -n: -index (indexing of the reference genome)\t\t\t    [optional]
+  -s: summarize results with annotations in a single .csv file \t    [optional]
+  -f: filter results for these target genes \t\t\t    [optional]
       with this syntax for one gene:
        -f BRCA1 
       or
        -f 'BRCA1\|BRCA2\|unknown' 
       for more than one gene or string to filter results
-  -k: keep temporary files after they have been used \t\t\t[optional] 
-  -h: show this help text \t\t\t[optional]\n
-  -l: log results (optional, to be coded ;-). In the mean time, use the standard unix utilities such as:
+  -k: keep temporary files after they have been used \t\t    [optional] 
+  -h: show this help text \t\t\t\t\t    [optional]\n
+  -l: log results (optional, to be coded ;-). In the mean time, use the standard unix utilities such as:\n
   Example1: perl $program_ueb -i ./dir_in -o ./dir_out -s -f 'BRCA1\|BRCA2\|unknown' > ./logs/log_stdout.txt 2> ./logs/log_stderr.txt
   Example2: perl $program_ueb -i ./test_in -o ./test_out -s -k > ./logs/log_both.txt 2>&1
   Example3: perl $program_ueb -i ./test_in -o ./test_out -s -k | tee /dev/tty ./logs/log_both.txt\n");
