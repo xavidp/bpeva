@@ -1,0 +1,77 @@
+Started analysis of vhir_sample_b_sure_1e6.fastq
+Approx 5% complete for vhir_sample_b_sure_1e6.fastq
+Approx 10% complete for vhir_sample_b_sure_1e6.fastq
+Approx 15% complete for vhir_sample_b_sure_1e6.fastq
+Approx 20% complete for vhir_sample_b_sure_1e6.fastq
+Approx 25% complete for vhir_sample_b_sure_1e6.fastq
+Approx 30% complete for vhir_sample_b_sure_1e6.fastq
+Approx 35% complete for vhir_sample_b_sure_1e6.fastq
+Approx 40% complete for vhir_sample_b_sure_1e6.fastq
+Approx 45% complete for vhir_sample_b_sure_1e6.fastq
+Approx 50% complete for vhir_sample_b_sure_1e6.fastq
+Approx 55% complete for vhir_sample_b_sure_1e6.fastq
+Approx 60% complete for vhir_sample_b_sure_1e6.fastq
+Approx 65% complete for vhir_sample_b_sure_1e6.fastq
+Approx 70% complete for vhir_sample_b_sure_1e6.fastq
+Approx 75% complete for vhir_sample_b_sure_1e6.fastq
+Approx 80% complete for vhir_sample_b_sure_1e6.fastq
+Approx 85% complete for vhir_sample_b_sure_1e6.fastq
+Approx 90% complete for vhir_sample_b_sure_1e6.fastq
+Approx 95% complete for vhir_sample_b_sure_1e6.fastq
+Approx 100% complete for vhir_sample_b_sure_1e6.fastq
+[bwt_restore_sa] SA-BWT inconsistency: seq_len is not the same. Abort!
+Aborted
+[samopen] no @SQ lines in the header.
+[sam_read1] missing header? Abort!
+[mpileup] 1 samples in 1 input files
+<mpileup> Set max per-file depth to 8000
+[afs] 0:0.000 1:0.000 2:0.000
+NOTICE: Read 27 lines and wrote 0 different variants at 0 genomic positions (0 SNPs and 0 indels)
+NOTICE: Among 0 different variants at 0 positions, 0 are heterozygotes, 0 are homozygotes
+NOTICE: Among 0 SNPs, 0 are transitions, 0 are transversions
+NOTICE: Reading gene annotation from /home/ueb/annovar/humandb/hg19_refGene.txt ... Done with 38580 transcripts (including 6088 without coding sequence annotation) for 23248 unique genes
+NOTICE: Finished gene-based annotation on 0 genetic variants in ./dir_out/vhir_sample_b_sure_1e6.sam.sorted.noDup.bam.samtools.var.filtered.vcf.annovar
+NOTICE: Output files were written to ./dir_out/vhir_sample_b_sure_1e6.sam.sorted.noDup.bam.samtools.var.filtered.vcf.annovar.variant_function, ./dir_out/vhir_sample_b_sure_1e6.sam.sorted.noDup.bam.samtools.var.filtered.vcf.annovar.exonic_variant_function
+NOTICE: Variants matching filtering criteria are written to ./dir_out/vhir_sample_b_sure_1e6.sam.sorted.noDup.bam.samtools.var.filtered.vcf.annovar.hg19_snp132_dropped, other variants are written to ./dir_out/vhir_sample_b_sure_1e6.sam.sorted.noDup.bam.samtools.var.filtered.vcf.annovar.hg19_snp132_filtered
+NOTICE: Processing next batch with 0 unique variants in 0 input lines
+NOTICE: Scanning filter database /home/ueb/annovar/humandb/hg19_snp132.txt...Done
+grep: ./dir_out/vhir_sample_b_sure_1e6.sam.sorted.noDup.bam.samtools.var.filtered.vcf.exonic_variant_function_filter: El fitxer o directori no existeix
+rm: no s’ha pogut eliminar «./dir_out/vhir_sample_b_sure_1e6.sam.sorted.noDup.bam.samtools.var.filtered.vcf.exonic_variant_function_filter»: El fitxer o directori no existeix
+Started analysis of vhir_sample_a_sure_1e6.fastq
+Approx 5% complete for vhir_sample_a_sure_1e6.fastq
+Approx 10% complete for vhir_sample_a_sure_1e6.fastq
+Approx 15% complete for vhir_sample_a_sure_1e6.fastq
+Approx 20% complete for vhir_sample_a_sure_1e6.fastq
+Approx 25% complete for vhir_sample_a_sure_1e6.fastq
+Approx 30% complete for vhir_sample_a_sure_1e6.fastq
+Approx 35% complete for vhir_sample_a_sure_1e6.fastq
+Approx 40% complete for vhir_sample_a_sure_1e6.fastq
+Approx 45% complete for vhir_sample_a_sure_1e6.fastq
+Approx 50% complete for vhir_sample_a_sure_1e6.fastq
+Approx 55% complete for vhir_sample_a_sure_1e6.fastq
+Approx 60% complete for vhir_sample_a_sure_1e6.fastq
+Approx 65% complete for vhir_sample_a_sure_1e6.fastq
+Approx 70% complete for vhir_sample_a_sure_1e6.fastq
+Approx 75% complete for vhir_sample_a_sure_1e6.fastq
+Approx 80% complete for vhir_sample_a_sure_1e6.fastq
+Approx 85% complete for vhir_sample_a_sure_1e6.fastq
+Approx 90% complete for vhir_sample_a_sure_1e6.fastq
+Approx 95% complete for vhir_sample_a_sure_1e6.fastq
+Approx 100% complete for vhir_sample_a_sure_1e6.fastq
+[bwt_restore_sa] SA-BWT inconsistency: seq_len is not the same. Abort!
+Aborted
+[samopen] no @SQ lines in the header.
+[sam_read1] missing header? Abort!
+[mpileup] 1 samples in 1 input files
+<mpileup> Set max per-file depth to 8000
+[afs] 0:0.000 1:0.000 2:0.000
+NOTICE: Read 27 lines and wrote 0 different variants at 0 genomic positions (0 SNPs and 0 indels)
+NOTICE: Among 0 different variants at 0 positions, 0 are heterozygotes, 0 are homozygotes
+NOTICE: Among 0 SNPs, 0 are transitions, 0 are transversions
+NOTICE: Reading gene annotation from /home/ueb/annovar/humandb/hg19_refGene.txt ... Done with 38580 transcripts (including 6088 without coding sequence annotation) for 23248 unique genes
+NOTICE: Finished gene-based annotation on 0 genetic variants in ./dir_out/vhir_sample_a_sure_1e6.sam.sorted.noDup.bam.samtools.var.filtered.vcf.annovar
+NOTICE: Output files were written to ./dir_out/vhir_sample_a_sure_1e6.sam.sorted.noDup.bam.samtools.var.filtered.vcf.annovar.variant_function, ./dir_out/vhir_sample_a_sure_1e6.sam.sorted.noDup.bam.samtools.var.filtered.vcf.annovar.exonic_variant_function
+NOTICE: Variants matching filtering criteria are written to ./dir_out/vhir_sample_a_sure_1e6.sam.sorted.noDup.bam.samtools.var.filtered.vcf.annovar.hg19_snp132_dropped, other variants are written to ./dir_out/vhir_sample_a_sure_1e6.sam.sorted.noDup.bam.samtools.var.filtered.vcf.annovar.hg19_snp132_filtered
+NOTICE: Processing next batch with 0 unique variants in 0 input lines
+NOTICE: Scanning filter database /home/ueb/annovar/humandb/hg19_snp132.txt...grep: ./dir_out/vhir_sample_a_sure_1e6.sam.sorted.noDup.bam.samtools.var.filtered.vcf.exonic_variant_function_filter: El fitxer o directori no existeix
+rm: no s’ha pogut eliminar «./dir_out/vhir_sample_a_sure_1e6.sam.sorted.noDup.bam.samtools.var.filtered.vcf.exonic_variant_function_filter»: El fitxer o directori no existeix

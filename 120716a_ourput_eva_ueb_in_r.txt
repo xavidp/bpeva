@@ -1,0 +1,154 @@
+> setwd("/home/xavi/repo/peeva")
+> scriptname <- "eva_ueb_for_r.pl" # Adapted version to work from this R script to be parallelized
+> scriptparams <- "./test_in -o ./test_out | tee /dev/tty ./logs/log_both.txt"
+> sink('SnowFallExample.Rout', split=TRUE)
+> .Platform
+$OS.type
+[1] "unix"
+
+$file.sep
+[1] "/"
+
+$dynlib.ext
+[1] ".so"
+
+$GUI
+[1] "RStudio"
+
+$endian
+[1] "little"
+
+$pkgType
+[1] "source"
+
+$path.sep
+[1] ":"
+
+$r_arch
+[1] ""
+
+> .Machine
+$double.eps
+[1] 2.220446e-16
+
+$double.neg.eps
+[1] 1.110223e-16
+
+$double.xmin
+[1] 2.225074e-308
+
+$double.xmax
+[1] 1.797693e+308
+
+$double.base
+[1] 2
+
+$double.digits
+[1] 53
+
+$double.rounding
+[1] 5
+
+$double.guard
+[1] 0
+
+$double.ulp.digits
+[1] -52
+
+$double.neg.ulp.digits
+[1] -53
+
+$double.exponent
+[1] 11
+
+$double.min.exp
+[1] -1022
+
+$double.max.exp
+[1] 1024
+
+$integer.max
+[1] 2147483647
+
+$sizeof.long
+[1] 8
+
+$sizeof.longlong
+[1] 8
+
+$sizeof.longdouble
+[1] 16
+
+$sizeof.pointer
+[1] 8
+
+> R.version
+               _                            
+platform       x86_64-pc-linux-gnu          
+arch           x86_64                       
+os             linux-gnu                    
+system         x86_64, linux-gnu            
+status                                      
+major          2                            
+minor          15.0                         
+year           2012                         
+month          03                           
+day            30                           
+svn rev        58871                        
+language       R                            
+version.string R version 2.15.0 (2012-03-30)
+nickname                                    
+> Sys.info()
+                                      sysname                                       release 
+                                      "Linux"                            "2.6.32-41-server" 
+                                      version                                      nodename 
+"#89-Ubuntu SMP Fri Apr 27 22:33:31 UTC 2012"                                    "mainhead" 
+                                      machine                                         login 
+                                     "x86_64"                                     "unknown" 
+                                         user                                effective_user 
+                                       "xavi"                                        "xavi" 
+> if(!require(snowfall)){ install.packages("snowfall") }
+> library(snowfall)
+> # 1. Initialisation of snowfall.
+> # (if used with sfCluster, just call sfInit())
+> sfInit(parallel=TRUE, cpus=7)
+snowfall 1.84 initialized (using snow 0.3-9): parallel execution on 7 CPUs.
+
+> # 2. Loading data (from a package in this example), or from elsewhere (adapt accordingly).
+> ## if(!require(ExamplePackage)){ install.packages("ExamplePackage") }
+> ## require(ExamplePackage)
+> ## data(MyDataset)
+> # 3. Wrapper, which can be parallelised.
+> wrapper <- function(file2process) {
++   # Output progress in worker logfile
++   cat( "Current file: ", file2process, "\n" )
++   system(paste("perl ", scriptname, scriptparams, sep=""), TRUE);
++   # function from the perl script come here
++   gc() # Let's clean ouR garbage if possible
++   return(NULL) # return nothing, since results are saved on disk from the perl script
++ }
+> 
+> # 4. Exporting needed data and loading required
+> # packages on workers.
+> sfExport("MyDataset")
+Error in sfExport("MyDataset") : 
+  Unknown/unfound variable MyDataset in export. (local=TRUE)
+> # Install dependency of sfClusterSetupRNG() if not yet installed
+> if(!require(cmprsk)){ install.packages("cmprsk") }
+> sfLibrary(cmprsk) 
+Library cmprsk loaded.
+Library cmprsk loaded in cluster.
+
+Warning message:
+In library(package = "cmprsk", character.only = TRUE, pos = 2, warn.conflicts = TRUE,  :
+  'keep.source' is deprecated and will be ignored
+> # 5. Start network random number generator
+>  # Install dependency of sfClusterSetupRNG() if not yet installed
+>  if(!require(rlecuyer)){ install.packages("rlecuyer") }
+> # (as "sample" is using random numbers).
+> sfClusterSetupRNG()
+[1] "RNGstream"
+> # 6. Distribute calculation
+> start <- Sys.time(); result <- sfLapply(1:1000, wrapper) ; Sys.time()-start
+Error in checkForRemoteErrors(val) : 
+  7 nodes produced errors; first error: object 'scriptname' not found

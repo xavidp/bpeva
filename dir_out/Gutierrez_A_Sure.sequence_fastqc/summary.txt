@@ -1,0 +1,11 @@
+PASS	Basic Statistics	Gutierrez_A_Sure.sequence.fastq
+FAIL	Per base sequence quality	Gutierrez_A_Sure.sequence.fastq
+FAIL	Per sequence quality scores	Gutierrez_A_Sure.sequence.fastq
+WARN	Per base sequence content	Gutierrez_A_Sure.sequence.fastq
+PASS	Per base GC content	Gutierrez_A_Sure.sequence.fastq
+PASS	Per sequence GC content	Gutierrez_A_Sure.sequence.fastq
+PASS	Per base N content	Gutierrez_A_Sure.sequence.fastq
+PASS	Sequence Length Distribution	Gutierrez_A_Sure.sequence.fastq
+PASS	Sequence Duplication Levels	Gutierrez_A_Sure.sequence.fastq
+PASS	Overrepresented sequences	Gutierrez_A_Sure.sequence.fastq
+WARN	Kmer Content	Gutierrez_A_Sure.sequence.fastq

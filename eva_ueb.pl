@@ -352,7 +352,7 @@ while ($file = readdir(DIR))
 	$command = "$command00 $options00";
 	system($command);
 	print_done();
-	check2clean("$file_in");
+	#check2clean("$file_in"); # Commented out so that samtools standard .vcf files (and not only the converted to .vcf4 - .vcf.annovar - format) are also always kept.
 	
 	## Next Step. Variant Annotation
 	# ---------------------------------------------------------------------
@@ -463,7 +463,6 @@ while ($file = readdir(DIR))
 	print_done();
 	check2clean("$file_in"); # here we check if the user requested to clean the .vcf.annovar nowadays that it's not being used any more.
 
-exi
 	## Next Step. Visualization of Variants
 	# ---------------------------------------------------------------------
 	$step_tmp = $step_tmp + 1;

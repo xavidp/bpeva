@@ -1,0 +1,70 @@
+Started analysis of prova1.fastq
+[bsw2_aln] read 25 sequences/pairs (2265 bp)...
+[main] Version: 0.6.1-r104
+[main] CMD: bwa bwasw /home/xavi/Data/Data_Genomes/hg19/hg19.fa ./test_in/prova1.fastq
+[main] Real time: 68.437 sec; CPU: 8.020 sec
+[samopen] SAM header is present: 93 sequences.
+[bam_rmdupse_core] 0 / 25 = 0.0000 in library '	'
+[mpileup] 1 samples in 1 input files
+<mpileup> Set max per-file depth to 8000
+[afs] 0:15.578 1:9.222 2:9.200
+NOTICE: Read 27 lines and wrote 0 different variants at 0 genomic positions (0 SNPs and 0 indels)
+NOTICE: Among 0 different variants at 0 positions, 0 are heterozygotes, 0 are homozygotes
+NOTICE: Among 0 SNPs, 0 are transitions, 0 are transversions
+NOTICE: Reading gene annotation from /home/ueb/annovar/humandb/hg19_refGene.txt ... Done with 38580 transcripts (including 6088 without coding sequence annotation) for 23248 unique genes
+NOTICE: Finished gene-based annotation on 0 genetic variants in ./test_out/prova1.sam.sorted.noDup.bam.samtools.var.filtered.vcf.annovar
+NOTICE: Output files were written to ./test_out/prova1.sam.sorted.noDup.bam.samtools.var.filtered.vcf.annovar.variant_function, ./test_out/prova1.sam.sorted.noDup.bam.samtools.var.filtered.vcf.annovar.exonic_variant_function
+NOTICE: Variants matching filtering criteria are written to ./test_out/prova1.sam.sorted.noDup.bam.samtools.var.filtered.vcf.annovar.hg19_snp132_dropped, other variants are written to ./test_out/prova1.sam.sorted.noDup.bam.samtools.var.filtered.vcf.annovar.hg19_snp132_filtered
+NOTICE: Processing next batch with 0 unique variants in 0 input lines
+NOTICE: Scanning filter database /home/ueb/annovar/humandb/hg19_snp132.txt...Done
+NOTICE: the --ver1000g argument is set as '1000g2010nov' by default
+
+NOTICE: Running step 1 with system command <annotate_variation.pl -geneanno -buildver hg19 -dbtype refgene -outfile ./test_out/prova1.sam.sorted.noDup.bam.samtools.var.filtered.vcf.exonic_variant_function_filter -exonsort ./test_out/prova1.sam.sorted.noDup.bam.samtools.var.filtered.vcf.annovar /home/ueb/annovar/humandb/>
+NOTICE: Reading gene annotation from /home/ueb/annovar/humandb/hg19_refGene.txt ... Done with 38580 transcripts (including 6088 without coding sequence annotation) for 23248 unique genes
+NOTICE: Finished gene-based annotation on 0 genetic variants in ./test_out/prova1.sam.sorted.noDup.bam.samtools.var.filtered.vcf.annovar
+NOTICE: Output files were written to ./test_out/prova1.sam.sorted.noDup.bam.samtools.var.filtered.vcf.exonic_variant_function_filter.variant_function, ./test_out/prova1.sam.sorted.noDup.bam.samtools.var.filtered.vcf.exonic_variant_function_filter.exonic_variant_function
+
+NOTICE: Running system command <annotate_variation.pl -regionanno -dbtype mce46way -buildver hg19 -outfile ./test_out/prova1.sam.sorted.noDup.bam.samtools.var.filtered.vcf.exonic_variant_function_filter ./test_out/prova1.sam.sorted.noDup.bam.samtools.var.filtered.vcf.annovar /home/ueb/annovar/humandb/>
+NOTICE: Reading annotation database /home/ueb/annovar/humandb/hg19_phastConsElements46way.txt ... Done with 5163775 regions
+NOTICE: Finished region-based annotation on 0 genetic variants in ./test_out/prova1.sam.sorted.noDup.bam.samtools.var.filtered.vcf.annovar
+NOTICE: Output files were written to ./test_out/prova1.sam.sorted.noDup.bam.samtools.var.filtered.vcf.exonic_variant_function_filter.hg19_phastConsElements46way
+
+NOTICE: Running step 3 with system command <annotate_variation.pl -regionanno -dbtype segdup -buildver hg19 -outfile ./test_out/prova1.sam.sorted.noDup.bam.samtools.var.filtered.vcf.exonic_variant_function_filter ./test_out/prova1.sam.sorted.noDup.bam.samtools.var.filtered.vcf.annovar /home/ueb/annovar/humandb/>
+NOTICE: Reading annotation database /home/ueb/annovar/humandb/hg19_genomicSuperDups.txt ... Done with 51599 regions
+NOTICE: Finished region-based annotation on 0 genetic variants in ./test_out/prova1.sam.sorted.noDup.bam.samtools.var.filtered.vcf.annovar
+NOTICE: Output files were written to ./test_out/prova1.sam.sorted.noDup.bam.samtools.var.filtered.vcf.exonic_variant_function_filter.hg19_genomicSuperDups
+
+NOTICE: Running step 4/5/6 with system command <annotate_variation.pl -filter -dbtype 1000g2010nov_all -buildver hg19 -outfile ./test_out/prova1.sam.sorted.noDup.bam.samtools.var.filtered.vcf.exonic_variant_function_filter ./test_out/prova1.sam.sorted.noDup.bam.samtools.var.filtered.vcf.annovar /home/ueb/annovar/humandb/>
+NOTICE: Variants matching filtering criteria are written to ./test_out/prova1.sam.sorted.noDup.bam.samtools.var.filtered.vcf.exonic_variant_function_filter.hg19_ALL.sites.2010_11_dropped, other variants are written to ./test_out/prova1.sam.sorted.noDup.bam.samtools.var.filtered.vcf.exonic_variant_function_filter.hg19_ALL.sites.2010_11_filtered
+NOTICE: Processing next batch with 0 unique variants in 0 input lines
+NOTICE: Database index loaded. Total number of bins is 28524 and the number of bins to be scanned is 0
+NOTICE: Scanning filter database /home/ueb/annovar/humandb/hg19_ALL.sites.2010_11.txt...Done
+
+NOTICE: Running step 7 with system command <annotate_variation.pl -filter -dbtype snp132 -buildver hg19 -outfile ./test_out/prova1.sam.sorted.noDup.bam.samtools.var.filtered.vcf.exonic_variant_function_filter ./test_out/prova1.sam.sorted.noDup.bam.samtools.var.filtered.vcf.annovar /home/ueb/annovar/humandb/>
+NOTICE: Variants matching filtering criteria are written to ./test_out/prova1.sam.sorted.noDup.bam.samtools.var.filtered.vcf.exonic_variant_function_filter.hg19_snp132_dropped, other variants are written to ./test_out/prova1.sam.sorted.noDup.bam.samtools.var.filtered.vcf.exonic_variant_function_filter.hg19_snp132_filtered
+NOTICE: Processing next batch with 0 unique variants in 0 input lines
+NOTICE: Scanning filter database /home/ueb/annovar/humandb/hg19_snp132.txt...Done
+
+NOTICE: Running step 8 with system command <annotate_variation.pl -filter -dbtype avsift -buildver hg19 -sift 0 -outfile ./test_out/prova1.sam.sorted.noDup.bam.samtools.var.filtered.vcf.exonic_variant_function_filter ./test_out/prova1.sam.sorted.noDup.bam.samtools.var.filtered.vcf.annovar /home/ueb/annovar/humandb/>
+NOTICE: Variants matching filtering criteria are written to ./test_out/prova1.sam.sorted.noDup.bam.samtools.var.filtered.vcf.exonic_variant_function_filter.hg19_avsift_dropped, other variants are written to ./test_out/prova1.sam.sorted.noDup.bam.samtools.var.filtered.vcf.exonic_variant_function_filter.hg19_avsift_filtered
+NOTICE: Processing next batch with 0 unique variants in 0 input lines
+NOTICE: Database index loaded. Total number of bins is 192662 and the number of bins to be scanned is 0
+NOTICE: Scanning filter database /home/ueb/annovar/humandb/hg19_avsift.txt...Done
+
+NOTICE: Running step 9-13 with system command <annotate_variation.pl -filter -dbtype ljb_all -buildver hg19 -outfile ./test_out/prova1.sam.sorted.noDup.bam.samtools.var.filtered.vcf.exonic_variant_function_filter ./test_out/prova1.sam.sorted.noDup.bam.samtools.var.filtered.vcf.annovar /home/ueb/annovar/humandb/ -otherinfo>
+NOTICE: Variants matching filtering criteria are written to ./test_out/prova1.sam.sorted.noDup.bam.samtools.var.filtered.vcf.exonic_variant_function_filter.hg19_ljb_all_dropped, other variants are written to ./test_out/prova1.sam.sorted.noDup.bam.samtools.var.filtered.vcf.exonic_variant_function_filter.hg19_ljb_all_filtered
+NOTICE: Processing next batch with 0 unique variants in 0 input lines
+NOTICE: Database index loaded. Total number of bins is 157173 and the number of bins to be scanned is 0
+NOTICE: Scanning filter database /home/ueb/annovar/humandb/hg19_ljb_all.txt...Done
+
+NOTICE: Running step 14 with system command <annotate_variation.pl -filter -dbtype esp5400_all -buildver hg19 -outfile ./test_out/prova1.sam.sorted.noDup.bam.samtools.var.filtered.vcf.exonic_variant_function_filter ./test_out/prova1.sam.sorted.noDup.bam.samtools.var.filtered.vcf.annovar /home/ueb/annovar/humandb/>
+NOTICE: Variants matching filtering criteria are written to ./test_out/prova1.sam.sorted.noDup.bam.samtools.var.filtered.vcf.exonic_variant_function_filter.hg19_esp5400_all_dropped, other variants are written to ./test_out/prova1.sam.sorted.noDup.bam.samtools.var.filtered.vcf.exonic_variant_function_filter.hg19_esp5400_all_filtered
+NOTICE: Processing next batch with 0 unique variants in 0 input lines
+NOTICE: Database index loaded. Total number of bins is 193040 and the number of bins to be scanned is 0
+NOTICE: Scanning filter database /home/ueb/annovar/humandb/hg19_esp5400_all.txt...Done
+NOTICE: Finished loading filterstep database file
+NOTICE: Final whole-genome summary was written to ./test_out/prova1.sam.sorted.noDup.bam.samtools.var.filtered.vcf.exonic_variant_function_filter.genome_summary.csv file
+NOTICE: Final whole-exome summary was written to ./test_out/prova1.sam.sorted.noDup.bam.samtools.var.filtered.vcf.exonic_variant_function_filter.exome_summary.csv file
+grep: ./test_out/prova1.sam.sorted.noDup.bam.samtools.var.filtered.vcf.exonic_variant_function_filter: El fitxer o directori no existeix
+grep: ./test_out/prova1.sum: El fitxer o directori no existeix
+rm: no s’ha pogut eliminar «./test_out/prova1.sam.sorted.noDup.bam.samtools.var.filtered.vcf.exonic_variant_function_filter»: El fitxer o directori no existeix

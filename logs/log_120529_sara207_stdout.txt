@@ -1,0 +1,77 @@
+-i /home/ueb/estudis/ngs/2011-08-SGutierrez-VHIO-207
+-o ./dir_out
+-f BRCA1|BRCA2|unknown
+-s 1
+[1;36m##############################################################################
+[0m[1;36m### eva_ueb.pl: Pipeline for 'Exome Variant Analysis' (EVA) at the UEB     ###
+[0m[1;36m###   r22
+###                                                                        ###
+[0m[1;36m###   ( using dbSNP 132 & hg 19 )                                          ###
+[0m[1;36m### (c) 2011-12 UEB - GPL licensed - http://ueb.vhir.org/tools             ###
+[0m[1;36m##############################################################################
+
+[0mUse 'eva_ueb.pl -h' for help
+
+[1;36mStep 1. Reading parameters
+[0m[1;32m2012-04-29 19:37 - 							[DONE]
+
+[0m[1;36mStep 2. Accesing directory: /home/ueb/estudis/ngs/2011-08-SGutierrez-VHIO-207
+[0m[1;32m2012-04-29 19:37 - 							[DONE]
+
+[0m[1;36m2012-04-29 19:37 - ########## Step 3. Processing file #1 (Gutierrez_B_Illumina.sequence.fastq) ... ##########
+[0m[1;36m2012-04-29 19:37 -   Step 3.1 Quality Control and Preprocessing: Gutierrez_B_Illumina.sequence ...
+[0mAnalysis complete for Gutierrez_B_Illumina.sequence.fastq
+[1;32m2012-04-29 20:06 - 							[DONE]
+
+[0m[1;36m2012-04-29 20:06 -   Step 3.2 Map against reference genome: Index the reference genome (if needed): Gutierrez_B_Illumina.sequence ...
+[0m  ...skipped...
+[1;32m2012-04-29 20:06 - 							[DONE]
+
+[0m[1;36m2012-04-29 20:06 -   Step 3.3 Map against reference genome: do the mapping: Gutierrez_B_Illumina.sequence ...
+[0m[1;32m2012-04-29 20:06 - 							[DONE]
+
+[0m[1;36m2012-04-29 20:06 -   Step 3.4 Convert sam to bam and sort it: Gutierrez_B_Illumina.sequence ...
+[0m[1;32m2012-04-29 20:06 - 							[DONE]
+
+[0m[1;36m2012-04-29 20:06 -   Step 3.5 Remove possible PCR duplicates: Gutierrez_B_Illumina.sequence ...
+[0m[1;32m2012-04-29 20:06 - 							[DONE]
+
+[0m[1;36m2012-04-29 20:06 -   Step 3.6 Index the bam file: Gutierrez_B_Illumina.sequence ...
+[0m[1;32m2012-04-29 20:06 - 							[DONE]
+
+[0m[1;36m2012-04-29 20:06 -   Step 3.7 Get some stats using the samtools [optional]: Gutierrez_B_Illumina.sequence ...
+[0m0 + 0 in total (QC-passed reads + QC-failed reads)
+0 + 0 duplicates
+0 + 0 mapped (-nan%:-nan%)
+0 + 0 paired in sequencing
+0 + 0 read1
+0 + 0 read2
+0 + 0 properly paired (-nan%:-nan%)
+0 + 0 with itself and mate mapped
+0 + 0 singletons (-nan%:-nan%)
+0 + 0 with mate mapped to a different chr
+0 + 0 with mate mapped to a different chr (mapQ>=5)
+[1;32m2012-04-29 20:06 - 							[DONE]
+
+[0m[1;36m2012-04-29 20:06 -   Step 3.8 Variant calling: Gutierrez_B_Illumina.sequence ...
+[0m[1;32m2012-04-29 20:06 - 							[DONE]
+
+[0m[1;36m2012-04-29 20:06 -   Step 3.9 Variant Filtering: Gutierrez_B_Illumina.sequence ...
+[0m[1;32m2012-04-29 20:06 - 							[DONE]
+
+[0m[1;36m2012-04-29 20:06 -   Step 3.10 Convert files to Annnovar vcf4 format: Gutierrez_B_Illumina.sequence ...
+[0m[1;32m2012-04-29 20:06 - 							[DONE]
+
+[0m[1;36m2012-04-29 20:06 -   Step 3.11 Variant Annotation (gene-based): Gutierrez_B_Illumina.sequence ...
+[0m[1;32m2012-04-29 20:06 - 							[DONE]
+
+[0m[1;36m2012-04-29 20:06 -   Step 3.12 Variant Annotation (filter based): Gutierrez_B_Illumina.sequence ...
+[0m[1;32m2012-04-29 20:21 - 							[DONE]
+
+[0m[1;36m2012-04-29 20:21 -   Step 3.13 Variant Annotation (summarize annotations in .csv): Gutierrez_B_Illumina.sequence ...
+[0m[1;32m2012-04-29 20:38 - 							[DONE]
+
+[0m[1;36m2012-04-29 20:38 -   Step 3.14 Filter variants for the target genes: Gutierrez_B_Illumina.sequence ...
+[0m[1;32m2012-04-29 20:38 - 							[DONE]
+
+[0m

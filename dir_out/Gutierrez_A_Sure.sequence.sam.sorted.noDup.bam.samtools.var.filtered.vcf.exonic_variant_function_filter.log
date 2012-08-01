@@ -1,0 +1,12 @@
+ANNOVAR Version:
+	$LastChangedDate: 2012-03-08 08:19:28 -0800 (Thu, 08 Mar 2012) $
+ANNOVAR Information:
+	For questions, comments, documentation, bug reports and program update, please visit http://www.openbioinformatics.org/annovar/
+ANNOVAR Command:
+	/home/ueb/annovar//annotate_variation.pl -filter -dbtype esp5400_all -buildver hg19 -outfile ./dir_out/Gutierrez_A_Sure.sequence.sam.sorted.noDup.bam.samtools.var.filtered.vcf.exonic_variant_function_filter ./dir_out/Gutierrez_A_Sure.sequence.sam.sorted.noDup.bam.samtools.var.filtered.vcf.annovar /home/ueb/annovar/humandb/
+ANNOVAR Started:
+	Fri Jun  1 15:53:18 2012
+NOTICE: Variants matching filtering criteria are written to ./dir_out/Gutierrez_A_Sure.sequence.sam.sorted.noDup.bam.samtools.var.filtered.vcf.exonic_variant_function_filter.hg19_esp5400_all_dropped, other variants are written to ./dir_out/Gutierrez_A_Sure.sequence.sam.sorted.noDup.bam.samtools.var.filtered.vcf.exonic_variant_function_filter.hg19_esp5400_all_filtered
+NOTICE: Processing next batch with 16743 unique variants in 16743 input lines
+NOTICE: Database index loaded. Total number of bins is 193040 and the number of bins to be scanned is 12589
+NOTICE: Scanning filter database /home/ueb/annovar/humandb/hg19_esp5400_all.txt...Done
