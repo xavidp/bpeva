@@ -92,15 +92,16 @@ params <- list(file2process = "",
                scriptparams <- " -o ./test_out",
                #scriptparams <- "-i ./test_in -o ./test_out -s -k | tee /dev/tty ./logs/log_both.txt
                file_list = file_list,
-               directory_in = "foo",
-               path_fastq = "foo"
+               directory_in = "test_in",
+               directory_out = "test_out",
+               path_fastq = "/home/ueb/fastqc/fastqc"
 )
 
 # 3. Wrapper function, which can be parallelised.
 #----------------------------------
 wrapper <- function(datastep.my) {
   # Output progress in worker logfile
-  file2process.my1 <- file_list[datastep.my]
+  file2process.my1 <- params$file_list[datastep.my]
   cat( "Current file: ", file2process.my1, "\n" )
   #  system(paste("perl ", abs_path_to_input_files.my1, scriptparams.my1, sep=""), TRUE);
   # function from the perl script come here
@@ -118,12 +119,12 @@ wrapper <- function(datastep.my) {
     # Remove .fastq (substitute it with nothing) from file names
     name = sub(".fastq","",file2process.my1,  ignore.case = FALSE, perl = FALSE, fixed = TRUE);
     #  print_doc("$now -   Step $step_n.$step_tmp Quality Control and Preprocessing: $name ...");
-    file_in = paste(directory_in, "/", file2process.my1, sep="");
+    file_in = paste(params$directory_in, "/", file2process.my1, ".fastq", sep="");
     #  $file_out = "$directory_out/$name.txt";
-    command00 = path_fastq; # path to fastqc binary; adapt to your case.
+    command00 = params$path_fastq; # path to fastqc binary; adapt to your case.
     #  $command00 = "ls"; # next command.
-    options00 = paste(file_in, " --outdir=", directory_out, sep="");
-    command = paste(command00, options00, sep="");
+    options00 = paste(file_in, " --outdir=", params$directory_out, sep="");
+    command = paste(command00, " ", options00, sep="");
     system(command);
     #  print_done();
     

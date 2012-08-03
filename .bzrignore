@@ -55,3 +55,8 @@ prova1.sam.sorted.noDup.bam.samtools.var.filtered.vcf.exonic_variant_function_fi
 ./test_out/prova1.sam.sorted.noDup.bam.samtools.var.filtered.vcf.exonic_variant_function_filter.log
 ./test_out/prova1.sam.sorted.noDup.bam.samtools.var.filtered.vcf.exonic_variant_function_filter.variant_function
 ./test_out/prova1.sum_results_2012-06-10_16-58-33.txt
+.RData
+.Rhistory
+.Rproj.user
+eva_1_file.pl
+peeva.Rproj
