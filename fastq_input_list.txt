@@ -1,4 +1,4 @@
-./test_in/prova1.fastq
-./test_in/prova2.fastq
-./test_in/prova3.fastq
-./test_in/prova4.fastq
+/mnt/magatzem01/ngs/peeva/test_in/prova1.fastq
+/mnt/magatzem01/ngs/peeva/test_in/prova2.fastq
+/mnt/magatzem01/ngs/peeva/test_in/prova3.fastq
+/mnt/magatzem01/ngs/peeva/test_in/prova4.fastq
