@@ -1,0 +1,235 @@
+$OS.type
+[1] "unix"
+
+$file.sep
+[1] "/"
+
+$dynlib.ext
+[1] ".so"
+
+$GUI
+[1] "RStudio"
+
+$endian
+[1] "little"
+
+$pkgType
+[1] "source"
+
+$path.sep
+[1] ":"
+
+$r_arch
+[1] ""
+
+$double.eps
+[1] 2.220446e-16
+
+$double.neg.eps
+[1] 1.110223e-16
+
+$double.xmin
+[1] 2.225074e-308
+
+$double.xmax
+[1] 1.797693e+308
+
+$double.base
+[1] 2
+
+$double.digits
+[1] 53
+
+$double.rounding
+[1] 5
+
+$double.guard
+[1] 0
+
+$double.ulp.digits
+[1] -52
+
+$double.neg.ulp.digits
+[1] -53
+
+$double.exponent
+[1] 11
+
+$double.min.exp
+[1] -1022
+
+$double.max.exp
+[1] 1024
+
+$integer.max
+[1] 2147483647
+
+$sizeof.long
+[1] 8
+
+$sizeof.longlong
+[1] 8
+
+$sizeof.longdouble
+[1] 16
+
+$sizeof.pointer
+[1] 8
+
+               _                            
+platform       x86_64-pc-linux-gnu          
+arch           x86_64                       
+os             linux-gnu                    
+system         x86_64, linux-gnu            
+status                                      
+major          2                            
+minor          15.0                         
+year           2012                         
+month          03                           
+day            30                           
+svn rev        58871                        
+language       R                            
+version.string R version 2.15.0 (2012-03-30)
+nickname                                    
+                                      sysname                                       release 
+                                      "Linux"                            "2.6.32-41-server" 
+                                      version                                      nodename 
+"#89-Ubuntu SMP Fri Apr 27 22:33:31 UTC 2012"                                    "mainhead" 
+                                      machine                                         login 
+                                     "x86_64"                                     "unknown" 
+                                         user                                effective_user 
+                                       "xavi"                                        "xavi" 
+character(0)
+Current file:  prova1 
+Current file:  prova2 
+Current file:  prova3 
+Current file:  prova4 
+Time difference of 8.971634 secs
+function (x, ...) 
+UseMethod("time")
+<bytecode: 0x369f228>
+<environment: namespace:stats>
+function ()  .Primitive("proc.time")
+    user   system  elapsed 
+  27.090    3.540 8505.724 
+[1] "2012-08-03_15-28h_conversion_file_list.txt"
+[1] "2012-08-03 15:29h conversion_file_list.txt"
+[1] "2012-08-03 15:30h - "
+[1] "2012-08-03 15:52h - "
+[1] "yeah caçadpr aña"
+2012-08-03 16:03h - 2012-08-03 16:04h - yeah caçadpr aña							[DONE]
+
+function(mess) 
+{
+  # ---------------------------------------------------------------------
+  now <- nownice()
+  cat(now)
+  cat("\t\t\t\t\t\t\t[DONE]\n\n")
+}
+2012-08-03 16:07h - 							[DONE]
+
+
+The downloaded source packages are in
+	‘/tmp/Rtmp64gzj0/downloaded_packages’
+[1] "The help info needs to be updated to the new argument system for calls to the $program_ueb.\n"
+[1] "The help info needs to be updated to the new argument system for calls to the $program_ueb.\n"
+The help info needs to be updated to the new argument system for calls to the $program_ueb.
+The help info needs to be updated to the new argument system for calls to the eva_ueb2.Rcharacter(0)
+ [1] "help"      "h"         "0"         "logical"   "input"     "i"        
+ [7] "1"         "character" "output"    "o"         "1"         "character"
+[13] "index"     "n"         "0"         "logical"   "filter"    "f"        
+[19] "1"         "character" "log"       "l"         "1"         "character"
+[25] "summarize" "s"         "0"         "character" "keep"      "k"        
+[31] "0"         "logical"  
+$ARGS
+character(0)
+
+$ARGS
+character(0)
+
+character(0)
+[1] "RStudio"
+Usage: RStudio [-[vh]] [-[-mean|m] <mean>] [-[-sd|s] <sd>] [-[-count|c] <count>]
+2012-08-03 17:10h - ##############################################################################
+2012-08-03 17:12h - 
+This program $program_ueb accepts 3 arguments passed to the program call:
+  -i: directory with source .fastq files 			 *** required ***
+            -o: directory to save output files 				 *** required ***
+            -n: -index (indexing of the reference genome)			    [optional]
+            -s: summarize results with annotations in a single .csv file 	    [optional]
+            -f: filter results for these target genes 			    [optional]
+            with this syntax for one gene:
+            -f BRCA1 
+            or
+            -f 'BRCA1|BRCA2|unknown' 
+            for more than one gene or string to filter results
+            -k: keep temporary files after they have been used 		    [optional] 
+            -h: show this help text 					    [optional]
+
+            -l: log results (optional, to be coded ;-). In the mean time, use the standard unix utilities such as:
+
+            Example1: perl $program_ueb -i ./dir_in -o ./dir_out -s -f 'BRCA1|BRCA2|unknown' > ./logs/log_stdout.txt 2> ./logs/log_stderr.txt
+            Example2: perl $program_ueb -i ./test_in -o ./test_out -s -k > ./logs/log_both.txt 2>&1
+            Example3: perl $program_ueb -i ./test_in -o ./test_out -s -k | tee /dev/tty ./logs/log_both.txt
+The help info needs to be updated to the new argument system for calls to the eva_ueb2.R2012-08-03 17:14h - ##############################################################################
+The help info needs to be updated to the new argument system for calls to the eva_ueb2.R2012-08-03 17:19h - 
+This program $program_ueb accepts 3 arguments passed to the program call:-i: directory with source .fastq files 			 *** required ***          -o: directory to save output files 				 *** required ***          -n: -index (indexing of the reference genome)			    [optional]          -s: summarize results with annotations in a single .csv file 	    [optional]          -f: filter results for these target genes 			    [optional]        with this syntax for one gene:          -f BRCA1         or          -f 'BRCA1|BRCA2|unknown'         for more than one gene or string to filter results          -k: keep temporary files after they have been used 		    [optional]           -h: show this help text 					    [optional]
+          -l: log results (optional, to be coded ;-). In the mean time, use the standard unix utilities such as:
+        Example1: Rscript  eva_ueb2.R  -i ./dir_in -o ./dir_out -s -f 'BRCA1|BRCA2|unknown' > ./logs/log_stdout.txt 2> ./logs/log_stderr.txt        Example2: Rscript  eva_ueb2.R  -i ./test_in -o ./test_out -s -k > ./logs/log_both.txt 2>&1        Example3: Rscript  eva_ueb2.R  -i ./test_in -o ./test_out -s -k | tee /dev/tty ./logs/log_both.txt
+##############################################################################
+The help info needs to be updated to the new argument system for calls to the eva_ueb2.R2012-08-03 17:19h - 
+This program $program_ueb accepts 3 arguments passed to the program call:-i: directory with source .fastq files 			 *** required ***          -o: directory to save output files 				 *** required ***          -n: -index (indexing of the reference genome)			    [optional]          -s: summarize results with annotations in a single .csv file 	    [optional]          -f: filter results for these target genes 			    [optional]        with this syntax for one gene:          -f BRCA1         or          -f 'BRCA1|BRCA2|unknown'         for more than one gene or string to filter results          -k: keep temporary files after they have been used 		    [optional]           -h: show this help text 					    [optional]
+          -l: log results (optional, to be coded ;-). In the mean time, use the standard unix utilities such as:
+        Example1: Rscript  eva_ueb2.R  -i ./dir_in -o ./dir_out -s -f 'BRCA1|BRCA2|unknown' > ./logs/log_stdout.txt 2> ./logs/log_stderr.txt        Example2: Rscript  eva_ueb2.R  -i ./test_in -o ./test_out -s -k > ./logs/log_both.txt 2>&1        Example3: Rscript  eva_ueb2.R  -i ./test_in -o ./test_out -s -k | tee /dev/tty ./logs/log_both.txt
+##############################################################################
+function()
+{
+  # ---------------------------------------------------------------------
+  cat("The help info needs to be updated to the new argument system for calls to the", program_ueb);
+  print_doc("\nThis program $program_ueb accepts 3 arguments passed to the program call:")
+  cat("\n          -i: directory with source .fastq files \t\t\t *** required ***")
+  cat("\n          -o: directory to save output files \t\t\t\t *** required ***")
+  cat("\n          -n: -index (indexing of the reference genome)\t\t\t    [optional]")
+  cat("\n          -s: summarize results with annotations in a single .csv file \t    [optional]")
+  cat("\n          -f: filter results for these target genes \t\t\t    [optional]")
+  cat("\n        with this syntax for one gene:")
+  cat("\n          -f BRCA1 ")
+  cat("\n        or")
+  cat("\n          -f 'BRCA1|BRCA2|unknown' ")
+  cat("\n        for more than one gene or string to filter results")
+  cat("\n          -k: keep temporary files after they have been used \t\t    [optional] ")
+  cat("\n          -h: show this help text \t\t\t\t\t    [optional]\n")
+  cat("\n          -l: log results (optional, to be coded ;-). In the mean time, use the standard unix utilities such as:\n")
+  cat("\n        Example1: Rscript ", program_ueb," -i ./dir_in -o ./dir_out -s -f 'BRCA1|BRCA2|unknown' > ./logs/log_stdout.txt 2> ./logs/log_stderr.txt")
+  cat("\n        Example2: Rscript ", program_ueb," -i ./test_in -o ./test_out -s -k > ./logs/log_both.txt 2>&1")
+  cat("\n        Example3: Rscript ", program_ueb," -i ./test_in -o ./test_out -s -k | tee /dev/tty ./logs/log_both.txt\n");
+  cat("\n##############################################################################\n");
+}
+The help info needs to be updated to the new argument system for calls to the eva_ueb2.R2012-08-03 17:21h - 
+This program $program_ueb accepts 3 arguments passed to the program call:
+          -i: directory with source .fastq files 			 *** required ***
+          -o: directory to save output files 				 *** required ***
+          -n: -index (indexing of the reference genome)			    [optional]
+          -s: summarize results with annotations in a single .csv file 	    [optional]
+          -f: filter results for these target genes 			    [optional]
+        with this syntax for one gene:
+          -f BRCA1 
+        or
+          -f 'BRCA1|BRCA2|unknown' 
+        for more than one gene or string to filter results
+          -k: keep temporary files after they have been used 		    [optional] 
+          -h: show this help text 					    [optional]
+
+          -l: log results (optional, to be coded ;-). In the mean time, use the standard unix utilities such as:
+
+        Example1: Rscript  eva_ueb2.R  -i ./dir_in -o ./dir_out -s -f 'BRCA1|BRCA2|unknown' > ./logs/log_stdout.txt 2> ./logs/log_stderr.txt
+        Example2: Rscript  eva_ueb2.R  -i ./test_in -o ./test_out -s -k > ./logs/log_both.txt 2>&1
+        Example3: Rscript  eva_ueb2.R  -i ./test_in -o ./test_out -s -k | tee /dev/tty ./logs/log_both.txt
+
+##############################################################################
+2012-08-03 17:22h - 2012-08-03 17:22h - 2012-08-03 17:22h - help info2012-08-03 17:23h - HELP info ------------------------2012-08-03 17:23h - HELP info ======================                      V1
+1 ./test_in/prova1.fastq
+2 ./test_in/prova2.fastq
+3 ./test_in/prova3.fastq
+4 ./test_in/prova4.fastq
+[1] "./test_in/"

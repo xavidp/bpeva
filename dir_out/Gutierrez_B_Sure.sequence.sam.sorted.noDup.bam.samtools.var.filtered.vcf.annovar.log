@@ -1,0 +1,12 @@
+ANNOVAR Version:
+	$LastChangedDate: 2012-03-08 08:19:28 -0800 (Thu, 08 Mar 2012) $
+ANNOVAR Information:
+	For questions, comments, documentation, bug reports and program update, please visit http://www.openbioinformatics.org/annovar/
+ANNOVAR Command:
+	/home/ueb/annovar/annotate_variation.pl -filter --buildver hg19 -dbtype snp132 ./dir_out/Gutierrez_B_Sure.sequence.sam.sorted.noDup.bam.samtools.var.filtered.vcf.annovar /home/ueb/annovar/humandb/
+ANNOVAR Started:
+	Sat Jun  2 02:31:12 2012
+NOTICE: Variants matching filtering criteria are written to ./dir_out/Gutierrez_B_Sure.sequence.sam.sorted.noDup.bam.samtools.var.filtered.vcf.annovar.hg19_snp132_dropped, other variants are written to ./dir_out/Gutierrez_B_Sure.sequence.sam.sorted.noDup.bam.samtools.var.filtered.vcf.annovar.hg19_snp132_filtered
+NOTICE: Processing next batch with 12332 unique variants in 12334 input lines
+NOTICE: Scanning filter database /home/ueb/annovar/humandb/hg19_snp132.txt...Done
+NOTICE: Variants with invalid input format were written to ./dir_out/Gutierrez_B_Sure.sequence.sam.sorted.noDup.bam.samtools.var.filtered.vcf.annovar.invalid_input

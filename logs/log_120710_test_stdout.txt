@@ -1,0 +1,83 @@
+-i ./test_in
+-o ./test_out
+-f BRCA1|BRCA2|unknown
+-s 1
+[1;36m##############################################################################
+[0m[1;36m### eva_ueb.pl: Pipeline for 'Exome Variant Analysis' (EVA) at the UEB     ###
+[0m[1;36m###   r22
+###                                                                        ###
+[0m[1;36m###   ( using dbSNP 132 & hg 19 )                                          ###
+[0m[1;36m### (c) 2011-12 UEB - GPL licensed - http://ueb.vhir.org/tools             ###
+[0m[1;36m##############################################################################
+
+[0mUse 'eva_ueb.pl -h' for help
+
+[1;36mStep 1. Reading parameters
+[0m[1;32m2012-06-10 16:25 - 							[DONE]
+
+[0m[1;36mStep 2. Accesing directory: ./test_in
+[0m[1;32m2012-06-10 16:25 - 							[DONE]
+
+[0m[1;36m2012-06-10 16:25 - ########## Step 3. Processing file #1 (prova1.fastq) ... ##########
+[0m[1;36m2012-06-10 16:25 -   Step 3.1 Quality Control and Preprocessing: prova1 ...
+[0mAnalysis complete for prova1.fastq
+[1;32m2012-06-10 16:25 - 							[DONE]
+
+[0m[1;36m2012-06-10 16:25 -   Step 3.2 Map against reference genome: Index the reference genome (if needed): prova1 ...
+[0m  ...skipped...
+[1;32m2012-06-10 16:25 - 							[DONE]
+
+[0m[1;36m2012-06-10 16:25 -   Step 3.3 Map against reference genome: do the mapping: prova1 ...
+[0m[1;32m2012-06-10 16:26 - 							[DONE]
+
+[0m[1;36m2012-06-10 16:26 -   Step 3.4 Convert sam to bam and sort it: prova1 ...
+[0m[1;32m2012-06-10 16:26 - 							[DONE]
+
+[0m[1;36m2012-06-10 16:26 -   Step 3.5 Remove possible PCR duplicates: prova1 ...
+[0m[1;32m2012-06-10 16:26 - 							[DONE]
+
+[0m[1;36m2012-06-10 16:26 -   Step 3.6 Index the bam file: prova1 ...
+[0m[1;32m2012-06-10 16:26 - 							[DONE]
+
+[0m[1;36m2012-06-10 16:26 -   Step 3.7 Get some stats using the samtools [optional]: prova1 ...
+[0m25 + 0 in total (QC-passed reads + QC-failed reads)
+0 + 0 duplicates
+25 + 0 mapped (100.00%:-nan%)
+0 + 0 paired in sequencing
+0 + 0 read1
+0 + 0 read2
+0 + 0 properly paired (-nan%:-nan%)
+0 + 0 with itself and mate mapped
+0 + 0 singletons (-nan%:-nan%)
+0 + 0 with mate mapped to a different chr
+0 + 0 with mate mapped to a different chr (mapQ>=5)
+[1;32m2012-06-10 16:26 - 							[DONE]
+
+[0m[1;36m2012-06-10 16:26 -   Step 3.8 Variant calling: prova1 ...
+[0m[1;32m2012-06-10 16:27 - 							[DONE]
+
+[0m[1;36m2012-06-10 16:27 -   Step 3.9 Variant Filtering: prova1 ...
+[0m[1;32m2012-06-10 16:27 - 							[DONE]
+
+[0m[1;36m2012-06-10 16:27 -   Step 3.10 Convert files to Annnovar vcf4 format: prova1 ...
+[0m[1;32m2012-06-10 16:27 - 							[DONE]
+
+[0m[1;36m2012-06-10 16:27 -   Step 3.11 Variant Annotation (gene-based): prova1 ...
+[0m[1;32m2012-06-10 16:27 - 							[DONE]
+
+[0m[1;36m2012-06-10 16:27 -   Step 3.12 Variant Annotation (filter based): prova1 ...
+[0m[1;32m2012-06-10 16:42 - 							[DONE]
+
+[0m[1;36m2012-06-10 16:42 -   Step 3.13 Variant Annotation (summarize annotations in .csv): prova1 ...
+[0m[1;32m2012-06-10 16:58 - 							[DONE]
+
+[0m[1;36m2012-06-10 16:58 -   Step 3.14 Filter variants for the target genes: prova1 ...
+[0m[1;32m2012-06-10 16:58 - 							[DONE]
+
+[0m[1;36m2012-06-10 16:58 -   Step 3.15 Visualization of Variants: prova1 ...
+[0m  ...skipped...
+[1;32m2012-06-10 16:58 - 							[DONE]
+
+[0m[1;32m2012-06-10 16:58 - 							[DONE]
+
+[0m

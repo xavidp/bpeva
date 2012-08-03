@@ -1,0 +1,207 @@
+> ## 2012. Xavier de Pedro Puente - xavier.depedro@vhir.org
+> ## Licensed under the Creative Commons Attribution-ShareAlike 3.0 License
+> ## cc-by-sa 3.0
+> ##
+> ## Derived from ideas and code from Michael Zeller, Harry Mangalam and Vinh Nguyen
+> ## http://blog.nguyenvq.com/
+> ##
+> ## Acknowledgements: 
+> ## * Aleix Ruiz de Villa, for comments and feedback.
+> 
+> ## 0. Define params for each run, using Multi-core on a single computer
+> #----------------------------------
+> scriptname <- "eva_ueb_for_r.pl" # Adapted version to work from this R script to be parallelized
+> scriptparams <- "./test_in -o ./test_out | tee /dev/tty ./logs/log_both.txt"
+> #scriptparams <- "-i ./test_in -o ./test_out -s -k | tee /dev/tty ./logs/log_both.txt
+> setwd("/home/xavi/repo/peeva")
+> path_to_input_files <- "./test_in/" # Include the trailing slash at the right of the folder name
+> file_list_name <- "fastq_input_list.txt"
+> 
+> sink('SnowFallExample.Rout', split=TRUE)
+> .Platform
+$OS.type
+[1] "unix"
+
+$file.sep
+[1] "/"
+
+$dynlib.ext
+[1] ".so"
+
+$GUI
+[1] "RStudio"
+
+$endian
+[1] "little"
+
+$pkgType
+[1] "source"
+
+$path.sep
+[1] ":"
+
+$r_arch
+[1] ""
+
+> .Machine
+$double.eps
+[1] 2.220446e-16
+
+$double.neg.eps
+[1] 1.110223e-16
+
+$double.xmin
+[1] 2.225074e-308
+
+$double.xmax
+[1] 1.797693e+308
+
+$double.base
+[1] 2
+
+$double.digits
+[1] 53
+
+$double.rounding
+[1] 5
+
+$double.guard
+[1] 0
+
+$double.ulp.digits
+[1] -52
+
+$double.neg.ulp.digits
+[1] -53
+
+$double.exponent
+[1] 11
+
+$double.min.exp
+[1] -1022
+
+$double.max.exp
+[1] 1024
+
+$integer.max
+[1] 2147483647
+
+$sizeof.long
+[1] 8
+
+$sizeof.longlong
+[1] 8
+
+$sizeof.longdouble
+[1] 16
+
+$sizeof.pointer
+[1] 8
+
+> R.version
+               _                            
+platform       x86_64-pc-linux-gnu          
+arch           x86_64                       
+os             linux-gnu                    
+system         x86_64, linux-gnu            
+status                                      
+major          2                            
+minor          15.0                         
+year           2012                         
+month          03                           
+day            30                           
+svn rev        58871                        
+language       R                            
+version.string R version 2.15.0 (2012-03-30)
+nickname                                    
+> Sys.info()
+                                      sysname                                       release 
+                                      "Linux"                            "2.6.32-41-server" 
+                                      version                                      nodename 
+"#89-Ubuntu SMP Fri Apr 27 22:33:31 UTC 2012"                                    "mainhead" 
+                                      machine                                         login 
+                                     "x86_64"                                     "unknown" 
+                                         user                                effective_user 
+                                       "xavi"                                        "xavi" 
+> 
+> if(!require(snowfall)){ install.packages("snowfall") }
+> library(snowfall)
+> 
+> # 1. Initialisation of snowfall.
+> #----------------------------------
+> # (if used with sfCluster, just call sfInit())
+> sfInit(parallel=TRUE, cpus=7)
+Explicit sfStop() is missing: stop now.
+
+Stopping cluster
+
+snowfall 1.84 initialized (using snow 0.3-9): parallel execution on 7 CPUs.
+
+> 
+> # 2. Loading data (from a package in this example), or from elsewhere (adapt accordingly).
+> #----------------------------------
+> 
+> ## if(!require(ExamplePackage)){ install.packages("ExamplePackage") }
+> ## require(ExamplePackage)
+> ## data(MyDataset)
+> 
+> # 3. Wrapper, which can be parallelised.
+> #----------------------------------
+> wrapper <- function(file2process.w, scriptname.w, scriptparams.w) {
++   # Output progress in worker logfile
++   cat( "Current file: ", file2process.w, "\n" )
++   system(paste("perl ", scriptname.w, scriptparams.w, sep=""), TRUE);
++   # function from the perl script come here
++   
++   gc() # Let's clean ouR garbage if possible
++   return(NULL) # return nothing, since results are saved on disk from the perl script
++ }
+> 
+> 
+> # 4. Exporting needed data and loading required
+> #----------------------------------
+> # packages on workers.
+> sfExport("MyDataset")
+Error in sfExport("MyDataset") : 
+  Unknown/unfound variable MyDataset in export. (local=TRUE)
+> # Install dependency of sfClusterSetupRNG() if not yet installed
+> if(!require(cmprsk)){ install.packages("cmprsk") }
+> sfLibrary(cmprsk) 
+Library cmprsk loaded.
+Library cmprsk loaded in cluster.
+
+Warning message:
+In library(package = "cmprsk", character.only = TRUE, pos = 2, warn.conflicts = TRUE,  :
+  'keep.source' is deprecated and will be ignored
+> 
+> # # 5a. Start network random number generator
+> #----------------------------------
+> #  # Install dependency of sfClusterSetupRNG() if not yet installed
+> #  if(!require(rlecuyer)){ install.packages("rlecuyer") }
+> # # (as "sample" is using random numbers).
+> # sfClusterSetupRNG()
+> 
+> # 5b. Get the list of files to be processed 
+> #----------------------------------
+> # Get the list of files in "input" directory through a system call to "ls *" and save the result to a file on disk
+> system(paste("ls ",path_to_input_files,"*.fastq > ",file_list_name, sep=""), TRUE)
+character(0)
+> # Read the file with the list of files to be processed
+> file_list <- read.table(file_list_name, sep="")
+> 
+> # Count the number of source files
+> number_of_source_files = length(file_list[[1]])
+> 
+> # remove the directory prefix from the names
+> # through gsub, alternatively
+> file_list <- gsub(path_to_input_files,"", file_list[[1]])
+> file_list <- gsub(".fastq","", file_list)
+> 
+> 
+> # 6. Distribute calculation
+> #----------------------------------
+> # Call the wrapper function to do the Job in child processes
+> start <- Sys.time(); result <- sfLapply(file_list, function(file2process) wrapper(file2process, scriptname, scriptparams)) ; Sys.time()-start
+Error in checkForRemoteErrors(val) : 
+  4 nodes produced errors; first error: could not find function "wrapper"
+> 

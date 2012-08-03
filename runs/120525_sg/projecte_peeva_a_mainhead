@@ -1,0 +1,18 @@
+
+[indentation]
+indent_width=4
+indent_type=1
+indent_hard_tab_width=8
+detect_indent=false
+indent_mode=2
+
+[project]
+name=projecte peeva al mainhead
+base_path=/home/xavi/repo/peeva/
+make_in_base_path=true
+description=
+run_cmd=
+
+[files]
+current_page=0
+FILE_NAME_0=0;Perl;0;16;1;1;0;/home/xavi/repo/peeva/eva_ueb.pl;0
