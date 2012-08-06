@@ -28,37 +28,42 @@ get_timestamp <- function()
   
 }
 
-nownice  <- function() 
+now  <- function() 
 {
   # ---------------------------------------------------------------------
   paste(Sys.Date(), format(Sys.time(), " %H:%Mh - "), sep="");
   
 }
 
-print_doc <- function(mess) 
+print_doc <- function(mess, filename.my1) 
 {
   # ---------------------------------------------------------------------
-  now <- nownice()
-  cat(now)
+  mess <- paste(now(), mess, sep="")
   cat(mess)
+  if (params$log) { 
+    w.output(mess, filename.my1)
+  }
 }
 
-print_done <- function(mess) 
+print_done <- function(filename.my1) 
 {
   # ---------------------------------------------------------------------
-  now <- nownice()
-  cat(now)
-  cat("\t\t\t\t\t\t\t[DONE]\n\n")
+  mess <- paste(now(), "\t\t\t\t\t\t\t[DONE]\n\n", sep="")
+  cat(mess)
+  if (params$log) { 
+    w.output(mess, filename.my1)
+  }
 }
 
 
-print_error <- function(mess) 
+print_error <- function(mess, filename.my1) 
 {
   # ---------------------------------------------------------------------
-  now <- nownice()
-  cat(now)
+  mess <- paste(now(), "\t\t\t\t\t\t\t[ERROR]\n\n", sep="")
   cat(mess)
-  cat("\t\t\t\t\t\t\t[ERROR]\n\n")
+  if (params$log) { 
+    w.output(mess, filename.my1)
+  }
 }
 
 check2clean <- function(my.option)
@@ -72,6 +77,21 @@ check2clean <- function(my.option)
     system(paste("rm  ", var, sep=""));
   }
 }
+
+##########################
+### FUNCTION w.output
+###
+### 	Write output to log files on disk
+##########################
+
+w.output <- function(mess, filename.my2)
+{
+  write(mess, file=paste(params$log.folder,"/log.",Sys.Date(),".", filename.my2, ".txt", sep=""), append = TRUE, sep = "");
+}
+
+##########################
+### FUNCTION show_help
+##########################
 
 show_help <- function()
 {
@@ -98,8 +118,14 @@ show_help <- function()
   cat("\n##############################################################################\n");
 }
 
-fun.quality.control <- function(file2process.my2, scriptparams.my1) {
-  # function from the perl script come here
+##########################
+### FUNCTION fun.quality.control
+##########################
+
+fun.quality.control <- function(file2process.my2, step.my, scriptparams.my1) {
+  # update step number
+  step.my$tmp <- step.my$tmp + 1
+  print_doc(paste("	Step ", step.my$n, ".", step.my$tmp, ". Quality Control and Preprocessing: ", file2process.my2, "\n", sep=""), file2process.my2);
   
   # Remove .fastq (substitute it with nothing) from file names
   name = sub(".fastq","",file2process.my2,  ignore.case = FALSE, perl = FALSE, fixed = TRUE);
@@ -115,9 +141,33 @@ fun.quality.control <- function(file2process.my2, scriptparams.my1) {
   
    
   gc() # Let's clean ouR garbage if possible
-  return(NULL) # return nothing, since results are saved on disk from the system command
+  return(step.my) # return nothing, since results are saved on disk from the system command
 }
 
+##########################
+### FUNCTION fun.index.reference.genome
+##########################
+
+fun.index.reference.genome <- function(file2process.my2, step.my, scriptparams.my1) {
+  # update step number
+  step.my$tmp <- step.my$tmp + 1
+
+  print_doc(paste("	Step ", step.my$n, ".", step.my$tmp, ". Map against reference genome: Index the reference genome (if needed)\n", sep=""), file2process.my2);
+  # Remove .fastq (substitute it with nothing) from file names
+  name = sub(".fastq","",file2process.my2,  ignore.case = FALSE, perl = FALSE, fixed = TRUE);
+  #  print_doc("$now() -   Step $step_n.$step_tmp Quality Control and Preprocessing: $name ...");
+  file_in = paste(params$directory_in, "/", file2process.my2, ".fastq", sep="");
+  #  $file_out = "$directory_out/$name.txt";
+  command00 = params$path_fastq; # path to fastqc binary; adapt to your case.
+  #	$command00 = "ls"; # next command.
+  options00 = paste(file_in, " --outdir=", params$directory_out, sep="");
+  command = paste(command00, " ", options00, sep="");
+  system(command);
+  #  print_done();
+  
+  gc() # Let's clean ouR garbage if possible
+  return(step.my) # return nothing, since results are saved on disk from the system command
+}
 #==============================================================
 
 ##########################
@@ -183,7 +233,9 @@ my.options <- c(
   'filter'   , 'f', 1, "character", # "__F__ilter results for these target genes # Optional",
   'log'      , 'l', 1, "character", # "__L__og info about the process into a log file # Optional",
   'summarize', 's', 0, "logical"  , # "__S__summarize results in a single .csv file with annotations # Optional",
-  'keep'     , 'k', 0, "logical"  #, "__K__eep temporal dummy files after they have been used # Optional"
+  'keep'     , 'k', 0, "logical"  , #, "__K__eep temporal dummy files after they have been used # Optional",
+  'cpus'     , 'c', 1, "integer"  , #, "__C__pus to use from the multicore computer or cluster # Optional".
+  'parallel' , 'p', 0, "logical"  #, "__P__arallel processing using SnowFall package # Optional"
 )
 
 opt = getopt(matrix(my.options, ncol=4, byrow=TRUE))
@@ -207,6 +259,8 @@ if ( is.null(opt$filter   ) ) { opt$filter   = ""            }
 if ( is.null(opt$log      ) ) { opt$log      = "log"         }
 if ( is.null(opt$summarize) ) { opt$summarize= TRUE          }
 if ( is.null(opt$keep     ) ) { opt$keep     = FALSE         }
+if ( is.null(opt$cpus     ) ) { opt$cpus     = 7             }
+if ( is.null(opt$parallel ) ) { opt$parallel = TRUE          }
 
 
 # # other things found on the command line
@@ -219,7 +273,7 @@ if ( is.null(opt$keep     ) ) { opt$keep     = FALSE         }
 # 1. Initialisation of snowfall.
 #----------------------------------
 # (if used with sfCluster, just call sfInit())
-sfInit(parallel=TRUE, cpus=7) # Amb parallel=TRUE s'envien les feines als nodes fills
+sfInit(parallel=opt$parallel, cpus=opt$cpus) # Amb parallel=TRUE s'envien les feines als nodes fills
 # Si es posa "parallel=FALSE" no ho paralelitzara 
 # i mostrara els missatges d'error per pantalla de forma normal. 
 
@@ -254,7 +308,7 @@ system(paste("ls ",abs_path_to_input_files,"*.fastq > ",file_list_name, sep=""),
 file_list <- read.table(file_list_name, sep="")
 
 # Count the number of source files
-number_of_source_files = length(file_list[[1]])
+n_files = length(file_list[[1]])
 
 # remove the directory prefix from the names
 # through gsub, alternatively
@@ -264,13 +318,16 @@ file_list <- gsub(".fastq","", file_list)
 ## 2b. Define params for all runs
 #----------------------------------
 params <- list(file2process = "",
+               log = TRUE,
                scriptname = "eva_ueb2.R", # Adapted version to work from this R script to be parallelized
                scriptparams = " -o ./test_out",
                #scriptparams = "-i ./test_in -o ./test_out -s -k | tee /dev/tty ./logs/log_both.txt
                file_list = file_list,
+               n_files = n_files,
                wd = wd, # the working directory
                directory_in = "test_in",
                directory_out = "test_out",
+               log.folder = params$directory_out, # "logs",
                path_fastq = "/home/ueb/fastqc/fastqc",
                path_genome = "/home/xavi/Data/Data_Genomes/hg19/hg19.fa",
                path_vcfutils = "/usr/share/samtools/vcfutils.pl",
@@ -289,13 +346,34 @@ wrapper <- function(datastep.my) {
   #  system(paste("perl ", abs_path_to_input_files.my1, scriptparams.my1, sep=""), TRUE);
   # function from the perl script come here
   setwd(params$wd)
-  
-  #file_list
-  
-  # Parallelized Pipeline steps
-  fun.quality.control(file2process.my2  = file2process.my1,
-                  scriptparams.my1  = scriptparams)
+  step <- data.frame(datastep.my, 0)
+  colnames(step) <- c("n","tmp")
+  # Re-set the log file, if it exists already and log is requested
+  if (params$log) { 
+      write(paste("			### NEW RUN (", Sys.Date()," - ", params$n_files, " files) ###\n", sep=""), file=paste(params$log.folder,"/log.", Sys.Date(),".", file2process.my1, ".txt", sep=""), append = FALSE, sep = "");
+  }
+#  step$n <- 0
+#  step$tmp <- 0
+  print_doc(paste("########## Step ", step$n, ". Processing file #", datastep.my, " (", file2process.my1, ") ... ##########\n", sep=""), file2process.my1);
 
+  
+  ### Parallelized Pipeline steps ###
+
+  # First Step
+  step <- fun.quality.control(file2process.my2  = file2process.my1,
+                      step.my  = step,
+                      scriptparams.my1  = scriptparams)
+
+  print(step)
+  
+  # Next Step
+  step <- fun.index.reference.genome(file2process.my2  = file2process.my1,
+                      step.my  = step,
+                      scriptparams.my1  = scriptparams)
+  # XXX...
+
+
+  # Last step of wrapper
   gc() # Let's clean ouR garbage if possible
   return(NULL) # return nothing, since results are saved on disk from the perl script
 }
@@ -308,7 +386,14 @@ wrapper <- function(datastep.my) {
 # # Install dependency of sfClusterSetupRNG() if not yet installed
 # if(!require(cmprsk)){ install.packages("cmprsk") }
 # sfLibrary(cmprsk) 
-sfExport("params", "fun.quality.control") # can functions be passed to workers from master?
+sfExport("params", 
+         "now",
+         "print_doc",
+         "print_done",
+         "print_error",
+         "w.output",
+         "fun.quality.control",
+         "fun.index.reference.genome") # functions can be passed also to workers from master
 
 # # 5a. Start network random number generator
 #----------------------------------
