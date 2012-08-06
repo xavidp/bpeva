@@ -98,25 +98,25 @@ show_help <- function()
   cat("\n##############################################################################\n");
 }
 
-# quality.control <- function(file2process.my2, directory_in.my2, directory_out.my2, scriptparams.my2, path_fastq.my1) {
-#   # function from the perl script come here
-#   
-#   # Remove .fastq (substitute it with nothing) from file names
-#   name = sub(".fastq","",file2process.my2,  ignore.case = FALSE, perl = FALSE, fixed = TRUE);
-#   #  print_doc("$now -   Step $step_n.$step_tmp Quality Control and Preprocessing: $name ...");
-#   file_in = paste(directory_in.my2, "/", file2process.my2, sep="");
-#   #  $file_out = "$directory_out/$name.txt";
-#   command00 = path_fastq.my1; # path to fastqc binary; adapt to your case.
-#   #	$command00 = "ls"; # next command.
-#   options00 = paste(file_in, " --outdir=", directory_out.my2, sep="");
-#   command = paste(command00, options00, sep="");
-#   system(command);
-#   #  print_done();
-#   
-#   
-#   gc() # Let's clean ouR garbage if possible
-#   return(NULL) # return nothing, since results are saved on disk from the system command
-# }
+fun.quality.control <- function(file2process.my2, scriptparams.my1) {
+  # function from the perl script come here
+  
+  # Remove .fastq (substitute it with nothing) from file names
+  name = sub(".fastq","",file2process.my2,  ignore.case = FALSE, perl = FALSE, fixed = TRUE);
+  #  print_doc("$now -   Step $step_n.$step_tmp Quality Control and Preprocessing: $name ...");
+  file_in = paste(params$directory_in, "/", file2process.my2, ".fastq", sep="");
+  #  $file_out = "$directory_out/$name.txt";
+  command00 = params$path_fastq; # path to fastqc binary; adapt to your case.
+  #	$command00 = "ls"; # next command.
+  options00 = paste(file_in, " --outdir=", params$directory_out, sep="");
+  command = paste(command00, " ", options00, sep="");
+  system(command);
+  #  print_done();
+  
+   
+  gc() # Let's clean ouR garbage if possible
+  return(NULL) # return nothing, since results are saved on disk from the system command
+}
 
 #==============================================================
 
@@ -237,7 +237,9 @@ sfInit(parallel=TRUE, cpus=7) # Amb parallel=TRUE s'envien les feines als nodes 
 ## require(ExamplePackage)
 ## data(MyDataset)
 
-setwd("/home/xavi/repo/peeva/")
+# Set the working directory
+wd <- "/home/xavi/repo/peeva/"
+setwd(wd)
 
 # 2a. Get the list of files to be processed 
 #----------------------------------
@@ -266,9 +268,9 @@ params <- list(file2process = "",
                scriptparams = " -o ./test_out",
                #scriptparams = "-i ./test_in -o ./test_out -s -k | tee /dev/tty ./logs/log_both.txt
                file_list = file_list,
+               wd = wd, # the working directory
                directory_in = "test_in",
                directory_out = "test_out",
-               path_fastq = "/home/ueb/fastqc/fastqc",
                path_fastq = "/home/ueb/fastqc/fastqc",
                path_genome = "/home/xavi/Data/Data_Genomes/hg19/hg19.fa",
                path_vcfutils = "/usr/share/samtools/vcfutils.pl",
@@ -286,29 +288,14 @@ wrapper <- function(datastep.my) {
   cat( "Current file: ", file2process.my1, "\n" )
   #  system(paste("perl ", abs_path_to_input_files.my1, scriptparams.my1, sep=""), TRUE);
   # function from the perl script come here
-  setwd("/home/xavi/repo/peeva")
+  setwd(params$wd)
   
   #file_list
   
-#   # Parallelized Pipeline steps
-#   quality.control(file2process.my2  = file2process.my1,
-#                   directory_in.my2  = directory_in.my1, 
-#                   directory_out.my2 = directory_out.my1,
-#                   scriptparams.my1  = scriptparams, 
-#                   path_fastq.my1    = path_fastq)
+  # Parallelized Pipeline steps
+  fun.quality.control(file2process.my2  = file2process.my1,
+                  scriptparams.my1  = scriptparams)
 
-    # Remove .fastq (substitute it with nothing) from file names
-    name = sub(".fastq","",file2process.my1,  ignore.case = FALSE, perl = FALSE, fixed = TRUE);
-    #  print_doc("$now -   Step $step_n.$step_tmp Quality Control and Preprocessing: $name ...");
-    file_in = paste(params$directory_in, "/", file2process.my1, ".fastq", sep="");
-    #  $file_out = "$directory_out/$name.txt";
-    command00 = params$path_fastq; # path to fastqc binary; adapt to your case.
-    #  $command00 = "ls"; # next command.
-    options00 = paste(file_in, " --outdir=", params$directory_out, sep="");
-    command = paste(command00, " ", options00, sep="");
-    system(command);
-    #  print_done();
-    
   gc() # Let's clean ouR garbage if possible
   return(NULL) # return nothing, since results are saved on disk from the perl script
 }
@@ -321,7 +308,7 @@ wrapper <- function(datastep.my) {
 # # Install dependency of sfClusterSetupRNG() if not yet installed
 # if(!require(cmprsk)){ install.packages("cmprsk") }
 # sfLibrary(cmprsk) 
-sfExport("params") # can functions be passed to workers from master?
+sfExport("params", "fun.quality.control") # can functions be passed to workers from master?
 
 # # 5a. Start network random number generator
 #----------------------------------
@@ -347,6 +334,7 @@ sfStop()
 sink()
 
 
-#signal success and exit.
-q(status=0);
+#signal success and exit. 
+#q(status=0); # To be un-commented out at the very end of the development process,
+              #so that the R process quits after execution
 
