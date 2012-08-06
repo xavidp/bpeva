@@ -137,7 +137,7 @@ fun.quality.control <- function(file2process.my2, step.my, scriptparams.my1) {
   options00 = paste(file_in, " --outdir=", params$directory_out, sep="");
   command = paste(command00, " ", options00, sep="");
   system(command);
-  #  print_done();
+  print_done(file2process.my2);
   
    
   gc() # Let's clean ouR garbage if possible
@@ -153,17 +153,17 @@ fun.index.reference.genome <- function(file2process.my2, step.my, scriptparams.m
   step.my$tmp <- step.my$tmp + 1
 
   print_doc(paste("	Step ", step.my$n, ".", step.my$tmp, ". Map against reference genome: Index the reference genome (if needed)\n", sep=""), file2process.my2);
-  # Remove .fastq (substitute it with nothing) from file names
-  name = sub(".fastq","",file2process.my2,  ignore.case = FALSE, perl = FALSE, fixed = TRUE);
-  #  print_doc("$now() -   Step $step_n.$step_tmp Quality Control and Preprocessing: $name ...");
-  file_in = paste(params$directory_in, "/", file2process.my2, ".fastq", sep="");
-  #  $file_out = "$directory_out/$name.txt";
-  command00 = params$path_fastq; # path to fastqc binary; adapt to your case.
-  #	$command00 = "ls"; # next command.
-  options00 = paste(file_in, " --outdir=", params$directory_out, sep="");
+	if ((params$opt$index) & (step.my$n == 1)) { # case to index the reference genome (time consuming, do only when really needed as requested)
+		# Index the reference genome, if requested with argument -n and only for the first file if more than one sample to process
+		command00 <- "bwa index"; # next command
+		options00 <- paste("  -a bwtsw", params$path_genome, sep="");
+	} else	{ # skip the indexing of the reference genome
+		command00 <- "echo '  ...skipped...'"; # next command.
+		options00 <- "";
+	}
   command = paste(command00, " ", options00, sep="");
   system(command);
-  #  print_done();
+  print_done(file2process.my2);
   
   gc() # Let's clean ouR garbage if possible
   return(step.my) # return nothing, since results are saved on disk from the system command
@@ -321,6 +321,7 @@ params <- list(file2process = "",
                log = TRUE,
                scriptname = "eva_ueb2.R", # Adapted version to work from this R script to be parallelized
                scriptparams = " -o ./test_out",
+               opt = opt, # command line arguments passed to the program run
                #scriptparams = "-i ./test_in -o ./test_out -s -k | tee /dev/tty ./logs/log_both.txt
                file_list = file_list,
                n_files = n_files,
@@ -364,7 +365,6 @@ wrapper <- function(datastep.my) {
                       step.my  = step,
                       scriptparams.my1  = scriptparams)
 
-  print(step)
   
   # Next Step
   step <- fun.index.reference.genome(file2process.my2  = file2process.my1,
