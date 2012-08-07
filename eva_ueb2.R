@@ -93,28 +93,29 @@ w.output <- function(mess, filename.my2)
 ### FUNCTION show_help
 ##########################
 
-show_help <- function()
+show_help <- function(program_ueb.my)
 {
   # ---------------------------------------------------------------------
-  print_doc("HELP info ======================");
-  cat("The help info needs to be updated to the new argument system for calls to the", program_ueb);
-  cat("\nThis program ", program_ueb," accepts 3 arguments passed to the program call:")
-  cat("\n          -i: directory with source .fastq files \t\t\t *** required ***")
-  cat("\n          -o: directory to save output files \t\t\t\t *** required ***")
-  cat("\n          -n: -index (indexing of the reference genome)\t\t\t    [optional]")
-  cat("\n          -s: summarize results with annotations in a single .csv file \t    [optional]")
-  cat("\n          -f: filter results for these target genes \t\t\t    [optional]")
-  cat("\n        with this syntax for one gene:")
-  cat("\n          -f BRCA1 ")
-  cat("\n        or")
-  cat("\n          -f 'BRCA1|BRCA2|unknown' ")
-  cat("\n        for more than one gene or string to filter results")
-  cat("\n          -k: keep temporary files after they have been used \t\t    [optional] ")
-  cat("\n          -h: show this help text \t\t\t\t\t    [optional]\n")
-  cat("\n          -l: log results (optional, to be coded ;-). In the mean time, use the standard unix utilities such as:\n")
-  cat("\n        Example1: Rscript ", program_ueb," -i ./dir_in -o ./dir_out -s -f 'BRCA1|BRCA2|unknown' > ./logs/log_stdout.txt 2> ./logs/log_stderr.txt")
-  cat("\n        Example2: Rscript ", program_ueb," -i ./test_in -o ./test_out -s -k > ./logs/log_both.txt 2>&1")
-  cat("\n        Example3: Rscript ", program_ueb," -i ./test_in -o ./test_out -s -k | tee /dev/tty ./logs/log_both.txt\n");
+  cat("\n===============================", program_ueb.my," HELP ===============================\n");
+  cat("\nUsage: Rscript", program_ueb.my, "[arguments]\n");
+  cat("\nArguments  accepted:\n");
+  cat("\n   -i: directory with source .fastq files \t\t\t *** required ***\n")
+  cat("\n   -o: directory to save output files \t\t\t\t *** required ***\n")
+  cat("\n   -n: -index (indexing of the reference genome)\t\t    [optional]\n")
+  cat("\n   -s: summarize results with annotations in a single .csv file     [optional]\n")
+  cat("\n   -f: filter results for these target genes \t\t\t    [optional]")
+  cat("\n     with this syntax for one gene:")
+  cat("\n       -f BRCA1 ")
+  cat("\n     or for more than one gene or string to filter results:")
+  cat("\n       -f 'BRCA1|BRCA2|unknown' \n")
+  cat("\n   -k: keep temporary files after they have been used \t\t    [optional]\n")
+  cat("\n   -p: parallel processing \t\t\t\t\t    [optional]\n")
+  cat("\n   -c: number of cpus to use (if parallel). Default: 7\t\t    [optional]\n")
+  cat("\n   -h: show this help text \t\t\t\t\t    [optional]\n")
+  cat("\n   -l: log process output. Default: 1 (TRUE)\t\t\t    [optional]\n")
+  cat("\n Example1: Rscript", program_ueb.my,"-i ./dir_in -o ./dir_out -s -f 'BRCA1|BRCA2|unknown'")
+  cat("\n Example2: Rscript", program_ueb.my,"-i ./test_in -o ./test_out -s -k > ./logs/log_both.txt 2>&1")
+  cat("\n Example3: Rscript", program_ueb.my,"-i ./test_in -o ./test_out -s -k | tee /dev/tty ./logs/log_both.txt\n");
   cat("\n##############################################################################\n");
 }
 
@@ -173,7 +174,7 @@ fun.index.reference.genome <- function(file2process.my2, step.my, scriptparams.m
 ##########################
 ### Main Program
 ##########################
-program_ueb = "eva_ueb2.R";
+program_ueb <- "eva_ueb2.R";
 sink('SnowFallExample.Rout', split=TRUE)
 # .Platform
 # .Machine
@@ -184,9 +185,9 @@ sink('SnowFallExample.Rout', split=TRUE)
 #---------------------------------------------------
 # Required packages
 if(!require(getopt)){ install.packages("getopt") }
-library('getopt');
+library('getopt', quietly = TRUE);
 if(!require(snowfall)){ install.packages("snowfall") }
-library(snowfall)
+library(snowfall, quietly = TRUE)
 
 
 # Command to run on Debian machines to install some of the requriements
@@ -231,49 +232,47 @@ my.options <- c(
   'output'   , 'o', 1, "character", # "Directory with __O_utput data files # Compulsory",
   'index'    , 'n', 0, "logical"  , # "i__N__dex the reference genome # Optional",
   'filter'   , 'f', 1, "character", # "__F__ilter results for these target genes # Optional",
-  'log'      , 'l', 1, "character", # "__L__og info about the process into a log file # Optional",
+  'log'      , 'l', 1, "integer"  , # "__L__og info about the process into a log file # Optional",
   'summarize', 's', 0, "logical"  , # "__S__summarize results in a single .csv file with annotations # Optional",
   'keep'     , 'k', 0, "logical"  , #, "__K__eep temporal dummy files after they have been used # Optional",
   'cpus'     , 'c', 1, "integer"  , #, "__C__pus to use from the multicore computer or cluster # Optional".
   'parallel' , 'p', 0, "logical"  #, "__P__arallel processing using SnowFall package # Optional"
 )
 
-opt = getopt(matrix(my.options, ncol=4, byrow=TRUE))
+opt <- getopt(matrix(my.options, ncol=4, byrow=TRUE))
+#help was asked for and the script was called from the command line.
+if ( !is.null(opt$help) || ((length(commandArgs()) >3 )
+&& (is.null(opt$input) && is.null(opt$output)))) {
 
-#help was asked for.
-if ( !is.null(opt$help) ) {
-  #get the script name (only works when invoked with Rscript).
-  self = commandArgs()[1];
+  ##get the script name (only works when invoked with Rscript).
+  #self = commandArgs()[4];
+
   #print a friendly message and exit with a non-zero error code
 #  cat(paste("Usage: ",self," [-[vh]] [-[-mean|m] <mean>] [-[-sd|s] <sd>] [-[-count|c] <count>]\n",sep=""));
-  show_help()
+  show_help(program_ueb)
   q(status=1);
 }
 
+
 #set some reasonable defaults for the options that are needed,
 #but were not specified.
-if ( is.null(opt$input    ) ) { opt$input    = "test_in"     }
-if ( is.null(opt$output   ) ) { opt$output   = "test_out"    }
+#if ( is.null(opt$input    ) ) { opt$input    = "test_in"     }
+#if ( is.null(opt$output   ) ) { opt$output   = "test_out"    }
 if ( is.null(opt$index    ) ) { opt$index    = FALSE         }
 if ( is.null(opt$filter   ) ) { opt$filter   = ""            }
-if ( is.null(opt$log      ) ) { opt$log      = "log"         }
+if ( is.null(opt$log) || opt$log ==1) { opt$log      = "TRUE"        }
 if ( is.null(opt$summarize) ) { opt$summarize= TRUE          }
 if ( is.null(opt$keep     ) ) { opt$keep     = FALSE         }
 if ( is.null(opt$cpus     ) ) { opt$cpus     = 7             }
-if ( is.null(opt$parallel ) ) { opt$parallel = TRUE          }
+if ( is.null(opt$parallel ) ) { opt$parallel = FALSE         }
 
-
-# # other things found on the command line
-# print "Other things found on the command line:\n" if $ARGV[0];
-# foreach (@ARGV)
-# {
-#   print "$_\n";
-# }
 
 # 1. Initialisation of snowfall.
 #----------------------------------
 # (if used with sfCluster, just call sfInit())
 sfInit(parallel=opt$parallel, cpus=opt$cpus) # Amb parallel=TRUE s'envien les feines als nodes fills
+#useRscript : Change startup behavior (snow>0.3 needed): use shell scripts or R-script for startup (R-scripts beeing the new variant, but not working with sfCluster.
+
 # Si es posa "parallel=FALSE" no ho paralelitzara 
 # i mostrara els missatges d'error per pantalla de forma normal. 
 
@@ -318,7 +317,6 @@ file_list <- gsub(".fastq","", file_list)
 ## 2b. Define params for all runs
 #----------------------------------
 params <- list(file2process = "",
-               log = TRUE,
                scriptname = "eva_ueb2.R", # Adapted version to work from this R script to be parallelized
                scriptparams = " -o ./test_out",
                opt = opt, # command line arguments passed to the program run
@@ -328,6 +326,7 @@ params <- list(file2process = "",
                wd = wd, # the working directory
                directory_in = "test_in",
                directory_out = "test_out",
+               log = opt$log,
                log.folder = params$directory_out, # "logs",
                path_fastq = "/home/ueb/fastqc/fastqc",
                path_genome = "/home/xavi/Data/Data_Genomes/hg19/hg19.fa",
@@ -377,7 +376,6 @@ wrapper <- function(datastep.my) {
   gc() # Let's clean ouR garbage if possible
   return(NULL) # return nothing, since results are saved on disk from the perl script
 }
-
 
 # 4. Exporting needed data and loading required
 #----------------------------------
