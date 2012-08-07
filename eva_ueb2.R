@@ -31,7 +31,7 @@ get_timestamp <- function()
 now  <- function() 
 {
   # ---------------------------------------------------------------------
-  paste(Sys.Date(), format(Sys.time(), " %H:%Mh - "), sep="");
+  paste(Sys.Date(), format(Sys.time(), " %H:%Mh %Ss - "), sep="");
   
 }
 
@@ -86,7 +86,7 @@ check2clean <- function(my.option)
 
 w.output <- function(mess, filename.my2)
 {
-  write(mess, file=paste(params$log.folder,"/log.",Sys.Date(),".", filename.my2, ".txt", sep=""), append = TRUE, sep = "");
+  write(mess, file=paste(params$log.folder,"/log.",params$startdate,".", filename.my2, ".txt", sep=""), append = TRUE, sep = "");
 }
 
 ##########################
@@ -171,11 +171,43 @@ fun.index.reference.genome <- function(file2process.my2, step.my, scriptparams.m
 }
 #==============================================================
 
+
+##########################
+### FUNCTION fun.map.on.reference.genome
+##########################
+
+fun.map.on.reference.genome <- function(file2process.my2, step.my, scriptparams.my1) {
+  # update step number
+  step.my$tmp <- step.my$tmp + 1
+  print_doc(paste("	Step ", step.my$n, ".", step.my$tmp, ". Map against reference genome: do the mapping with: ", file2process.my2, "\n", sep=""), file2process.my2);
+  
+  # Remove .fastq (substitute it with nothing) from file names
+  name = sub(".fastq","",file2process.my2,  ignore.case = FALSE, perl = FALSE, fixed = TRUE);
+  #  print_doc("$now -   Step $step_n.$step_tmp Quality Control and Preprocessing: $name ...");
+  file_in = paste(params$directory_in, "/", file2process.my2, ".fastq", sep="");
+  file_out = paste(params$directory_out, "/", file2process.my2, ".sam", sep="");
+  command00 = "bwa bwasw"; # next command.
+  options00 = paste(params$path_genome, " ", file_in, " > ", file_out, sep="");
+  command = paste(command00, " ", options00, sep="");
+  system(command);
+  print_done(file2process.my2);
+  
+   
+  gc() # Let's clean ouR garbage if possible
+  return(step.my) # return nothing, since results are saved on disk from the system command
+}
 ##########################
 ### Main Program
 ##########################
+startdate <- paste(Sys.Date(), sep="")
 program_ueb <- "eva_ueb2.R";
-sink('SnowFallExample.Rout', split=TRUE)
+routlogfile <- paste("log.", startdate,".SnowFall.Rout", sep="") # SnowFall R output file
+abs_routlogfile <- paste(log.folder, "/", routlogfile, sep="")
+sink(abs_routlogfile , split=TRUE)
+w.output(unlist(.Platform), routlogfile )
+w.output(unlist(.Machine),  routlogfile )
+w.output(unlist(R.version), routlogfile )
+w.output(unlist(Sys.info()),  routlogfile )
 # .Platform
 # .Machine
 # R.version
@@ -263,14 +295,18 @@ if ( is.null(opt$filter   ) ) { opt$filter   = ""            }
 if ( is.null(opt$log) || opt$log ==1) { opt$log      = "TRUE"        }
 if ( is.null(opt$summarize) ) { opt$summarize= TRUE          }
 if ( is.null(opt$keep     ) ) { opt$keep     = FALSE         }
-if ( is.null(opt$cpus     ) ) { opt$cpus     = 7             }
-if ( is.null(opt$parallel ) ) { opt$parallel = FALSE         }
+if ( is.null(opt$cpus     ) ) { opt$cpus     = 4             }
+if ( is.null(opt$parallel ) ) { opt$parallel = TRUE          }
 
+# Other early initialization of variables
+# Set the working directory
+wd <- "/home/xavi/repo/peeva/"
+setwd(wd)
 
 # 1. Initialisation of snowfall.
 #----------------------------------
 # (if used with sfCluster, just call sfInit())
-sfInit(parallel=opt$parallel, cpus=opt$cpus) # Amb parallel=TRUE s'envien les feines als nodes fills
+sfInit(parallel=opt$parallel, cpus=opt$cpus, useRscript=TRUE) # Amb parallel=TRUE s'envien les feines als nodes fills
 #useRscript : Change startup behavior (snow>0.3 needed): use shell scripts or R-script for startup (R-scripts beeing the new variant, but not working with sfCluster.
 
 # Si es posa "parallel=FALSE" no ho paralelitzara 
@@ -289,10 +325,6 @@ sfInit(parallel=opt$parallel, cpus=opt$cpus) # Amb parallel=TRUE s'envien les fe
 ## if(!require(ExamplePackage)){ install.packages("ExamplePackage") }
 ## require(ExamplePackage)
 ## data(MyDataset)
-
-# Set the working directory
-wd <- "/home/xavi/repo/peeva/"
-setwd(wd)
 
 # 2a. Get the list of files to be processed 
 #----------------------------------
@@ -317,6 +349,7 @@ file_list <- gsub(".fastq","", file_list)
 ## 2b. Define params for all runs
 #----------------------------------
 params <- list(file2process = "",
+               startdate = startdate,
                scriptname = "eva_ueb2.R", # Adapted version to work from this R script to be parallelized
                scriptparams = " -o ./test_out",
                opt = opt, # command line arguments passed to the program run
@@ -343,21 +376,21 @@ wrapper <- function(datastep.my) {
   # Output progress in worker logfile
   file2process.my1 <- params$file_list[datastep.my]
   cat( "Current file: ", file2process.my1, "\n" )
-  #  system(paste("perl ", abs_path_to_input_files.my1, scriptparams.my1, sep=""), TRUE);
-  # function from the perl script come here
+
+  # Re-set working directory while in child worker, just in case
   setwd(params$wd)
   step <- data.frame(datastep.my, 0)
   colnames(step) <- c("n","tmp")
   # Re-set the log file, if it exists already and log is requested
   if (params$log) { 
-      write(paste("			### NEW RUN (", Sys.Date()," - ", params$n_files, " files) ###\n", sep=""), file=paste(params$log.folder,"/log.", Sys.Date(),".", file2process.my1, ".txt", sep=""), append = FALSE, sep = "");
+      write(paste("			### NEW RUN (", Sys.Date()," - ", params$n_files, " files) ###\n", sep=""), file=paste(params$log.folder,"/log.", params$startdate, ".", file2process.my1, ".txt", sep=""), append = FALSE, sep = "");
   }
 #  step$n <- 0
 #  step$tmp <- 0
   print_doc(paste("########## Step ", step$n, ". Processing file #", datastep.my, " (", file2process.my1, ") ... ##########\n", sep=""), file2process.my1);
 
   
-  ### Parallelized Pipeline steps ###
+  #--- Parallelized Pipeline steps inside wrapper function ###----------------------------------------
 
   # First Step
   step <- fun.quality.control(file2process.my2  = file2process.my1,
@@ -369,6 +402,12 @@ wrapper <- function(datastep.my) {
   step <- fun.index.reference.genome(file2process.my2  = file2process.my1,
                       step.my  = step,
                       scriptparams.my1  = scriptparams)
+
+  # Next Step
+  step <- fun.map.on.reference.genome(file2process.my2  = file2process.my1,
+                      step.my  = step,
+                      scriptparams.my1  = scriptparams)
+
   # XXX...
 
 
@@ -391,7 +430,8 @@ sfExport("params",
          "print_error",
          "w.output",
          "fun.quality.control",
-         "fun.index.reference.genome") # functions can be passed also to workers from master
+         "fun.index.reference.genome",
+         "fun.map.on.reference.genome") # functions can be passed also to workers from master
 
 # # 5a. Start network random number generator
 #----------------------------------
