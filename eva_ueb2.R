@@ -123,7 +123,7 @@ show_help <- function(program_ueb.my)
 ### FUNCTION fun.quality.control
 ##########################
 
-fun.quality.control <- function(file2process.my2, step.my, scriptparams.my1) {
+fun.quality.control <- function(file2process.my2, step.my) {
   # update step number
   step.my$tmp <- step.my$tmp + 1
   print_doc(paste("	Step ", step.my$n, ".", step.my$tmp, ". Quality Control and Preprocessing: ", file2process.my2, "\n", sep=""), file2process.my2);
@@ -149,7 +149,7 @@ fun.quality.control <- function(file2process.my2, step.my, scriptparams.my1) {
 ### FUNCTION fun.index.reference.genome
 ##########################
 
-fun.index.reference.genome <- function(file2process.my2, step.my, scriptparams.my1) {
+fun.index.reference.genome <- function(file2process.my2, step.my) {
   # update step number
   step.my$tmp <- step.my$tmp + 1
 
@@ -176,18 +176,38 @@ fun.index.reference.genome <- function(file2process.my2, step.my, scriptparams.m
 ### FUNCTION fun.map.on.reference.genome
 ##########################
 
-fun.map.on.reference.genome <- function(file2process.my2, step.my, scriptparams.my1) {
+fun.map.on.reference.genome <- function(file2process.my2, step.my) {
   # update step number
   step.my$tmp <- step.my$tmp + 1
   print_doc(paste("	Step ", step.my$n, ".", step.my$tmp, ". Map against reference genome: do the mapping with: ", file2process.my2, "\n", sep=""), file2process.my2);
   
-  # Remove .fastq (substitute it with nothing) from file names
-  name = sub(".fastq","",file2process.my2,  ignore.case = FALSE, perl = FALSE, fixed = TRUE);
-  #  print_doc("$now -   Step $step_n.$step_tmp Quality Control and Preprocessing: $name ...");
   file_in = paste(params$directory_in, "/", file2process.my2, ".fastq", sep="");
   file_out = paste(params$directory_out, "/", file2process.my2, ".sam", sep="");
   command00 = "bwa bwasw"; # next command.
   options00 = paste(params$path_genome, " ", file_in, " > ", file_out, sep="");
+  command = paste(command00, " ", options00, sep="");
+  system(command);
+  print_done(file2process.my2);
+   
+  gc() # Let's clean ouR garbage if possible
+  return(step.my) # return both the step number, and the filename out that will be theinput for the next step
+}
+
+
+
+##########################
+### FUNCTION fun.sam2bam.and.sort
+##########################
+
+fun.sam2bam.and.sort <- function(file2process.my2, step.my) {
+  # update step number
+  step.my$tmp <- step.my$tmp + 1
+  print_doc(paste("	Step ", step.my$n, ".", step.my$tmp, ". Convert sam to bam and sort it: ", file2process.my2, "\n", sep=""), file2process.my2);
+  
+  file_in = paste(params$directory_out, "/", file2process.my2, ".sam", sep="");
+  file_out = paste(file_in, ".sorted", sep="");
+  command00 = "samtools"; # next command.
+  options00 = paste(" view -bS ", file_in, " | ", command00, " sort - ", file_out, sep="");
   command = paste(command00, " ", options00, sep="");
   system(command);
   print_done(file2process.my2);
@@ -196,22 +216,13 @@ fun.map.on.reference.genome <- function(file2process.my2, step.my, scriptparams.
   gc() # Let's clean ouR garbage if possible
   return(step.my) # return nothing, since results are saved on disk from the system command
 }
+
+
 ##########################
 ### Main Program
 ##########################
 startdate <- paste(Sys.Date(), sep="")
 program_ueb <- "eva_ueb2.R";
-routlogfile <- paste("log.", startdate,".SnowFall.Rout", sep="") # SnowFall R output file
-abs_routlogfile <- paste(log.folder, "/", routlogfile, sep="")
-sink(abs_routlogfile , split=TRUE)
-w.output(unlist(.Platform), routlogfile )
-w.output(unlist(.Machine),  routlogfile )
-w.output(unlist(R.version), routlogfile )
-w.output(unlist(Sys.info()),  routlogfile )
-# .Platform
-# .Machine
-# R.version
-# Sys.info()
 
 # 0. Check dependencies and install missing packages
 #---------------------------------------------------
@@ -288,20 +299,33 @@ if ( !is.null(opt$help) || ((length(commandArgs()) >3 )
 
 #set some reasonable defaults for the options that are needed,
 #but were not specified.
-#if ( is.null(opt$input    ) ) { opt$input    = "test_in"     }
-#if ( is.null(opt$output   ) ) { opt$output   = "test_out"    }
+if ( is.null(opt$input    ) ) { opt$input    = "test_in"     }
+if ( is.null(opt$output   ) ) { opt$output   = "test_out"    }
 if ( is.null(opt$index    ) ) { opt$index    = FALSE         }
 if ( is.null(opt$filter   ) ) { opt$filter   = ""            }
 if ( is.null(opt$log) || opt$log ==1) { opt$log      = "TRUE"        }
 if ( is.null(opt$summarize) ) { opt$summarize= TRUE          }
 if ( is.null(opt$keep     ) ) { opt$keep     = FALSE         }
 if ( is.null(opt$cpus     ) ) { opt$cpus     = 4             }
-if ( is.null(opt$parallel ) ) { opt$parallel = TRUE          }
+if ( is.null(opt$parallel ) ) { opt$parallel = FALSE          }
 
 # Other early initialization of variables
 # Set the working directory
 wd <- "/home/xavi/repo/peeva/"
 setwd(wd)
+
+routlogfile <- paste("log.", startdate,".SnowFall.Rout", sep="") # SnowFall R output file
+abs_routlogfile <- paste(opt$output, "/", routlogfile, sep="")
+system(paste("touch ", abs_routlogfile, sep=""))
+w.output(unlist(.Platform), routlogfile )
+w.output(unlist(.Machine),  routlogfile )
+w.output(unlist(R.version), routlogfile )
+w.output(unlist(Sys.info()),  routlogfile )
+sink(abs_routlogfile , split=TRUE)
+# .Platform
+# .Machine
+# R.version
+# Sys.info()
 
 # 1. Initialisation of snowfall.
 #----------------------------------
@@ -348,17 +372,15 @@ file_list <- gsub(".fastq","", file_list)
 
 ## 2b. Define params for all runs
 #----------------------------------
-params <- list(file2process = "",
-               startdate = startdate,
+params <- list(startdate = startdate,
                scriptname = "eva_ueb2.R", # Adapted version to work from this R script to be parallelized
-               scriptparams = " -o ./test_out",
                opt = opt, # command line arguments passed to the program run
                #scriptparams = "-i ./test_in -o ./test_out -s -k | tee /dev/tty ./logs/log_both.txt
                file_list = file_list,
                n_files = n_files,
                wd = wd, # the working directory
-               directory_in = "test_in",
-               directory_out = "test_out",
+               directory_in = opt$input,
+               directory_out = opt$output,
                log = opt$log,
                log.folder = params$directory_out, # "logs",
                path_fastq = "/home/ueb/fastqc/fastqc",
@@ -373,6 +395,25 @@ params <- list(file2process = "",
 # 3. Wrapper function, which can be parallelised.
 #----------------------------------
 wrapper <- function(datastep.my) {
+  # -----------------------------
+  # Define which processes to run (in later stage, this will be in an external R file sourced here)
+  # -----------------------------
+  #####
+  runParam <-FALSE
+  ####
+
+    quality.control 		<- runParam
+    index.reference.genome 	<- runParam
+  
+  #####
+  runParam <-TRUE
+  ####
+
+    map.on.reference.genome 	<- runParam
+    sam2bam.and.sort		<- runParam
+
+  # -----------------------------
+  
   # Output progress in worker logfile
   file2process.my1 <- params$file_list[datastep.my]
   cat( "Current file: ", file2process.my1, "\n" )
@@ -392,22 +433,31 @@ wrapper <- function(datastep.my) {
   
   #--- Parallelized Pipeline steps inside wrapper function ###----------------------------------------
 
-  # First Step
-  step <- fun.quality.control(file2process.my2  = file2process.my1,
-                      step.my  = step,
-                      scriptparams.my1  = scriptparams)
-
+  if (quality.control) { 
+    # First Step
+    step <- fun.quality.control(file2process.my2  = file2process.my1,
+                      step.my  = step)
+  }
   
-  # Next Step
-  step <- fun.index.reference.genome(file2process.my2  = file2process.my1,
-                      step.my  = step,
-                      scriptparams.my1  = scriptparams)
+  if (index.reference.genome) { 
+    # Next Step
+    step <- fun.index.reference.genome(file2process.my2  = file2process.my1,
+                      step.my  = step)
+  }
 
-  # Next Step
-  step <- fun.map.on.reference.genome(file2process.my2  = file2process.my1,
-                      step.my  = step,
-                      scriptparams.my1  = scriptparams)
+  if (map.on.reference.genome) { 
+    # Next Step
+    # Receive its output returned in a tmp vector with 2 elements: step and filename_out 
+    step <- fun.map.on.reference.genome(file2process.my2  = file2process.my1,
+                      step.my  = step)
+  }
 
+  if (sam2bam.and.sort) {
+    # Next Step
+    # Receive its output returned in a tmp vector with 2 elements: step and filename_out 
+    stepfile <- fun.sam2bam.and.sort(file2process.my2  = file2process.my1,
+                      step.my  = step)
+  }
   # XXX...
 
 
