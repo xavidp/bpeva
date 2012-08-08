@@ -45,6 +45,15 @@ print_doc <- function(mess, filename.my1)
   }
 }
 
+print_mes <- function(mess, filename.my1) # Similar to print_doc but without adding the time stamp at the beggining.
+{
+  # ---------------------------------------------------------------------
+  cat(mess)
+  if (params$log) { 
+    w.output(mess, filename.my1)
+  }
+}
+
 print_done <- function(filename.my1) 
 {
   # ---------------------------------------------------------------------
@@ -66,15 +75,22 @@ print_error <- function(mess, filename.my1)
   }
 }
 
-check2clean <- function(my.option)
+##########################
+### FUNCTION check2clean
+###
+### 	Check if temp files should be kept or can be removed on disk
+##########################
+
+check2clean <- function(my.option, filename.my1)
 {
   # ---------------------------------------------------------------------
   var <- my.option
-  if ( !is.null(opt$k) ) # keep temporary files if requested by the user 
+  if ( !is.null(opt$keep) ) # keep temporary files if requested by the user 
   { 
     # do nothing
   } else { # clean temporary files not from this but from the previous step
     system(paste("rm  ", var, sep=""));
+    print_mes(paste("\t\t\t\t\tOk. Removing temporary files ", var, "\n", sep=""), filename.my1);
   }
 }
 
@@ -210,8 +226,8 @@ fun.sam2bam.and.sort <- function(file2process.my2, step.my) {
   options00 = paste(" view -bS ", file_in, " | ", command00, " sort - ", file_out, sep="");
   command = paste(command00, " ", options00, sep="");
   system(command);
+  check2clean(file_in, file2process.my2);
   print_done(file2process.my2);
-  
    
   gc() # Let's clean ouR garbage if possible
   return(step.my) # return nothing, since results are saved on disk from the system command
@@ -305,7 +321,7 @@ if ( is.null(opt$index    ) ) { opt$index    = FALSE         }
 if ( is.null(opt$filter   ) ) { opt$filter   = ""            }
 if ( is.null(opt$log) || opt$log ==1) { opt$log      = "TRUE"        }
 if ( is.null(opt$summarize) ) { opt$summarize= TRUE          }
-if ( is.null(opt$keep     ) ) { opt$keep     = FALSE         }
+#if ( is.null(opt$keep     ) ) { opt$keep     = TRUE         } # Enable if run through editor and you want to keep temp files
 if ( is.null(opt$cpus     ) ) { opt$cpus     = 4             }
 if ( is.null(opt$parallel ) ) { opt$parallel = FALSE          }
 
@@ -479,9 +495,12 @@ sfExport("params",
          "print_done",
          "print_error",
          "w.output",
+         "check2clean",
          "fun.quality.control",
          "fun.index.reference.genome",
-         "fun.map.on.reference.genome") # functions can be passed also to workers from master
+         "fun.map.on.reference.genome",
+         "fun.sam2bam.and.sort"
+	 ) # functions can be passed also to workers from master
 
 # # 5a. Start network random number generator
 #----------------------------------
