@@ -85,12 +85,12 @@ check2clean <- function(my.option, filename.my1)
 {
   # ---------------------------------------------------------------------
   var <- my.option
-  if ( !is.null(opt$keep) ) # keep temporary files if requested by the user 
+  if ( !is.null(params$opt$keep) ) # keep temporary files if requested by the user 
   { 
     # do nothing
   } else { # clean temporary files not from this but from the previous step
     system(paste("rm  ", var, sep=""));
-    print_mes(paste("\t\t\t\t\tOk. Removing temporary files ", var, "\n", sep=""), filename.my1);
+    print_mes(paste("\t\t\t\t\tOk. Removing temporary file ", var, "\n\n", sep=""), filename.my1);
   }
 }
 
@@ -102,7 +102,7 @@ check2clean <- function(my.option, filename.my1)
 
 w.output <- function(mess, filename.my2)
 {
-  write(mess, file=paste(params$log.folder,"/log.",params$startdate,".", filename.my2, ".txt", sep=""), append = TRUE, sep = "");
+  write(mess, file=paste(params$log.folder,"/log.",params$startdate, params$opt$label,".", filename.my2, ".txt", sep=""), append = TRUE, sep = "");
 }
 
 ##########################
@@ -142,7 +142,7 @@ show_help <- function(program_ueb.my)
 fun.quality.control <- function(file2process.my2, step.my) {
   # update step number
   step.my$tmp <- step.my$tmp + 1
-  print_doc(paste("	Step ", step.my$n, ".", step.my$tmp, ". Quality Control and Preprocessing: ", file2process.my2, "\n", sep=""), file2process.my2);
+  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Quality Control and Preprocessing: ", file2process.my2, " ###\n", sep=""), file2process.my2);
   
   # Remove .fastq (substitute it with nothing) from file names
   name = sub(".fastq","",file2process.my2,  ignore.case = FALSE, perl = FALSE, fixed = TRUE);
@@ -169,7 +169,7 @@ fun.index.reference.genome <- function(file2process.my2, step.my) {
   # update step number
   step.my$tmp <- step.my$tmp + 1
 
-  print_doc(paste("	Step ", step.my$n, ".", step.my$tmp, ". Map against reference genome: Index the reference genome (if needed)\n", sep=""), file2process.my2);
+  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Map against reference genome: Index the reference genome (if needed)\n", sep=""), file2process.my2);
 	if ((params$opt$index) & (step.my$n == 1)) { # case to index the reference genome (time consuming, do only when really needed as requested)
 		# Index the reference genome, if requested with argument -n and only for the first file if more than one sample to process
 		command00 <- "bwa index"; # next command
@@ -195,7 +195,7 @@ fun.index.reference.genome <- function(file2process.my2, step.my) {
 fun.map.on.reference.genome <- function(file2process.my2, step.my) {
   # update step number
   step.my$tmp <- step.my$tmp + 1
-  print_doc(paste("	Step ", step.my$n, ".", step.my$tmp, ". Map against reference genome: do the mapping with: ", file2process.my2, "\n", sep=""), file2process.my2);
+  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Map against reference genome: do the mapping with: ", file2process.my2, " ###\n", sep=""), file2process.my2);
   
   file_in = paste(params$directory_in, "/", file2process.my2, ".fastq", sep="");
   file_out = paste(params$directory_out, "/", file2process.my2, ".sam", sep="");
@@ -218,7 +218,7 @@ fun.map.on.reference.genome <- function(file2process.my2, step.my) {
 fun.sam2bam.and.sort <- function(file2process.my2, step.my) {
   # update step number
   step.my$tmp <- step.my$tmp + 1
-  print_doc(paste("	Step ", step.my$n, ".", step.my$tmp, ". Convert sam to bam and sort it: ", file2process.my2, "\n", sep=""), file2process.my2);
+  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Convert sam to bam and sort it: ", file2process.my2, " ###\n", sep=""), file2process.my2);
   
   file_in = paste(params$directory_out, "/", file2process.my2, ".sam", sep="");
   file_out = paste(file_in, ".sorted", sep="");
@@ -243,7 +243,7 @@ fun.sam2bam.and.sort <- function(file2process.my2, step.my) {
 fun.remove.pcr.dup <- function(file2process.my2, step.my) {
   # update step number
   step.my$tmp <- step.my$tmp + 1
-  print_doc(paste("	Step ", step.my$n, ".", step.my$tmp, ". Remove possible PCR duplicates: ", file2process.my2, "\n", sep=""), file2process.my2);
+  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Remove possible PCR duplicates: ", file2process.my2, " ###\n", sep=""), file2process.my2);
   
   file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.bam", sep="");
   file_out = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam", sep="");
@@ -267,7 +267,7 @@ fun.remove.pcr.dup <- function(file2process.my2, step.my) {
 fun.index.bam.file <- function(file2process.my2, step.my) {
   # update step number
   step.my$tmp <- step.my$tmp + 1
-  print_doc(paste("	Step ", step.my$n, ".", step.my$tmp, ". Index the bam file: ", file2process.my2, "\n", sep=""), file2process.my2);
+  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Index the bam file: ", file2process.my2, " ###\n", sep=""), file2process.my2);
   
   file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam", sep="");
 #  file_out = paste(file_in, ".foo", sep="");
@@ -291,7 +291,7 @@ fun.index.bam.file <- function(file2process.my2, step.my) {
 fun.stats <- function(file2process.my2, step.my) {
   # update step number
   step.my$tmp <- step.my$tmp + 1
-  print_doc(paste("	Step ", step.my$n, ".", step.my$tmp, ". Get some stats using the samtools [optional]: ", file2process.my2, "\n", sep=""), file2process.my2);
+  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Get some stats using the samtools [optional]: ", file2process.my2, " ###\n", sep=""), file2process.my2);
   
   file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam", sep="");
 #  file_out = paste(file_in, ".foo", sep="");
@@ -313,15 +313,15 @@ fun.stats <- function(file2process.my2, step.my) {
 ### 	Variant calling
 ##########################
 
-fun. <- function(file2process.my2, step.my) {
+fun.variant.calling <- function(file2process.my2, step.my) {
   # update step number
   step.my$tmp <- step.my$tmp + 1
-  print_doc(paste("	Step ", step.my$n, ".", step.my$tmp, ". Variant calling: ", file2process.my2, "\n", sep=""), file2process.my2);
+  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Variant calling: ", file2process.my2, " ###\n", sep=""), file2process.my2);
   
   file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam", sep="");
   file_out = paste(file_in, ".samtools.var.raw.vcf", sep="");
   command00 = "samtools"; # next command.
-  options00 = paste(" mpileup -uf ", params$path_genome, file_in, " | bcftools view -vcg - >  ", file_out, sep="");
+  options00 = paste(" mpileup -uf ", params$path_genome, " ", file_in, " | bcftools view -vcg - >  ", file_out, sep="");
   command = paste(command00, " ", options00, sep="");
   system(command);
   check2clean(file_in, file2process.my2);
@@ -341,7 +341,7 @@ fun. <- function(file2process.my2, step.my) {
 fun.variant.filtering <- function(file2process.my2, step.my) {
   # update step number
   step.my$tmp <- step.my$tmp + 1
-  print_doc(paste("	Step ", step.my$n, ".", step.my$tmp, ". Variant Filtering: ", file2process.my2, "\n", sep=""), file2process.my2);
+  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Variant Filtering: ", file2process.my2, " ###\n", sep=""), file2process.my2);
   
   file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam.samtools.var.raw.vcf", sep="");
   file_out = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam.samtools.var.filtered.vcf", sep="");
@@ -363,13 +363,13 @@ fun.variant.filtering <- function(file2process.my2, step.my) {
 ### 	Convert files to Annnovar vcf4 format
 ##########################
 
-fun. <- function(file2process.my2, step.my) {
+fun.convert2vcf4 <- function(file2process.my2, step.my) {
   # update step number
   step.my$tmp <- step.my$tmp + 1
-  print_doc(paste("	Step ", step.my$n, ".", step.my$tmp, ". Convert files to Annnovar vcf4 format: ", file2process.my2, "\n", sep=""), file2process.my2);
+  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Convert files to Annnovar vcf4 format: ", file2process.my2, " ###\n", sep=""), file2process.my2);
   
   file_in =  paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam.samtools.var.filtered.vcf", sep="");
-  file_out = paste(params$directory_out, "/", file2process.my2, ".filtered.vcf.annovar", sep=""); # shorten the name a bit
+  file_out = paste(params$directory_out, "/", file2process.my2, ".f.vcf4", sep=""); # shorten the name a bit
   command00 = params$path_convert2annovar; # next command.
   options00 = paste(" ", file_in, " -format vcf4 > ", file_out, sep="");
   command = paste(command00, " ", options00, sep="");
@@ -398,6 +398,7 @@ fun. <- function(file2process.my2, step.my) {
 ### FUNCTION fun.variant.annotation.geneb
 ###
 ### 	Variant Annotation with Annovar: Gene-based
+###   annotate variants by functional consequences on genes
 ###     Identify whether SNPs or CNVs cause protein coding changes and the amino acids that are affected. Users can flexibly use RefSeq genes, UCSC genes, ENSEMBL genes, GENCODE genes, or many other gene definition systems.
 ###     http://www.openbioinformatics.org/annovar/annovar_gene.html
 ##########################
@@ -405,20 +406,20 @@ fun. <- function(file2process.my2, step.my) {
 fun.variant.annotation.geneb <- function(file2process.my2, step.my) {
   # update step number
   step.my$tmp <- step.my$tmp + 1
-  print_doc(paste("	Step ", step.my$n, ".", step.my$tmp, ". Variant Annotation (gene-based): ", file2process.my2, "\n", sep=""), file2process.my2);
+  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Variant Annotation (gene-based): ", file2process.my2, " ###\n", sep=""), file2process.my2);
   
-  file_in = paste(params$directory_out, "/", file2process.my2, ".filtered.vcf.annovar", sep=""); 
-  file_out = paste(params$directory_out, "/", file2process.my2, ".filtered.vcf.annovar.exonic_variant_function_gene", sep=""); 
+  file_in  = paste(params$directory_out, "/", file2process.my2, ".f.vcf4", sep=""); 
+  file_out = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.exonic_variant_function_gene", sep=""); 
   command00 = "perl"; # next command.
-  options00 = paste(" ", params$path_annotate_variation, " -geneanno --buildver hg19 ", file_in, params$path_annotate_humandb, sep="");
+  options00 = paste(" ", params$path_annotate_variation, " -geneanno --buildver hg19 ", file_in, " ", params$path_annotate_humandb, sep="");
   command = paste(command00, " ", options00, sep="");
   system(command);
   # We don't do check2clean here  either since we will still use the .vcf.annovar file in the next steps
   print_done(file2process.my2);
 
 			# a mà la instrucció al mainhead és:
-			# perl /home/ueb/annovar/annotate_variation.pl -geneanno --buildver hg19 /home/xavi/repo/peeva/dir_out/Gutierrez_B_Sure.sequence_m50.sam.sorted.noDup.bam.samtools.var.filtered.vcf.annovar /home/ueb/annovar/humandb/
-			# perl /home/ueb/annovar/annotate_variation.pl -geneanno --buildver hg19 /home/ueb/estudis/ngs/2011-08-SGutierrez-VHIO-207/111224_peeva_dir_out/Gutierrez_B_Sure.sequence.sam.sorted.noDup.bam.samtools.var.filtered.vcf.annovar /home/ueb/annovar/humandb/
+			# perl /home/ueb/annovar/annotate_variation.pl -geneanno --buildver hg19 /home/xavi/repo/peeva/dir_out/Gutierrez_B_Sure.sequence_m50.sam.sorted.noDup.bam.samtools.var.f.vcf4 /home/ueb/annovar/humandb/
+			# perl /home/ueb/annovar/annotate_variation.pl -geneanno --buildver hg19 /home/ueb/estudis/ngs/2011-08-SGutierrez-VHIO-207/111224_peeva_dir_out/Gutierrez_B_Sure.sequence.sam.sorted.noDup.bam.samtools.var.f.vcf4 /home/ueb/annovar/humandb/
    
   gc() # Let's clean ouR garbage if possible
   return(step.my) # return nothing, since results are saved on disk from the system command
@@ -429,6 +430,7 @@ fun.variant.annotation.geneb <- function(file2process.my2, step.my) {
 ### FUNCTION fun.variant.annotation.regionb
 ###
 ### 	Variant Annotation with Annovar: Region-based
+###   annotate variants by functional consequences on genes
 ### 	  Identify variants in specific genomic regions, for example, conserved regions among 44 species, predicted transcription factor binding sites, segmental duplication regions, GWAS hits, database of genomic variants, DNAse I hypersensitivity sites, ENCODE H3K4Me1/H3K4Me3/H3K27Ac/CTCF sites, ChIP-Seq peaks, RNA-Seq peaks, or many other annotations on genomic intervals
 ###     Skipped so far (May 2012)
 ###     http://www.openbioinformatics.org/annovar/annovar_region.html
@@ -443,6 +445,7 @@ fun.variant.annotation.regionb <- function(file2process.my2, step.my) {
 ### FUNCTION fun.variant.annotation.filterb
 ###
 ### 	Variant Annotation with Annovar: Filter-based
+###   filter variants based on a position list
 ###     Identify variants that are reported in dbSNP, or identify the subset of common SNPs (MAF>1%) in the 1000 Genome Project, or identify subset of non-synonymous SNPs with SIFT score>0.05, or many other annotations on specific mutations
 ###     http://www.openbioinformatics.org/annovar/annovar_filter.html
 ##########################
@@ -450,19 +453,21 @@ fun.variant.annotation.regionb <- function(file2process.my2, step.my) {
 fun.variant.annotation.filterb <- function(file2process.my2, step.my) {
   # update step number
   step.my$tmp <- step.my$tmp + 1
-  print_doc(paste("	Step ", step.my$n, ".", step.my$tmp, ". Variant Annotation (filter based): ", file2process.my2, "\n", sep=""), file2process.my2);
+  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Variant Annotation (filter based): ", file2process.my2, " ###\n", sep=""), file2process.my2);
   
-  file_in = paste(params$directory_out, "/", file2process.my2, ".filtered.vcf.annovar", sep=""); 
-  file_out = paste(params$directory_out, "/", file2process.my2, ".filtered.vcf.annovar.exonic_variant_function_filter", sep=""); 
+  file_in = paste(params$directory_out, "/", file2process.my2, ".f.vcf4", sep=""); 
+# The output file is hardcoded by annotate_variation, and will end up with this type of suffix: .hg19_snp132_filtered
+#  file_out_dropped = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.hg19_snp132_dropped", sep=""); 
+#  file_out_passed = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.hg19_snp132_filtered", sep=""); 
   command00 = "perl"; # next command.
-  options00 = paste(" ", params$path_annotate_variation, " -filter --buildver hg19 -dbtype snp132 ", file_in, params$path_annotate_humandb, sep="");
+  options00 = paste(" ", params$path_annotate_variation, " -filter --buildver hg19 -dbtype snp132 ", file_in, " ", params$path_annotate_humandb, sep="");
   command = paste(command00, " ", options00, sep="");
   system(command);
   # We don't do check2clean here  either since we will still use the .vcf.annovar file in the next steps (summarizing annotations and filtering)
   print_done(file2process.my2);
 
 		# a mà la instrucció al mainhead és:
-		# perl /home/ueb/annovar/annotate_variation.pl -filter --buildver hg19 -dbtype snp132 /home/xavi/repo/peeva/dir_out/vhir_sample_a_sure_1e6.sam.sorted.noDup.bam.samtools.var.filtered.vcf.annovar /home/ueb/annovar/humandb/
+		# perl /home/ueb/annovar/annotate_variation.pl -filter --buildver hg19 -dbtype snp132 /home/xavi/repo/peeva/dir_out/vhir_sample_a_sure_1e6.sam.sorted.noDup.bam.samtools.var.f.vcf4 /home/ueb/annovar/humandb/
    
   gc() # Let's clean ouR garbage if possible
   return(step.my) # return nothing, since results are saved on disk from the system command
@@ -480,20 +485,20 @@ fun.variant.annotation.filterb <- function(file2process.my2, step.my) {
 fun.variant.annotation.summarize <- function(file2process.my2, step.my) {
   # update step number
   step.my$tmp <- step.my$tmp + 1
-  print_doc(paste("	Step ", step.my$n, ".", step.my$tmp, ". Variant Annotation (summarize annotations in .csv): ", file2process.my2, "\n", sep=""), file2process.my2);
+  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Variant Annotation (summarize annotations in .csv): ", file2process.my2, " ###\n", sep=""), file2process.my2);
   
 # TODO: 	if ($options{s}) # case to summarize annotation results in a single .csv file ...
-  file_in = paste(params$directory_out, "/", file2process.my2, ".filtered.vcf.annovar", sep=""); 
+  file_in = paste(params$directory_out, "/", file2process.my2, ".f.vcf4", sep=""); 
   file_out = paste(file_in, ".sum", sep=""); # summarize_annovar.pl adds the extension .exome_summary (hardcoded in annovar). 
   command00 = "perl"; # next command.
-  options00 = paste(" ", params$path_summarize_annovar, " --buildver hg19 --verdbsnp 132 ", file_in, params$path_annotate_humandb, " --outfile ", file_out, sep="");
+  options00 = paste(" ", params$path_summarize_annovar, " --buildver hg19 --verdbsnp 132 ", file_in, " ", params$path_annotate_humandb, " --outfile ", file_out, sep="");
   command = paste(command00, " ", options00, sep="");
   system(command);
   # # We don't do check2clean here  either since we will still use the .vcf.annovar file in the next steps (filtering)
   print_done(file2process.my2);
 
 		# a mà la instrucció al mainhead és:
-		# perl /home/ueb/annovar/summarize_annovar.pl --buildver hg19  --verdbsnp 132 /home/xavi/repo/peeva/dir_out/vhir_sample_a_sure_1e6.sam.sorted.noDup.bam.samtools.var.filtered.vcf.annovar /home/ueb/annovar/humandb/ --outfile sum
+		# perl /home/ueb/annovar/summarize_annovar.pl --buildver hg19  --verdbsnp 132 /home/xavi/repo/peeva/dir_out/vhir_sample_a_sure_1e6.sam.sorted.noDup.bam.samtools.var.f.vcf4 /home/ueb/annovar/humandb/ --outfile sum
    
   gc() # Let's clean ouR garbage if possible
   return(step.my) # return nothing, since results are saved on disk from the system command
@@ -511,10 +516,11 @@ fun.variant.annotation.summarize <- function(file2process.my2, step.my) {
 fun.filter.variants <- function(file2process.my2, step.my) {
   # update step number
   step.my$tmp <- step.my$tmp + 1
-  print_doc(paste("	Step ", step.my$n, ".", step.my$tmp, ". Filter variants for the target genes: ", file2process.my2, "\n", sep=""), file2process.my2);
+  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Filter variants for the target genes: ", file2process.my2, " ###\n", sep=""), file2process.my2);
+
   if (!is.null(params$opt$filter) && (params$opt$filter != "")) {
-      file_in = paste(params$directory_out, "/", file2process.my2, ".filtered.vcf.annovar.exonic_variant_function_filter", sep=""); 
-      file_out = paste(file_in, ".results.", startdate, ".txt", sep="");
+      file_in  = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.hg19_snp132_filtered", sep=""); 
+      file_out = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.hsf.results.", startdate, params$opt$label, ".txt", sep="");
       command00 = "grep"; # next command.
       options00 = paste(" '", params$opt$filter,"' ", file_in, " > ", file_out, sep="");
 	# Remember that the values in the previous opt$filter variable needs to be like: 'BRCA1\|BRCA2' 
@@ -546,7 +552,7 @@ fun.visualize.variants <- function(file2process.my2, step.my) {
 ### Main Program #############################################################
 ##############################################################################
 ##############################################################################
-startdate <- paste(Sys.Date(), sep="")
+startdate <- paste(format(Sys.Date(), "%y%m%d"), sep="")
 program_ueb <- "eva_ueb2.R";
 
 # 0. Check dependencies and install missing packages
@@ -604,7 +610,8 @@ my.options <- c(
   'summarize', 's', 0, "logical"  , # "__S__summarize results in a single .csv file with annotations # Optional",
   'keep'     , 'k', 0, "logical"  , #, "__K__eep temporal dummy files after they have been used # Optional",
   'cpus'     , 'c', 1, "integer"  , #, "__C__pus to use from the multicore computer or cluster # Optional".
-  'parallel' , 'p', 0, "logical"  #, "__P__arallel processing using SnowFall package # Optional"
+  'parallel' , 'p', 0, "logical"  , #, "__P__arallel processing using SnowFall package # Optional"
+  'label'    , 'b', 1, "character"  #, "Run la__B__el to add to output file names, Like: "test-paralel-a", or "sample with param X as Y" # Optional"
 )
 
 opt <- getopt(matrix(my.options, ncol=4, byrow=TRUE))
@@ -627,19 +634,20 @@ if ( !is.null(opt$help) || ((length(commandArgs()) >3 )
 if ( is.null(opt$input    ) ) { opt$input    = "test_in"     }
 if ( is.null(opt$output   ) ) { opt$output   = "test_out"    }
 if ( is.null(opt$index    ) ) { opt$index    = FALSE         }
-if ( is.null(opt$filter   ) ) { opt$filter   = ""            }
+if ( is.null(opt$filter   ) ) { opt$filter   = "BRCA"            }
 if ( is.null(opt$log) || opt$log ==1) { opt$log      = "TRUE"        }
 if ( is.null(opt$summarize) ) { opt$summarize= TRUE          }
-#if ( is.null(opt$keep     ) ) { opt$keep     = TRUE         } # Enable if run through editor and you want to keep temp files
+if ( is.null(opt$keep     ) ) { opt$keep     = TRUE         } # Enable if run through editor and you want to keep temp files
 if ( is.null(opt$cpus     ) ) { opt$cpus     = 4             }
-if ( is.null(opt$parallel ) ) { opt$parallel = FALSE          }
+if ( is.null(opt$parallel ) ) { opt$parallel = FALSE        }
+if ( is.null(opt$label    ) ) { opt$label    = ".b_2s1cpu"        } # Run Label for output filenames
 
 # Other early initialization of variables
 # Set the working directory
 wd <- "/home/xavi/repo/peeva/"
 setwd(wd)
 
-routlogfile <- paste("log.", startdate,".SnowFall.Rout", sep="") # SnowFall R output file
+routlogfile <- paste("log.", startdate, opt$label, ".SnowFall.Rout", sep="") # SnowFall R output file
 abs_routlogfile <- paste(opt$output, "/", routlogfile, sep="")
 system(paste("touch ", abs_routlogfile, sep=""))
 w.output(unlist(.Platform), routlogfile )
@@ -678,12 +686,12 @@ sfInit(parallel=opt$parallel, cpus=opt$cpus, useRscript=TRUE) # Amb parallel=TRU
 # 2a. Get the list of files to be processed 
 #----------------------------------
 abs_path_to_script = getwd() # Path absolut to the script
-rel_path_to_input_files = "test_in" # Include both the trailing slash at the right of the folder name and the one at its left
+rel_path_to_input_files = opt$input # Include both the trailing slash at the right of the folder name and the one at its left
 abs_path_to_input_files = paste(abs_path_to_script, "/", rel_path_to_input_files, "/", sep="")
-file_list_name = "fastq_input_list.txt"
+file_list_name = paste(opt$output, "/", "log.",startdate, opt$label, ".fastq_input_list.txt", sep="")
 
 # Get the list of files in "input" directory through a system call to "ls *" and save the result to a file on disk
-system(paste("ls ",abs_path_to_input_files,"*.fastq > ",file_list_name, sep=""), TRUE)
+system(paste("ls ",abs_path_to_input_files,"*.fastq > ", file_list_name, sep=""), TRUE)
 # Read the file with the list of files to be processed
 file_list <- read.table(file_list_name, sep="")
 
@@ -725,16 +733,11 @@ wrapper <- function(datastep.my) {
   # names of control process are like functions but without the "fun." prefix.
   # -----------------------------
   #####
-  runParam <-FALSE
+  runParam <- FALSE # TRUE # FALSE
   ####
 
     quality.control 		<- runParam
     index.reference.genome 	<- runParam
-  
-  #####
-  runParam <-TRUE
-  ####
-
     map.on.reference.genome 	<- runParam
     sam2bam.and.sort		<- runParam
     remove.pcr.dup		<- runParam
@@ -744,10 +747,20 @@ wrapper <- function(datastep.my) {
     variant.filtering		<- runParam
     convert2vcf4		<- runParam
     variant.annotation.geneb	<- runParam
-    variant.annotation.regionb	<- runParam
+    variant.annotation.regionb	<- runParam # skipped so far
+
+  #####
+  runParam <- TRUE
+  ####
+
     variant.annotation.filterb	<- runParam
     variant.annotation.summarize<- runParam
     filter.variants		<- runParam
+
+  #####
+  runParam <- FALSE
+  ####
+
     visualize.variants		<- runParam
 #    XXX		<- runParam
 
@@ -756,7 +769,6 @@ wrapper <- function(datastep.my) {
   
   # Output progress in worker logfile
   file2process.my1 <- params$file_list[datastep.my]
-  cat( "Current file: ", file2process.my1, "\n" )
 
   # Re-set working directory while in child worker, just in case
   setwd(params$wd)
@@ -764,11 +776,14 @@ wrapper <- function(datastep.my) {
   colnames(step) <- c("n","tmp")
   # Re-set the log file, if it exists already and log is requested
   if (params$log) { 
-      write(paste("			### NEW RUN (", Sys.Date()," - ", params$n_files, " files) ###\n", sep=""), file=paste(params$log.folder,"/log.", params$startdate, ".", file2process.my1, ".txt", sep=""), append = FALSE, sep = "");
+#      write(paste("			### NEW RUN (", Sys.Date()," - ", params$n_files, " files) ###\n", sep=""), file=paste(params$log.folder,"/log.", params$startdate, ".", file2process.my1, ".txt", sep=""), append = FALSE, sep = "");
+      print_mes("\n################################################################################\n", file2process.my1);
+      print_mes(paste("			\t\t\t NEW RUN (", Sys.Date()," - ", params$n_files, " files). Current file: *** ", file2process.my1, " ***\n", sep=""), file2process.my1);
+      print_mes("################################################################################\n\n", file2process.my1);
   }
 #  step$n <- 0
 #  step$tmp <- 0
-  print_doc(paste("########## Step ", step$n, ". Processing file #", datastep.my, " (", file2process.my1, ") ... ##########\n", sep=""), file2process.my1);
+  print_doc(paste("### Start processing file #", datastep.my, " (", file2process.my1, ") ... ###\n", sep=""), file2process.my1);
 
   
   #--- Parallelized Pipeline steps inside wrapper function ###----------------------------------------
@@ -871,14 +886,16 @@ wrapper <- function(datastep.my) {
   }
 
   step$tmp <- step$tmp+1;
-  print_doc(paste("	Step ", step.my$n, ".", step.my$tmp, ". End of EVA UEB pipeline with this file: ", file2process.my2, "\n", sep=""), file2process.my2);
+  print_doc(paste("	End of EVA UEB pipeline with this file: ", file2process.my1, "\n", sep=""), file2process.my1);
+  print_mes("\n--------------------------------------------------------------------------------\n\n", file2process.my1);
+
    # XXX...
 
 
   # Last step of wrapper
   gc() # Let's clean ouR garbage if possible
   return(NULL) # return nothing, since results are saved on disk from the perl script
-}
+} # end of wrapper function
 
 # 4. Exporting needed data and loading required
 #----------------------------------
@@ -892,6 +909,7 @@ sfExport("params",
          "print_doc",
          "print_done",
          "print_error",
+         "print_mes",
          "w.output",
          "check2clean",
          "fun.quality.control",
@@ -922,7 +940,8 @@ sfExport("params",
 #----------------------------------
 # Call the wrapper function to do the Job in child processes
 #start <- Sys.time(); result <- sfLapply(1:length(file_list), function(file2process) wrapper(datastep, abs_path_to_input_files, scriptparams)) ; Sys.time()-start
-start <- Sys.time(); result <- sfLapply(1:length(file_list), wrapper) ; Sys.time()-start
+start <- Sys.time(); result <- sfLapply(1:length(file_list), wrapper) ; duration <- Sys.time()-start;
+print(duration)
 
 # Result is always in list form.
 unlist(result)

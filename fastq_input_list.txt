@@ -1,4 +1,2 @@
-/mnt/magatzem01/ngs/peeva/test_in/prova1.fastq
-/mnt/magatzem01/ngs/peeva/test_in/prova2.fastq
-/mnt/magatzem01/ngs/peeva/test_in/prova3.fastq
-/mnt/magatzem01/ngs/peeva/test_in/prova4.fastq
+/mnt/magatzem01/ngs/peeva/test_in2/vhir_sample_a_sure_1e6.fastq
+/mnt/magatzem01/ngs/peeva/test_in2/vhir_sample_b_sure_1e6.fastq
