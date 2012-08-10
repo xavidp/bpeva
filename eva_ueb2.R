@@ -489,7 +489,7 @@ fun.variant.annotation.summarize <- function(file2process.my2, step.my) {
   
 # TODO: 	if ($options{s}) # case to summarize annotation results in a single .csv file ...
   file_in = paste(params$directory_out, "/", file2process.my2, ".f.vcf4", sep=""); 
-  file_out = paste(file_in, ".sum", sep=""); # summarize_annovar.pl adds the extension .exome_summary (hardcoded in annovar). 
+  file_out = paste(file_in, ".sum", sep=""); # summarize_annovar.pl adds the extension .exome_summary.csv, and many other partial .csv files (hardcoded in annovar). 
   command00 = "perl"; # next command.
   options00 = paste(" ", params$path_summarize_annovar, " --buildver hg19 --verdbsnp 132 ", file_in, " ", params$path_annotate_humandb, " --outfile ", file_out, sep="");
   command = paste(command00, " ", options00, sep="");
@@ -498,7 +498,7 @@ fun.variant.annotation.summarize <- function(file2process.my2, step.my) {
   print_done(file2process.my2);
 
 		# a mà la instrucció al mainhead és:
-		# perl /home/ueb/annovar/summarize_annovar.pl --buildver hg19  --verdbsnp 132 /home/xavi/repo/peeva/dir_out/vhir_sample_a_sure_1e6.sam.sorted.noDup.bam.samtools.var.f.vcf4 /home/ueb/annovar/humandb/ --outfile sum
+		# perl /home/ueb/annovar/summarize_annovar.pl --buildver hg19  --verdbsnp 132 /home/xavi/repo/peeva/dir_out/vhir_sample_a_sure_1e6.sam.sorted.noDup.bam.samtools.var.f.vcf4 /home/ueb/annovar/humandb/ --outfile sample_a_sure_sum
    
   gc() # Let's clean ouR garbage if possible
   return(step.my) # return nothing, since results are saved on disk from the system command
@@ -519,18 +519,34 @@ fun.filter.variants <- function(file2process.my2, step.my) {
   print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Filter variants for the target genes: ", file2process.my2, " ###\n", sep=""), file2process.my2);
 
   if (!is.null(params$opt$filter) && (params$opt$filter != "")) {
-      file_in  = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.hg19_snp132_filtered", sep=""); 
-      file_out = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.hsf.results.", startdate, params$opt$label, ".txt", sep="");
-      command00 = "grep"; # next command.
-      options00 = paste(" '", params$opt$filter,"' ", file_in, " > ", file_out, sep="");
-	# Remember that the values in the previous opt$filter variable needs to be like: 'BRCA1\|BRCA2' 
-	# in order to end up performing a command like:
-	# grep 'BRCA1\|BRCA2' dir_out/Gutierrez_A_*.exonic* 
-      command = paste(command00, " ", options00, sep="");
-      system(command);
+		file_in  = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.hg19_snp132_filtered", sep=""); 
+		file_out = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.hsf.results.", params$startdate, params$opt$label, ".txt", sep="");
+		command00 = "grep"; # next command.
+		options00 = paste(" '", params$opt$filter,"' ", file_in, " > ", file_out, sep="");
+		# Remember that the values in the previous opt$filter variable needs to be like: 'BRCA1\|BRCA2' 
+		# in order to end up performing a command like:
+		# grep 'BRCA1\|BRCA2' dir_out/Gutierrez_A_*.exonic* 
+		if (params$opt$summarize) # case to have a file with summarized annotations to search also for specific target genes 
+			{
+				file_in = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.sum.exome_summary.csv", sep=""); # summarize_annovar.pl adds the extension .exome_summary.csv (hardcoded in annovar).
+				file_out = paste(file_in, ".grep.results.csv", sep="");  
+				options01 = paste(" '", params$opt$filter,"' ", file_in, " > ", file_out, sep="");
+			}
+	} else { # skip the searching for specific target genes 
+		command00 = "echo '  ...skipped...'"; # next command.
+		options00 = "";
+	}
+	command = paste(command00, " ", options00, sep="");
+	system(command);
+	if (!is.null(params$opt$filter) && (params$opt$filter != "") && !is.null(params$opt$summarize) ) # case to have a file with summarized annotations to search also for specific target genes 
+		{
+			command = paste(command00, " ", options01, sep="");
+			system(command);
+		}
+
       #check2clean(file_in, file2process.my2);
       print_done(file2process.my2);
-  }   
+     
   gc() # Let's clean ouR garbage if possible
   return(step.my) # return nothing, since results are saved on disk from the system command
 }
@@ -631,16 +647,16 @@ if ( !is.null(opt$help) || ((length(commandArgs()) >3 )
 
 #set some reasonable defaults for the options that are needed,
 #but were not specified.
-if ( is.null(opt$input    ) ) { opt$input    = "test_in"     }
-if ( is.null(opt$output   ) ) { opt$output   = "test_out"    }
+if ( is.null(opt$input    ) ) { opt$input    = "test_in2"     }
+if ( is.null(opt$output   ) ) { opt$output   = "test_out2"    }
 if ( is.null(opt$index    ) ) { opt$index    = FALSE         }
 if ( is.null(opt$filter   ) ) { opt$filter   = "BRCA"            }
 if ( is.null(opt$log) || opt$log ==1) { opt$log      = "TRUE"        }
 if ( is.null(opt$summarize) ) { opt$summarize= TRUE          }
 if ( is.null(opt$keep     ) ) { opt$keep     = TRUE         } # Enable if run through editor and you want to keep temp files
 if ( is.null(opt$cpus     ) ) { opt$cpus     = 4             }
-if ( is.null(opt$parallel ) ) { opt$parallel = FALSE        }
-if ( is.null(opt$label    ) ) { opt$label    = ".b_2s1cpu"        } # Run Label for output filenames
+if ( is.null(opt$parallel ) ) { opt$parallel = TRUE        }
+if ( is.null(opt$label    ) ) { opt$label    = ".test2_4s4cpu"        } # Run Label for output filenames
 
 # Other early initialization of variables
 # Set the working directory
@@ -733,7 +749,7 @@ wrapper <- function(datastep.my) {
   # names of control process are like functions but without the "fun." prefix.
   # -----------------------------
   #####
-  runParam <- FALSE # TRUE # FALSE
+  runParam <- TRUE # TRUE # FALSE
   ####
 
     quality.control 		<- runParam
@@ -748,13 +764,13 @@ wrapper <- function(datastep.my) {
     convert2vcf4		<- runParam
     variant.annotation.geneb	<- runParam
     variant.annotation.regionb	<- runParam # skipped so far
+    variant.annotation.filterb	<- runParam
+    variant.annotation.summarize<- runParam
 
   #####
   runParam <- TRUE
   ####
 
-    variant.annotation.filterb	<- runParam
-    variant.annotation.summarize<- runParam
     filter.variants		<- runParam
 
   #####
