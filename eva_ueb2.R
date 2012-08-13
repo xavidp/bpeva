@@ -21,19 +21,18 @@
 ### FUNCTIONS
 ##########################
 
-get_timestamp <- function() 
-{
-  # ---------------------------------------------------------------------
-  paste(Sys.Date(), format(Sys.time(), " %H:%Mh - "), sep="");
-  
-}
-
 now  <- function() 
 {
   # ---------------------------------------------------------------------
   paste(Sys.Date(), format(Sys.time(), " %H:%Mh %Ss - "), sep="");
   
 }
+
+##########################
+### FUNCTION print_doc
+###
+### 	Print a message in screen with timestamp and eventually in log files if requested
+##########################
 
 print_doc <- function(mess, filename.my1) 
 {
@@ -45,6 +44,12 @@ print_doc <- function(mess, filename.my1)
   }
 }
 
+##########################
+### FUNCTION print_mes
+###
+### 	Print a message in screen "as is" and eventually in log files if requested
+##########################
+
 print_mes <- function(mess, filename.my1) # Similar to print_doc but without adding the time stamp at the beggining.
 {
   # ---------------------------------------------------------------------
@@ -53,6 +58,12 @@ print_mes <- function(mess, filename.my1) # Similar to print_doc but without add
     w.output(mess, filename.my1)
   }
 }
+
+##########################
+### FUNCTION print_done
+###
+### 	Print a simple [DONE] message on screen and eventually in log files is requested
+##########################
 
 print_done <- function(filename.my1) 
 {
@@ -64,6 +75,12 @@ print_done <- function(filename.my1)
   }
 }
 
+
+##########################
+### FUNCTION print_error
+###
+### 	Print error message in screen and eventually in log files if requested
+##########################
 
 print_error <- function(mess, filename.my1) 
 {
@@ -506,17 +523,17 @@ fun.variant.annotation.summarize <- function(file2process.my2, step.my) {
 
 
 ##########################
-### FUNCTION fun.filter.variants
+### FUNCTION fun.grep.variants
 ###
-### 	Filter variants for the target genes
+### 	Select variants for the target genes based on grep calls
 
 ### XXX to be revised
 ##########################
 
-fun.filter.variants <- function(file2process.my2, step.my) {
+fun.grep.variants <- function(file2process.my2, step.my) {
   # update step number
   step.my$tmp <- step.my$tmp + 1
-  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Filter variants for the target genes: ", file2process.my2, " ###\n", sep=""), file2process.my2);
+  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Select variants for the target genes based on grep calls: ", file2process.my2, " ###\n", sep=""), file2process.my2);
 
   if (!is.null(params$opt$filter) && (params$opt$filter != "")) {
 		file_in  = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.hg19_snp132_filtered", sep=""); 
@@ -647,8 +664,8 @@ if ( !is.null(opt$help) || ((length(commandArgs()) >3 )
 
 #set some reasonable defaults for the options that are needed,
 #but were not specified.
-if ( is.null(opt$input    ) ) { opt$input    = "test_in2"     }
-if ( is.null(opt$output   ) ) { opt$output   = "test_out2"    }
+if ( is.null(opt$input    ) ) { opt$input    = "dir_in_sara_207"     }
+if ( is.null(opt$output   ) ) { opt$output   = "dir_out_sara_207"    }
 if ( is.null(opt$index    ) ) { opt$index    = FALSE         }
 if ( is.null(opt$filter   ) ) { opt$filter   = "BRCA"            }
 if ( is.null(opt$log) || opt$log ==1) { opt$log      = "TRUE"        }
@@ -656,7 +673,7 @@ if ( is.null(opt$summarize) ) { opt$summarize= TRUE          }
 if ( is.null(opt$keep     ) ) { opt$keep     = TRUE         } # Enable if run through editor and you want to keep temp files
 if ( is.null(opt$cpus     ) ) { opt$cpus     = 4             }
 if ( is.null(opt$parallel ) ) { opt$parallel = TRUE        }
-if ( is.null(opt$label    ) ) { opt$label    = ".test2_4s4cpu"        } # Run Label for output filenames
+if ( is.null(opt$label    ) ) { opt$label    = ".sara207_4s4cpu"        } # Run Label for output filenames
 
 # Other early initialization of variables
 # Set the working directory
@@ -749,12 +766,17 @@ wrapper <- function(datastep.my) {
   # names of control process are like functions but without the "fun." prefix.
   # -----------------------------
   #####
-  runParam <- TRUE # TRUE # FALSE
+  runParam <- FALSE # TRUE # FALSE
   ####
 
     quality.control 		<- runParam
     index.reference.genome 	<- runParam
     map.on.reference.genome 	<- runParam
+
+  #####
+  runParam <- TRUE
+  ####
+
     sam2bam.and.sort		<- runParam
     remove.pcr.dup		<- runParam
     index.bam.file		<- runParam
@@ -766,12 +788,7 @@ wrapper <- function(datastep.my) {
     variant.annotation.regionb	<- runParam # skipped so far
     variant.annotation.filterb	<- runParam
     variant.annotation.summarize<- runParam
-
-  #####
-  runParam <- TRUE
-  ####
-
-    filter.variants		<- runParam
+    grep.variants		<- runParam
 
   #####
   runParam <- FALSE
@@ -889,9 +906,9 @@ wrapper <- function(datastep.my) {
                       step.my  = step)
   }
 
-  if (filter.variants) {
+  if (grep.variants) {
     # Next Step
-    step <- fun.filter.variants(file2process.my2  = file2process.my1,
+    step <- fun.grep.variants(file2process.my2  = file2process.my1,
                       step.my  = step)
   }
  
@@ -942,7 +959,7 @@ sfExport("params",
 	 "fun.variant.annotation.regionb",
 	 "fun.variant.annotation.filterb",
 	 "fun.variant.annotation.summarize",
-	 "fun.filter.variants",
+	 "fun.grep.variants",
 	 "fun.visualize.variants") # functions can be passed also to workers from master
 
 # # 5a. Start network random number generator
