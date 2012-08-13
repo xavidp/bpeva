@@ -547,7 +547,10 @@ fun.grep.variants <- function(file2process.my2, step.my) {
 			{
 				file_in = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.sum.exome_summary.csv", sep=""); # summarize_annovar.pl adds the extension .exome_summary.csv (hardcoded in annovar).
 				file_out = paste(file_in, ".grep.results.csv", sep="");  
-				options01 = paste(" '", params$opt$filter,"' ", file_in, " > ", file_out, sep="");
+				command01 = "head -1";
+				command02 = command00;
+				options01 = paste(" ", file_in, " > ", file_out, sep="");
+				options02 = paste(" '", params$opt$filter,"' ", file_in, " >> ", file_out, sep="");
 			}
 	} else { # skip the searching for specific target genes 
 		command00 = "echo '  ...skipped...'"; # next command.
@@ -557,7 +560,9 @@ fun.grep.variants <- function(file2process.my2, step.my) {
 	system(command);
 	if (!is.null(params$opt$filter) && (params$opt$filter != "") && !is.null(params$opt$summarize) ) # case to have a file with summarized annotations to search also for specific target genes 
 		{
-			command = paste(command00, " ", options01, sep="");
+			command = paste(command01, " ", options01, sep="");
+			system(command);
+			command = paste(command02, " ", options02, sep="");
 			system(command);
 		}
 
