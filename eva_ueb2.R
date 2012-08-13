@@ -3,7 +3,7 @@
 # SCRIPT: eva_ueb2.R
 # Input: Directories of input and output
 # Output: List of Variants
-# Autor: Xavier de Pedro, Alex Sanchez (2011-2012)
+# Author: Xavier de Pedro (2011-2012)
 #        xavier.depedro@vhir.org
 ###################################################
 
@@ -14,6 +14,7 @@
 ## http://blog.nguyenvq.com/
 ##
 ## Acknowledgements: 
+## * Alex Sánchez Pla, for comments and feedback.
 ## * Aleix Ruiz de Villa, for comments and feedback.
 ## * Josep Lluis Mosquera, for comments and feedback.
 
@@ -625,6 +626,8 @@ library(snowfall, quietly = TRUE)
 # add new optional param: make colors of log files
 # make number of core to use a param callable as a command line argument of the Rscript call
 
+##############################################################
+
 # 0b. Argument handling of the program call
 # ---------------------------------------------------------------------
 # # declare the command line flags/options we want to allow
@@ -666,37 +669,28 @@ if ( !is.null(opt$help) || ((length(commandArgs()) >3 )
   q(status=1);
 }
 
+##############################################################
 
-#set some reasonable defaults for the options that are needed,
-#but were not specified.
-if ( is.null(opt$input    ) ) { opt$input    = "dir_in_sara_207"     }
-if ( is.null(opt$output   ) ) { opt$output   = "dir_out_sara_207"    }
+# 0c. set some reasonable defaults for the options that are needed, but were not specified.
+# ---------------------------------------------------------------------
+if ( is.null(opt$input    ) ) { opt$input    = "test_in"	} # "dir_in_sara_207"     }
+if ( is.null(opt$output   ) ) { opt$output   = "test_out"	} # "dir_out_sara_207"    }
 if ( is.null(opt$index    ) ) { opt$index    = FALSE         }
 if ( is.null(opt$filter   ) ) { opt$filter   = "BRCA"            }
-if ( is.null(opt$log) || opt$log ==1) { opt$log      = "TRUE"        }
+if ( is.null(opt$log) || opt$log ==1) { opt$log      = TRUE        }
 if ( is.null(opt$summarize) ) { opt$summarize= TRUE          }
 if ( is.null(opt$keep     ) ) { opt$keep     = TRUE         } # Enable if run through editor and you want to keep temp files
 if ( is.null(opt$cpus     ) ) { opt$cpus     = 4             }
 if ( is.null(opt$parallel ) ) { opt$parallel = TRUE        }
-if ( is.null(opt$label    ) ) { opt$label    = ".sara207_4s4cpu"        } # Run Label for output filenames
+if ( is.null(opt$label    ) ) { opt$label    = ".test_s_p"	} # ".sara207_4s4cpu"        } # Run Label for output filenames
 
 # Other early initialization of variables
 # Set the working directory
 wd <- "/home/xavi/repo/peeva/"
 setwd(wd)
 
-routlogfile <- paste("log.", startdate, opt$label, ".SnowFall.Rout", sep="") # SnowFall R output file
-abs_routlogfile <- paste(opt$output, "/", routlogfile, sep="")
-system(paste("touch ", abs_routlogfile, sep=""))
-w.output(unlist(.Platform), routlogfile )
-w.output(unlist(.Machine),  routlogfile )
-w.output(unlist(R.version), routlogfile )
-w.output(unlist(Sys.info()),  routlogfile )
-sink(abs_routlogfile , split=TRUE)
-# .Platform
-# .Machine
-# R.version
-# Sys.info()
+
+##############################################################
 
 # 1. Initialisation of snowfall.
 #----------------------------------
@@ -721,6 +715,8 @@ sfInit(parallel=opt$parallel, cpus=opt$cpus, useRscript=TRUE) # Amb parallel=TRU
 ## require(ExamplePackage)
 ## data(MyDataset)
 
+##############################################################
+
 # 2a. Get the list of files to be processed 
 #----------------------------------
 abs_path_to_script = getwd() # Path absolut to the script
@@ -741,8 +737,11 @@ n_files = length(file_list[[1]])
 file_list <- gsub(abs_path_to_input_files,"", file_list[[1]])
 file_list <- gsub(".fastq","", file_list)
 
-## 2b. Define params for all runs
+##############################################################
+
+# 2b. Define params for all runs
 #----------------------------------
+params <- list()
 params <- list(startdate = startdate,
                scriptname = "eva_ueb2.R", # Adapted version to work from this R script to be parallelized
                opt = opt, # command line arguments passed to the program run
@@ -753,7 +752,7 @@ params <- list(startdate = startdate,
                directory_in = opt$input,
                directory_out = opt$output,
                log = opt$log,
-               log.folder = params$directory_out, # "logs",
+               log.folder = opt$output, # "logs",
                path_fastq = "/home/ueb/fastqc/fastqc",
                path_genome = "/home/xavi/Data/Data_Genomes/hg19/hg19.fa",
                path_vcfutils = "/usr/share/samtools/vcfutils.pl",
@@ -763,20 +762,80 @@ params <- list(startdate = startdate,
                path_summarize_annovar = "/home/ueb/annovar/summarize_annovar.pl"           
 )
 
-# 3. Wrapper function, which can be parallelised.
+routlogfile <- paste("log.", startdate, opt$label, ".SnowFall.Rout", sep="") # SnowFall R output file
+abs_routlogfile <- paste(opt$output, "/", routlogfile, sep="")
+system(paste("touch ", abs_routlogfile, sep=""))
+#w.output(unlist(.Platform), routlogfile )
+#w.output(unlist(.Machine),  routlogfile )
+#w.output(unlist(R.version), routlogfile )
+#w.output(unlist(Sys.info()),  routlogfile )
+sink(abs_routlogfile , split=TRUE)
+# .Platform
+# .Machine
+# R.version
+# Sys.info()
+
+##############################################################
+
+# 3a. Wrapper functions, One is run always sequentially. The other one, parallelized.
 #----------------------------------
-wrapper <- function(datastep.my) {
+wrapper.sequential <- function(datastep.my) {
+
   # -----------------------------
   # Define which processes to run (in later stage, this will be in an external R file sourced here)
   # names of control process are like functions but without the "fun." prefix.
   # -----------------------------
+    map.on.reference.genome 	<- TRUE # FALSE
+  # -----------------------------
+  
+
+  # Get the file name to process now
+  file2process.my1 <- params$file_list[datastep.my]
+
+  # Re-set working directory while in child worker, just in case
+  setwd(params$wd)
+  step <- data.frame(datastep.my, 0)
+  colnames(step) <- c("n","tmp")
+
+  # Re-set the log file, if it exists already and log is requested
+  if (params$log) { 
+      write(paste("\n", sep=""), file=paste(params$log.folder,"/log.", params$startdate, params$opt$label, ".", file2process.my1, ".txt", sep=""), append = FALSE, sep = "");
+      print_mes("\n################################################################################\n", file2process.my1);
+      print_mes(paste("			NEW RUN - Part A. Allways in SEQUENTIAL Mode (", Sys.Date()," - ", params$n_files, " files). Current file: *** ", file2process.my1, " ***\n", sep=""), file2process.my1);
+      print_mes("################################################################################\n\n", file2process.my1);
+  }
+#  step$n <- 0
+#  step$tmp <- 0
+  print_doc(paste("### Start processing file #", datastep.my, " (", file2process.my1, ") ... ###\n", sep=""), file2process.my1);
+
+  
+  #--- Sequential Pipeline steps into wrapper.sequential function ###----------------------------------------
+
+  if (map.on.reference.genome) { 
+    # Next Step
+    step <- fun.map.on.reference.genome(file2process.my2  = file2process.my1,
+                      step.my  = step)
+  }
+
+
+}
+
+##############################################################
+
+# 3b. Wrapper functions, One is run always sequentially. The other one, parallelized.
+#----------------------------------
+wrapper2.parallelizable <- function(datastep.my2) {
+  # -----------------------------
+  # Define which processes to run (in later stage, this will be in an external R file sourced here)
+  # names of control process are like functions but without the "fun." prefix.
+  # -----------------------------
+print("\n\n***************** TEST XAVI 1.1*********************\n\n")
+
   #####
   runParam <- FALSE # TRUE # FALSE
   ####
 
     quality.control 		<- runParam
-    index.reference.genome 	<- runParam
-    map.on.reference.genome 	<- runParam
 
   #####
   runParam <- TRUE
@@ -786,6 +845,9 @@ wrapper <- function(datastep.my) {
     remove.pcr.dup		<- runParam
     index.bam.file		<- runParam
     stats			<- runParam
+  #####
+  runParam <- FALSE
+  ####
     variant.calling		<- runParam
     variant.filtering		<- runParam
     convert2vcf4		<- runParam
@@ -795,9 +857,6 @@ wrapper <- function(datastep.my) {
     variant.annotation.summarize<- runParam
     grep.variants		<- runParam
 
-  #####
-  runParam <- FALSE
-  ####
 
     visualize.variants		<- runParam
 #    XXX		<- runParam
@@ -805,26 +864,27 @@ wrapper <- function(datastep.my) {
 
   # -----------------------------
   
-  # Output progress in worker logfile
-  file2process.my1 <- params$file_list[datastep.my]
+  # Get the file name to process now
+  file2process.my1 <- params$file_list[datastep.my2]
 
   # Re-set working directory while in child worker, just in case
   setwd(params$wd)
-  step <- data.frame(datastep.my, 0)
+  step <- data.frame(datastep.my2, 0)
   colnames(step) <- c("n","tmp")
+
   # Re-set the log file, if it exists already and log is requested
   if (params$log) { 
 #      write(paste("			### NEW RUN (", Sys.Date()," - ", params$n_files, " files) ###\n", sep=""), file=paste(params$log.folder,"/log.", params$startdate, ".", file2process.my1, ".txt", sep=""), append = FALSE, sep = "");
       print_mes("\n################################################################################\n", file2process.my1);
-      print_mes(paste("			\t\t\t NEW RUN (", Sys.Date()," - ", params$n_files, " files). Current file: *** ", file2process.my1, " ***\n", sep=""), file2process.my1);
+      print_mes(paste("			NEW RUN - Part B. Can be run in PARALLELIZED Mode (", Sys.Date()," - ", params$n_files, " files). Current file: *** ", file2process.my1, " ***\n", sep=""), file2process.my1);
       print_mes("################################################################################\n\n", file2process.my1);
   }
 #  step$n <- 0
 #  step$tmp <- 0
-  print_doc(paste("### Start processing file #", datastep.my, " (", file2process.my1, ") ... ###\n", sep=""), file2process.my1);
+  print_doc(paste("### Start processing file #", datastep.my2, " (", file2process.my1, ") ... ###\n", sep=""), file2process.my1);
 
   
-  #--- Parallelized Pipeline steps inside wrapper function ###----------------------------------------
+  #--- Parallelized Pipeline steps insidewrapper.parallelizable function ###----------------------------------------
 
   if (quality.control) { 
     # First Step
@@ -832,18 +892,6 @@ wrapper <- function(datastep.my) {
                       step.my  = step)
   }
   
-  if (index.reference.genome) { 
-    # Next Step
-    step <- fun.index.reference.genome(file2process.my2  = file2process.my1,
-                      step.my  = step)
-  }
-
-  if (map.on.reference.genome) { 
-    # Next Step
-    step <- fun.map.on.reference.genome(file2process.my2  = file2process.my1,
-                      step.my  = step)
-  }
-
   if (sam2bam.and.sort) {
     # Next Step
     step <- fun.sam2bam.and.sort(file2process.my2  = file2process.my1,
@@ -931,9 +979,11 @@ wrapper <- function(datastep.my) {
 
 
   # Last step of wrapper
-  gc() # Let's clean ouR garbage if possible
+#  gc() # Let's clean ouR garbage if possible
   return(NULL) # return nothing, since results are saved on disk from the perl script
 } # end of wrapper function
+
+##############################################################
 
 # 4. Exporting needed data and loading required
 #----------------------------------
@@ -967,24 +1017,62 @@ sfExport("params",
 	 "fun.grep.variants",
 	 "fun.visualize.variants") # functions can be passed also to workers from master
 
-# # 5a. Start network random number generator
+##############################################################
+
+# # 5a. Start network random number generator (optional, when needed)
 #----------------------------------
 #  # Install dependency of sfClusterSetupRNG() if not yet installed
 #  if(!require(rlecuyer)){ install.packages("rlecuyer") }
 # # (as "sample" is using random numbers).
 # sfClusterSetupRNG()
 
-# 6. Distribute calculation
+##############################################################
+
+# 6. Run Sequential and unique processes for the whole sample set
+#----------------------------------
+
+  if (opt$index) { # index.reference.genome
+    # Next Step
+    start <- Sys.time(); 
+    step <- fun.index.reference.genome(file2process.my2  = file2process.my1,
+                      step.my  = step)
+    duration <- Sys.time()-start;
+    print(duration)
+  }
+
+
+##############################################################
+
+# 7. Run Sequential processes for the each one of the samples
 #----------------------------------
 # Call the wrapper function to do the Job in child processes
 #start <- Sys.time(); result <- sfLapply(1:length(file_list), function(file2process) wrapper(datastep, abs_path_to_input_files, scriptparams)) ; Sys.time()-start
-start <- Sys.time(); result <- sfLapply(1:length(file_list), wrapper) ; duration <- Sys.time()-start;
+start2 <- Sys.time(); result <- lapply(1:length(file_list), wrapper.sequential) ; duration <- Sys.time()-start2;
+#start2 <- Sys.time(); for (ii in 1:length(file_list)) wrapper.sequential(ii, params); duration <- Sys.time()-start2;
 print(duration)
-
+cat("\n")
 # Result is always in list form.
 unlist(result)
 
-# 7. Stop snowfall
+
+##############################################################
+
+# 8. Distribute Parallelized calculation
+#----------------------------------
+# Call the wrapper function to do the Job in child processes
+#start <- Sys.time(); result <- sfLapply(1:length(file_list), function(file2process) wrapper(datastep, abs_path_to_input_files, scriptparams)) ; Sys.time()-start
+start3 <- Sys.time(); result2 <- sfLapply(1:length(file_list), wrapper2.parallelizable) ; duration <- Sys.time()-start3;
+cat("\nRelative duration since last step: ")
+print(duration)
+cat("\n")
+
+# Result is always in list form.
+unlist(result2)
+
+
+##############################################################
+
+# 9. Stop snowfall
 #----------------------------------
 sfStop() 
 
