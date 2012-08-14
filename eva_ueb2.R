@@ -574,6 +574,23 @@ fun.grep.variants <- function(file2process.my2, step.my) {
   return(step.my) # return nothing, since results are saved on disk from the system command
 }
 
+##########################
+### FUNCTION fun.build.html.report
+###
+###   Build html report
+##########################
+
+fun.build.html.report <- function(file2process.my2, step.my) {
+  
+  # Adding a first column with sample file name, to merge all results from all samples in one same spreadsheet and/or html report
+  # Using awk or similar.
+  # TODO XXX
+
+  # Adding some html link with url like this one below for the column related to dbSnp in our results like rsNNN in csv files.
+  #http://www.ncbi.nlm.nih.gov/snp/?term=rsNNN
+  # TODO XXX
+  
+}
 
 ##########################
 ### FUNCTION fun.visualize.variants
@@ -583,6 +600,19 @@ fun.grep.variants <- function(file2process.my2, step.my) {
 
 fun.visualize.variants <- function(file2process.my2, step.my) {
   # ignored so far
+  # To use IGV (LGPL'd) in batch mode, as indicated in their website.
+  # http://www.broadinstitute.org/igv/
+  
+  # Running IGV with a batch file
+  # http://www.broadinstitute.org/igv/batch
+  # As of version 1.5, a user can load a text file to execute a series of sequential tasks by using File>Run Batch Script. The user loads a TXT file that contains a list of commands, one per line, that will be run by IGV.   Arguments are delimited by spaces (NOTE: not tabs).  Lines beginning with # or // are are skipped. See Controlling IGV through a Port for accepted commands.
+
+  # Controlling IGV through a Port
+  # http://www.broadinstitute.org/igv/PortCommands
+  # IGV can optionally listen for http requests over a port. This option is turned off by default but can be enabled from the Advanced tab of the Preferences window. 
+  # Note:  IGV will write a response back to the port socket upon completion of each command.  It is good practice to read this response before sending the next command.   Failure to do so can overflow the socket buffer and cause IGV to freeze.   See the example below for the recommended pattern.
+
+  # TODO XXX
 }
 
 
@@ -822,14 +852,13 @@ wrapper.sequential <- function(datastep.my) {
 
 ##############################################################
 
-# 3b. Wrapper functions, One is run always sequentially. The other one, parallelized.
+# 3b. Wrapper functions, to be run per input sample file, Can be parallelized.
 #----------------------------------
-wrapper2.parallelizable <- function(datastep.my2) {
+wrapper2.parallelizable.per.sample <- function(datastep.my2) {
   # -----------------------------
   # Define which processes to run (in later stage, this will be in an external R file sourced here)
   # names of control process are like functions but without the "fun." prefix.
   # -----------------------------
-print("\n\n***************** TEST XAVI 1.1*********************\n\n")
 
   #####
   runParam <- FALSE # TRUE # FALSE
@@ -972,7 +1001,7 @@ print("\n\n***************** TEST XAVI 1.1*********************\n\n")
   }
 
   step$tmp <- step$tmp+1;
-  print_doc(paste("	End of EVA UEB pipeline with this file: ", file2process.my1, "\n", sep=""), file2process.my1);
+  print_doc(paste("	End of processing this file: ", file2process.my1, "\n", sep=""), file2process.my1);
   print_mes("\n--------------------------------------------------------------------------------\n\n", file2process.my1);
 
    # XXX...
@@ -980,6 +1009,67 @@ print("\n\n***************** TEST XAVI 1.1*********************\n\n")
 
   # Last step of wrapper
 #  gc() # Let's clean ouR garbage if possible
+  return(NULL) # return nothing, since results are saved on disk from the perl script
+} # end of wrapper function
+
+##############################################################
+
+# 3c. Wrapper functions, parallelizable.
+#----------------------------------
+wrapper2.parallelizable.final <- function(datastep.my2) {
+  # -----------------------------
+  # Define which processes to run (in later stage, this will be in an external R file sourced here)
+  # names of control process are like functions but without the "fun." prefix.
+  # -----------------------------
+  
+  #####
+  runParam <- FALSE # TRUE # FALSE
+  ####
+  
+  build.html.report		<- runParam
+  #    XXX		<- runParam
+  
+  
+  # -----------------------------
+  
+  # Get the file name to process now
+  file2process.my1 <- params$file_list[datastep.my2]
+  
+  # Re-set working directory while in child worker, just in case
+  setwd(params$wd)
+  step <- data.frame(datastep.my2, 0)
+  colnames(step) <- c("n","tmp")
+  
+  # Re-set the log file, if it exists already and log is requested
+  if (params$log) { 
+    #      write(paste("			### NEW RUN (", Sys.Date()," - ", params$n_files, " files) ###\n", sep=""), file=paste(params$log.folder,"/log.", params$startdate, ".", file2process.my1, ".txt", sep=""), append = FALSE, sep = "");
+    print_mes("\n################################################################################\n", file2process.my1);
+    print_mes(paste("			NEW RUN - Part C. Can be run in PARALLELIZED Mode also (", Sys.Date()," - ", params$n_files, " files).", sep=""), file2process.my1);
+    print_mes("################################################################################\n\n", file2process.my1);
+  }
+  #  step$n <- 0
+  #  step$tmp <- 0
+  print_doc(paste("### Start processing file #", datastep.my2, " (", file2process.my1, ") ... ###\n", sep=""), file2process.my1);
+  
+  
+  #--- Parallelized Pipeline steps inside wrapper.parallelizable.final function ###----------------------------------------
+  
+
+  if (build.html.report) {
+    # Next Step
+    step <- fun.build.html.report(file2process.my2  = file2process.my1,
+                                   step.my  = step)
+  }
+  
+  step$tmp <- step$tmp+1;
+  print_doc(paste("	End of EVA UEB pipeline", "\n", sep=""), file2process.my1);
+  print_mes("\n--------------------------------------------------------------------------------\n\n", file2process.my1);
+  
+  # XXX...
+  
+  
+  # Last step of wrapper
+  #  gc() # Let's clean ouR garbage if possible
   return(NULL) # return nothing, since results are saved on disk from the perl script
 } # end of wrapper function
 
@@ -1015,7 +1105,8 @@ sfExport("params",
 	 "fun.variant.annotation.filterb",
 	 "fun.variant.annotation.summarize",
 	 "fun.grep.variants",
-	 "fun.visualize.variants") # functions can be passed also to workers from master
+	 "fun.visualize.variants",
+   "fun.build.html.report") # functions can be passed also to workers from master
 
 ##############################################################
 
@@ -1028,7 +1119,7 @@ sfExport("params",
 
 ##############################################################
 
-# 6. Run Sequential and unique processes for the whole sample set
+# 6. Run Sequential and unique initial processes for the whole sample set
 #----------------------------------
 
   if (opt$index) { # index.reference.genome
@@ -1057,11 +1148,11 @@ unlist(result)
 
 ##############################################################
 
-# 8. Distribute Parallelized calculation
+# 8. Distribute Parallelizable calculation per sample
 #----------------------------------
 # Call the wrapper function to do the Job in child processes
 #start <- Sys.time(); result <- sfLapply(1:length(file_list), function(file2process) wrapper(datastep, abs_path_to_input_files, scriptparams)) ; Sys.time()-start
-start3 <- Sys.time(); result2 <- sfLapply(1:length(file_list), wrapper2.parallelizable) ; duration <- Sys.time()-start3;
+start3 <- Sys.time(); result2 <- sfLapply(1:length(file_list), wrapper2.parallelizable.per.sample) ; duration <- Sys.time()-start3;
 cat("\nRelative duration since last step: ")
 print(duration)
 cat("\n")
@@ -1069,10 +1160,22 @@ cat("\n")
 # Result is always in list form.
 unlist(result2)
 
+##############################################################
+
+# 9. Distribute final Parallelizable calculation 
+#----------------------------------
+# Call the wrapper function to do the Job in child processes
+start3 <- Sys.time(); result3 <- sfLapply(1, wrapper2.parallelizable.final) ; duration <- Sys.time()-start3;
+cat("\nRelative duration since last step: ")
+print(duration)
+cat("\n")
+
+# Result is always in list form.
+unlist(result3)
 
 ##############################################################
 
-# 9. Stop snowfall
+# 10. Stop snowfall
 #----------------------------------
 sfStop() 
 
