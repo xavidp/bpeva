@@ -136,6 +136,7 @@ show_help <- function(program_ueb.my)
   cat("\n   -i: directory with source .fastq files \t\t\t *** required ***\n")
   cat("\n   -o: directory to save output files \t\t\t\t *** required ***\n")
   cat("\n   -n: -index (indexing of the reference genome)\t\t    [optional]\n")
+  cat("\n   -w: -bwa (bwa algorythm used, 1 for aln, 2 for bwasw)    [optional]\n")
   cat("\n   -s: summarize results with annotations in a single .csv file     [optional]\n")
   cat("\n   -f: filter results for these target genes \t\t\t    [optional]")
   cat("\n     with this syntax for one gene:")
@@ -214,13 +215,47 @@ fun.map.on.reference.genome <- function(file2process.my2, step.my) {
   # update step number
   step.my$tmp <- step.my$tmp + 1
   print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Map against reference genome: do the mapping with: ", file2process.my2, " ###\n", sep=""), file2process.my2);
-  
+
+  ## TODO: 
+  ## Add a param to allow the user to choose the aligner with 'bwa aln' (<200bp and <3% error rate, allowing paired end reads)
+  ##    or 'bwa bwasw' (for longer reads and/or with higher errors).
+  ##
+  ## From: http://bio-bwa.sourceforge.net/bwa.shtml
+  ## BWA is a fast light-weighted tool that aligns relatively short sequences (queries) to a sequence database (targe), such as the human reference genome. 
+  ## It implements two different algorithms, both based on Burrows-Wheeler Transform (BWT). 
+  ## The first algorithm is designed for short queries up to ~200bp with low error rate (<3%). 
+  ##   It does gapped global alignment w.r.t. queries, supports paired-end reads, and is one of the fastest short read alignment algorithms to date while also visiting suboptimal hits. 
+  ## The second algorithm, BWA-SW, is designed for long reads with more errors. It performs heuristic Smith-Waterman-like alignment to find high-scoring local hits (and thus chimera). 
+  ##   On low-error short queries, BWA-SW is slower and less accurate than the first algorithm, but on long queries, it is better
   file_in = paste(params$directory_in, "/", file2process.my2, ".fastq", sep="");
-  file_out = paste(params$directory_out, "/", file2process.my2, ".sam", sep="");
-  command00 = "bwa bwasw"; # next command.
-  options00 = paste(params$path_genome, " ", file_in, " > ", file_out, sep="");
-  command = paste(command00, " ", options00, sep="");
-  system(command);
+
+  if (params$opt$bwa == 1) # case to use algorythm 1 from bwa
+  {
+    # Example - 1s part
+    #bwa aln database.fasta short_read.fastq > aln_sa.sai
+    file_out = paste(params$directory_out, "/", file2process.my2, ".sai", sep="");
+    command00 = "bwa aln"; # next command.
+    options00 = paste(params$path_genome, " ", file_in, " > ", file_out, sep="");
+    command = paste(command00, " ", options00, sep="");
+    system(command);
+
+    # Example - 2nd part
+    #bwa samse database.fasta aln_sa.sai short_read.fastq > aln.sam
+    file_in_sai = paste(params$directory_out, "/", file2process.my2, ".sai", sep="");
+    file_out = paste(params$directory_out, "/", file2process.my2, ".sam", sep="");
+    command00 = "bwa samse"; # next command.
+    options00 = paste(params$path_genome, " ", file_in_sai, " ", file_in, " > ", file_out, sep="");
+    command = paste(command00, " ", options00, sep="");
+    system(command);
+  }
+
+  if (params$opt$bwa == 2) { # case to use algorythm 2 from bwa
+    file_out = paste(params$directory_out, "/", file2process.my2, ".sam", sep="");
+    command00 = "bwa bwasw"; # next command.
+    options00 = paste(params$path_genome, " ", file_in, " > ", file_out, sep="");
+    command = paste(command00, " ", options00, sep="");
+    system(command);
+  }
   print_done(file2process.my2);
    
   gc() # Let's clean ouR garbage if possible
@@ -676,6 +711,7 @@ my.options <- c(
   'input'    , 'i', 1, "character", # "Directory with __I__nput data files # Compulsory",
   'output'   , 'o', 1, "character", # "Directory with __O_utput data files # Compulsory",
   'index'    , 'n', 0, "logical"  , # "i__N__dex the reference genome # Optional",
+  'bwa'      , 'w', 1, "integer"  , #, "b__W__a algorythm used. See http://bio-bwa.sourceforge.net/bwa.shtml ".
   'filter'   , 'f', 1, "character", # "__F__ilter results for these target genes # Optional",
   'log'      , 'l', 1, "integer"  , # "__L__og info about the process into a log file # Optional",
   'summarize', 's', 0, "logical"  , # "__S__summarize results in a single .csv file with annotations # Optional",
@@ -713,6 +749,7 @@ if ( is.null(opt$keep     ) ) { opt$keep     = TRUE         } # Enable if run th
 if ( is.null(opt$cpus     ) ) { opt$cpus     = 4             }
 if ( is.null(opt$parallel ) ) { opt$parallel = TRUE        }
 if ( is.null(opt$label    ) ) { opt$label    = ".test_s_p"	} # ".sara207_4s4cpu"        } # Run Label for output filenames
+if ( is.null(opt$bwa      ) ) { opt$bwa      = 1          } # 1: bwa aln (short reads, low errors, allowing paired end also); 2= bwa bwasw (longer reads, single end only) # Algorythm for mapping with bwa
 
 # Other early initialization of variables
 # Set the working directory
