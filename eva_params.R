@@ -27,17 +27,17 @@ program_ueb <- "eva_main.R";
 
 # 0c. set some reasonable defaults for the options that are needed, but were not specified.
 # ---------------------------------------------------------------------
-if ( is.null(opt$input    ) ) { opt$input    = "test_in"	} # "dir_in_sara_207"     }
-if ( is.null(opt$output   ) ) { opt$output   = "test_out"	} # "dir_out_sara_207"    }
-if ( is.null(opt$index    ) ) { opt$index    = FALSE         }
-if ( is.null(opt$filter   ) ) { opt$filter   = "BRCA"            }
-if ( is.null(opt$log) || opt$log ==1) { opt$log      = TRUE        }
-if ( is.null(opt$summarize) ) { opt$summarize= TRUE          }
-if ( is.null(opt$keep     ) ) { opt$keep     = TRUE         } # Enable if run through editor and you want to keep temp files
-if ( is.null(opt$cpus     ) ) { opt$cpus     = 4             }
-if ( is.null(opt$parallel ) ) { opt$parallel = TRUE        }
-if ( is.null(opt$label    ) ) { opt$label    = ".test_s_p"	} # ".sara207_4s4cpu"        } # Run Label for output filenames
-if ( is.null(opt$bwa      ) ) { opt$bwa      = 1          } # 1: bwa aln (short reads, low errors, allowing paired end also); 2= bwa bwasw (longer reads, single end only) # Algorythm for mapping with bwa
+p_input    = "test_in"	 # "dir_in_sara_207"     }
+p_output   = "test_out"	 # "dir_out_sara_207"    }
+p_index    = FALSE         
+p_filter   = "BRCA"            
+p_log      = TRUE        
+p_summarize= TRUE          
+p_keep     = TRUE # Enable if run through editor and you want to keep temp files
+p_cpus     = 4             
+p_parallel = TRUE
+p_label    = ".test_refactoring"	 # ".sara207_4s4cpu"        # Run Label for output filenames
+p_bwa      = 1          # 1: bwa aln (short reads, low errors, allowing paired end also); 2= bwa bwasw (longer reads, single end only) # Algorythm for mapping with bwa
 
 # Other early initialization of variables
 # Set the working directory
@@ -49,10 +49,10 @@ setwd(wd)
 
 # 2b. Define path params for all runs
 #----------------------------------
-path_fastq = "/home/ueb/fastqc/fastqc",
-path_genome = "/home/xavi/Data/Data_Genomes/hg19/hg19.fa",
-path_vcfutils = "/usr/share/samtools/vcfutils.pl",
-path_convert2annovar = "/home/ueb/annovar/convert2annovar.pl",
-path_annotate_variation = "/home/ueb/annovar/annotate_variation.pl",
-path_annotate_humandb = "/home/ueb/annovar/humandb/",
+path_fastq = "/home/ueb/fastqc/fastqc"
+path_genome = "/home/xavi/Data/Data_Genomes/hg19/hg19.fa"
+path_vcfutils = "/usr/share/samtools/vcfutils.pl"
+path_convert2annovar = "/home/ueb/annovar/convert2annovar.pl"
+path_annotate_variation = "/home/ueb/annovar/annotate_variation.pl"
+path_annotate_humandb = "/home/ueb/annovar/humandb/"
 path_summarize_annovar = "/home/ueb/annovar/summarize_annovar.pl"           
