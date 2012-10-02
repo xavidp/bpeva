@@ -652,9 +652,9 @@ fun.visualize.variants <- function(file2process.my2, step.my) {
 
 
 ##########################
-### FUNCTION wrapper2.parallelizable.per.sample
+### FUNCTION wrapper.sequential
 ###
-###   3a. Wrapper functions, One is run always sequentially. The other one, parallelized.
+###   7a. Wrapper functions, One (here) is run always sequentially. The other one (further below), parallelized.
 ##########################
 #----------------------------------
 wrapper.sequential <- function(datastep.my) {
@@ -663,7 +663,7 @@ wrapper.sequential <- function(datastep.my) {
   # Define which processes to run (in later stage, this will be in an external R file sourced here)
   # names of control process are like functions but without the "fun." prefix.
   # -----------------------------
-  map.on.reference.genome   <- TRUE # FALSE
+  map.on.reference.genome               <- params_wseq$p_map.on.reference.genome
   # -----------------------------
   
   
@@ -709,37 +709,21 @@ wrapper2.parallelizable.per.sample <- function(datastep.my2) {
   # Define which processes to run (in later stage, this will be in an external R file sourced here)
   # names of control process are like functions but without the "fun." prefix.
   # -----------------------------
-  
-  #####
-  runParam <- FALSE # TRUE # FALSE
-  ####
-  
-  quality.control   	<- runParam
-  
-  #####
-  runParam <- TRUE
-  ####
-  
-  sam2bam.and.sort		<- runParam
-  remove.pcr.dup		<- runParam
-  index.bam.file		<- runParam
-  stats			<- runParam
-  #####
-  runParam <- FALSE
-  ####
-  variant.calling		<- runParam
-  variant.filtering		<- runParam
-  convert2vcf4		<- runParam
-  variant.annotation.geneb	<- runParam
-  variant.annotation.regionb	<- runParam # skipped so far
-  variant.annotation.filterb	<- runParam
-  variant.annotation.summarize<- runParam
-  grep.variants		<- runParam
-  
-  
-  visualize.variants		<- runParam
-  #    XXX		<- runParam
-  
+
+  quality.control   	          <- params_w2pps$p_quality.control
+  sam2bam.and.sort	 	          <- params_w2pps$p_sam2bam.and.sort
+  remove.pcr.dup		            <- params_w2pps$p_remove.pcr.dup
+  index.bam.file		            <- params_w2pps$p_index.bam.file
+  stats			                    <- params_w2pps$p_stats
+  variant.calling		            <- params_w2pps$p_variant.calling
+  variant.filtering		          <- params_w2pps$p_variant.filtering
+  convert2vcf4		              <- params_w2pps$p_convert2vcf4
+  variant.annotation.geneb	    <- params_w2pps$p_variant.annotation.geneb
+  variant.annotation.regionb	  <- params_w2pps$p_variant.annotation.regionb
+  variant.annotation.filterb	  <- params_w2pps$p_variant.annotation.filterb
+  variant.annotation.summarize  <- params_w2pps$p_variant.annotation.summarize
+  grep.variants		              <- params_w2pps$p_grep.variants
+  visualize.variants		        <- params_w2pps$p_visualize.variants
   
   # -----------------------------
   
@@ -876,12 +860,7 @@ wrapper2.parallelizable.final <- function(datastep.my2) {
   # names of control process are like functions but without the "fun." prefix.
   # -----------------------------
   
-  #####
-  runParam <- FALSE # TRUE # FALSE
-  ####
-  
-  build.html.report  	<- runParam
-  #    XXX		<- runParam
+  build.html.report  	<- params_w2pf$p_build.html.report
   
   
   # -----------------------------

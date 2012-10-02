@@ -230,6 +230,9 @@ sink(abs_routlogfile , split=TRUE)
 # if(!require(cmprsk)){ install.packages("cmprsk") }
 # sfLibrary(cmprsk) 
 sfExport("params", 
+         "params_wseq",
+         "params_w2pps",
+         "params_w2pf",
          "now",
          "print_doc",
          "print_done",
