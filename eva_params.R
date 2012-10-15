@@ -27,8 +27,19 @@ program_ueb <- "eva_main.R";
 
 # 0c. set some reasonable defaults for the options that are needed, but were not specified.
 # ---------------------------------------------------------------------
-p_input    = "dir_in_sara_207" # "test_in"	 # "dir_in_sara_207"     }
-p_output   = "dir_out_sara_207" # "test_out"	 # "dir_out_sara_207"    }
+# Set the working directory from either one of the two options (a and b) listed below
+## a) the hardcoded way
+#wd <- "/home/ueb/repo/peeva/"
+#
+## b) dynamically from the folder where the main script program_ueb is
+wd <- getwd()
+wdres <- system(paste("locate", program_ueb, "| grep", wd, sep=" "), intern=TRUE)
+wdres <- gsub(program_ueb, "", wdres, ignore.case = FALSE, perl = FALSE, fixed = TRUE)
+
+setwd(wdres)
+
+p_input    = "../dir_in" # "../test_in2"  # "../dir_in" # "test_in"	 # "dir_in"     
+p_output   = "../dir_out_293" # "../test_out2" # "../dir_out_293" # "test_out"	 # "dir_out_293"
 p_index    = FALSE         
 p_filter   = "BRCA"            
 p_log      = TRUE        
@@ -36,13 +47,11 @@ p_summarize= TRUE
 p_keep     = TRUE # Enable if run through editor and you want to keep temp files
 p_cpus     = 4             
 p_parallel = TRUE
-p_label    = ".sara207_4s4cpu_bwa1_b"	 # "test-121002" ".sara207_4s4cpu"        # Run Label for output filenames
-p_bwa      = 1          # 1: bwa aln (short reads, low errors, allowing paired end also); 2= bwa bwasw (longer reads, single end only) # Algorythm for mapping with bwa
-
-# Other early initialization of variables
-# Set the working directory
-wd <- "/home/xavi/repo/peeva/"
-setwd(wd)
+p_label    =  ".sg293_qa_sg3sg4" # "test-121002" # ".sg293_qa_sg3sg4"	 # "test-121002" ".sara207_4s4cpu"        # Run Label for output filenames
+p_bwa      = 2          # Algorythm for mapping with bwa - http://bio-bwa.sourceforge.net/bwa.shtml
+                        # 1: bwa aln      + samse  (short reads, single ends, low errors);
+                        # 2: bwa aln (x2) + sampe  (short reads, paired ends, low errors);
+                        # 3: bwa bwasw             (longer reads, single end only) 
 
 
 # 2b. Define path params for all runs
@@ -60,7 +69,7 @@ path_summarize_annovar = "/home/ueb/annovar/summarize_annovar.pl"
 #  wrapper.sequential (wseq)
 #----------------------------------
 #####
-runParam <- FALSE #######################
+runParam <- TRUE #######################
 ####
 p_map.on.reference.genome       <- runParam
 p_foo_wseq <- runParam # dummy param to attempt to prevent error message "Error in cut.default(i, breaks) : 'breaks' are not unique" https://bugs.r-project.org/bugzilla3/show_bug.cgi?id=14898
@@ -89,7 +98,7 @@ p_remove.pcr.dup		          <- runParam
 p_index.bam.file		          <- runParam
 p_stats			                  <- runParam
 #####
-runParam <- TRUE #######################
+runParam <- FALSE #######################
 ####
 p_variant.calling		          <- runParam
 p_variant.filtering		        <- runParam

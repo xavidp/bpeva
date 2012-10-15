@@ -135,7 +135,8 @@ show_help <- function(program_ueb.my)
   cat("\n   -i: directory with source .fastq files \t\t\t *** required ***\n")
   cat("\n   -o: directory to save output files \t\t\t\t *** required ***\n")
   cat("\n   -n: -index (indexing of the reference genome)\t\t    [optional]\n")
-  cat("\n   -w: -bwa (bwa algorythm used, 1 for aln, 2 for bwasw)    [optional]\n")
+  cat("\n   -w: -bwa (bwa algorythm: 1 aln+samse, 2 aln+sampe, 3 bwasw(se) ) [optional]\n")
+  cat("\n         for bwa: 2, use sufixes: *_1_sequence.fasq, *_2_sequence.fastq       \n")
   cat("\n   -s: summarize results with annotations in a single .csv file     [optional]\n")
   cat("\n   -f: filter results for these target genes \t\t\t    [optional]")
   cat("\n     with this syntax for one gene:")
@@ -218,6 +219,10 @@ fun.map.on.reference.genome <- function(file2process.my2, step.my) {
   ## TODO: 
   ## Add a param to allow the user to choose the aligner with 'bwa aln' (<200bp and <3% error rate, allowing paired end reads)
   ##    or 'bwa bwasw' (for longer reads and/or with higher errors).
+  # 1: bwa aln      + samse  (short reads, single ends, low errors);
+  # 2: bwa aln (x2) + sampe  (short reads, paired ends, low errors);
+  #        for bwa: 2, use sufixes: *_1_sequence.fasq, *_2_sequence.fastq
+  # 3: bwa bwasw             (longer reads, single end only) 
   ##
   ## From: http://bio-bwa.sourceforge.net/bwa.shtml
   ## BWA is a fast light-weighted tool that aligns relatively short sequences (queries) to a sequence database (targe), such as the human reference genome. 
@@ -228,7 +233,7 @@ fun.map.on.reference.genome <- function(file2process.my2, step.my) {
   ##   On low-error short queries, BWA-SW is slower and less accurate than the first algorithm, but on long queries, it is better
   file_in = paste(params$directory_in, "/", file2process.my2, ".fastq", sep="");
   
-  if (params$opt$bwa == 1) # case to use algorythm 1 from bwa
+  if (params$opt$bwa == 1) # case to use algorythm 1 from bwa: aln + samse  (short reads, single ends, low errors);
   {
     # Example - 1s part
     #bwa aln database.fasta short_read.fastq > aln_sa.sai
@@ -247,8 +252,43 @@ fun.map.on.reference.genome <- function(file2process.my2, step.my) {
     command = paste(command00, " ", options00, sep="");
     system(command);
   }
+
+  if (params$opt$bwa == 2) # case to use algorythm 2 from bwa: aln (x2) + sampe  (short reads, paired ends, low errors);
+  {
+    # Example - 1s part
+    #bwa aln database.fasta short_read1.fastq > aln_sa1.sai
+    #bwa aln database.fasta short_read2.fastq > aln_sa2.sai
+    file_out = paste(params$directory_out, "/", file2process.my2, ".sai", sep="");
+    command00 = "bwa aln"; # next command.
+    options00 = paste(params$path_genome, " ", file_in, " > ", file_out, sep="");
+    command = paste(command00, " ", options00, sep="");
+    system(command);
+
+#    file2process.my2 <- "s_4_m11_146b_1_sequence" #     file2process.my2
+#    file2process.my2 <- "s_4_m11_146b_2_sequence" #     file2process.my2
+#    tmp2 <- gsub("_sequence", "@", tmp)
+#    length(grep("_1_sequence", file2process.my2)) == 1 # returns TRUE when matched the string
+    if ( length(grep("_2_sequence", file2process.my2)) == 1 ) # returns TRUE when matched the string (2nd sample of the pair) 
+    {
+      # Provide temporal shorter base names for the 2 files of the paired-end set (remove "_1_sequence" and "_2_sequence")
+      f2pbase <- gsub("_2_sequence", "", file2process.my2)
+
+      # Example - 2nd part
+      #bwa sampe database.fasta aln_sa.sai short_read.fastq > aln.sam
+      file_in_sai1 = paste(params$directory_out, "/", f2pbase, "_1_sequence", ".sai", sep="");
+      file_in_sai2 = paste(params$directory_out, "/", f2pbase, "_2_sequence", ".sai", sep="");
+      file_in_fq1 = paste(params$directory_in, "/", f2pbase, "_1_sequence", ".fastq", sep="");
+      file_in_fq2 = paste(params$directory_in, "/", f2pbase, "_2_sequence", ".fastq", sep="");
+      file_out = paste(params$directory_out, "/", file2process.my2, ".sam", sep="");
+      command00 = "bwa sampe"; # next command.
+      options00 = paste(params$path_genome, " ", file_in_sai1, " ", file_in_sai2, " ", file_in_fq1, " ", file_in_fq2, " > ", file_out, sep="");
+      command = paste(command00, " ", options00, sep="");
+      system(command);
+    }
+
+  }
   
-  if (params$opt$bwa == 2) { # case to use algorythm 2 from bwa
+  if (params$opt$bwa == 3) { # case to use algorythm 3 from bwa: bwasw (longer reads, single end only)
     file_out = paste(params$directory_out, "/", file2process.my2, ".sam", sep="");
     command00 = "bwa bwasw"; # next command.
     options00 = paste(params$path_genome, " ", file_in, " > ", file_out, sep="");
