@@ -1,0 +1,33 @@
+
+
+
+################################################################################
+
+			NEW RUN - Part A. Allways in SEQUENTIAL Mode (2012-10-15 - 2 files). Current file: *** sample_a_1_sequence ***
+
+################################################################################
+
+
+2012-10-15 16:34h 31s - ### Start processing file #1 (sample_a_1_sequence) ... ###
+
+2012-10-15 16:34h 31s -  ### Step 1.1. Map against reference genome: do the mapping with: sample_a_1_sequence ###
+
+2012-10-15 16:35h 10s - 							[DONE]
+
+
+
+################################################################################
+
+			NEW RUN - Part B. Can be run in PARALLELIZED Mode (2012-10-15 - 2 files). Current file: *** sample_a_1_sequence ***
+
+################################################################################
+
+
+2012-10-15 16:35h 49s - ### Start processing file #1 (sample_a_1_sequence) ... ###
+
+2012-10-15 16:35h 49s - 	End of processing this file: sample_a_1_sequence
+
+
+--------------------------------------------------------------------------------
+
+

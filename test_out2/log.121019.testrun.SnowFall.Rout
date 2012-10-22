@@ -1,0 +1,68 @@
+
+################################################################################
+			NEW RUN - Part A. Allways in SEQUENTIAL Mode (2012-10-19 - 2 files). Current file: *** sample_a_1_sequence ***
+################################################################################
+
+2012-10-19 19:19h 40s - ### Start processing file #1 (sample_a_1_sequence) ... ###
+2012-10-19 19:19h 40s -  ### Step 1.1. Map against reference genome: do the mapping with: sample_a_1_sequence ###
+
+Relative duration since last step: Time difference of 4.073281 secs
+2012-10-19 19:19h 44s - 							[DONE]
+
+
+################################################################################
+			NEW RUN - Part A. Allways in SEQUENTIAL Mode (2012-10-19 - 2 files). Current file: *** sample_a_2_sequence ***
+################################################################################
+
+2012-10-19 19:19h 44s - ### Start processing file #2 (sample_a_2_sequence) ... ###
+2012-10-19 19:19h 44s -  ### Step 2.1. Map against reference genome: do the mapping with: sample_a_2_sequence ###
+
+Relative duration since last step: Time difference of 4.369873 secs
+
+Relative duration since last step: Time difference of 6.306728 secs
+2012-10-19 19:19h 54s - 							[DONE]
+
+Time difference of 14.88398 secs
+
+
+Relative duration since last step: Time difference of 0.04421949 secs
+
+2012-10-19 19:26h 34s - ### Start processing file #1 (s_3_m11_145b_1_sequence) ... ###
+2012-10-19 19:26h 34s - ### Start processing file #2 (s_3_m11_145b_2_sequence) ... ###
+2012-10-19 19:26h 34s - ### Start processing file #3 (s_4_m11_146b_1_sequence) ... ###
+2012-10-19 19:26h 34s - ### Start processing file #4 (s_4_m11_146b_2_sequence) ... ###
+Time difference of 0.02648664 secs
+
+
+Relative duration since last step: Time difference of 2.606235 hours
+
+of 4.073281 secs
+2012-10-19 19:19h 44s - 							[DONE]
+
+
+################################################################################
+			NEW RUN - Part A. Allways in SEQUENTIAL Mode (2012-10-19 - 2 files). Current file: *** sample_a_2_sequence ***
+################################################################################
+
+2012-10-19 19:19h 44s - ### Start processing file #2 (sample_a_2_sequence) ... ###
+2012-10-19 19:19h 44s -  ### Step 2.1. Map against reference genome: do the mapping with: sample_a_2_sequence ###
+
+Relative duration since last step: Time difference of 4.369873 secs
+
+Relative duration since last step: Time difference of 6.306728 secs
+2012-10-19 19:19h 54s - 							[DONE]
+
+Time difference of 14.88398 secs
+
+
+Relative duration since last step: Time difference of 0.04421949 secs
+
+2012-10-19 19:26h 34s - ### Start processing file #1 (s_3_m11_145b_1_sequence) ... ###
+2012-10-19 19:26h 34s - ### Start processing file #2 (s_3_m11_145b_2_sequence) ... ###
+2012-10-19 19:26h 34s - ### Start processing file #3 (s_4_m11_146b_1_sequence) ... ###
+2012-10-19 19:26h 34s - ### Start processing file #4 (s_4_m11_146b_2_sequence) ... ###
+Time difference of 0.02648664 secs
+
+
+Relative duration since last step: Time difference of 2.606235 hours
+

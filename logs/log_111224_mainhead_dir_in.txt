@@ -1,5 +1,0 @@
-total 16
-lrwxrwxrwx 1 root ueb 85 2011-12-24 03:26 Gutierrez_A_Illumina.sequence.fastq -> /home/ueb/estudis/ngs/2011-08-SGutierrez-VHIO-207/Gutierrez_A_Illumina.sequence.fastq
-lrwxrwxrwx 1 root ueb 81 2011-12-24 03:26 Gutierrez_A_Sure.sequence.fastq -> /home/ueb/estudis/ngs/2011-08-SGutierrez-VHIO-207/Gutierrez_A_Sure.sequence.fastq
-lrwxrwxrwx 1 root ueb 85 2011-12-24 03:26 Gutierrez_B_Illumina.sequence.fastq -> /home/ueb/estudis/ngs/2011-08-SGutierrez-VHIO-207/Gutierrez_B_Illumina.sequence.fastq
-lrwxrwxrwx 1 root ueb 81 2011-12-24 03:26 Gutierrez_B_Sure.sequence.fastq -> /home/ueb/estudis/ngs/2011-08-SGutierrez-VHIO-207/Gutierrez_B_Sure.sequence.fastq

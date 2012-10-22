@@ -1,5 +1,0 @@
-total 16
-lrwxrwxrwx 1 xavi ueb 89 2011-12-31 13:20 Gutierrez_A_Illumina.sequence_m50.fastq -> /home/ueb/estudis/ngs/2011-08-SGutierrez-VHIO-207/Gutierrez_A_Illumina.sequence_m50.fastq
-lrwxrwxrwx 1 xavi ueb 85 2011-12-31 13:22 Gutierrez_A_Sure.sequence_m50.fastq -> /home/ueb/estudis/ngs/2011-08-SGutierrez-VHIO-207/Gutierrez_A_Sure.sequence_m50.fastq
-lrwxrwxrwx 1 xavi ueb 89 2011-12-31 13:22 Gutierrez_B_Illumina.sequence_m50.fastq -> /home/ueb/estudis/ngs/2011-08-SGutierrez-VHIO-207/Gutierrez_B_Illumina.sequence_m50.fastq
-lrwxrwxrwx 1 xavi ueb 85 2011-12-31 13:23 Gutierrez_B_Sure.sequence_m50.fastq -> /home/ueb/estudis/ngs/2011-08-SGutierrez-VHIO-207/Gutierrez_B_Sure.sequence_m50.fastq

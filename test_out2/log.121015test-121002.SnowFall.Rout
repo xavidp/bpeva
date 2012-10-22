@@ -1,0 +1,66 @@
+
+################################################################################
+			NEW RUN - Part A. Allways in SEQUENTIAL Mode (2012-10-15 - 2 files). Current file: *** sample_a_1_sequence ***
+################################################################################
+
+2012-10-15 16:34h 31s - ### Start processing file #1 (sample_a_1_sequence) ... ###
+2012-10-15 16:34h 31s -  ### Step 1.1. Map against reference genome: do the mapping with: sample_a_1_sequence ###
+2012-10-15 16:35h 10s - 							[DONE]
+
+
+################################################################################
+			NEW RUN - Part A. Allways in SEQUENTIAL Mode (2012-10-15 - 2 files). Current file: *** sample_a_2_sequence ***
+################################################################################
+
+2012-10-15 16:35h 10s - ### Start processing file #2 (sample_a_2_sequence) ... ###
+2012-10-15 16:35h 10s -  ### Step 2.1. Map against reference genome: do the mapping with: sample_a_2_sequence ###
+2012-10-15 16:35h 49s - 							[DONE]
+
+Time difference of 1.300834 mins
+
+
+Relative duration since last step: Time difference of 0.05985546 secs
+
+
+################################################################################
+			NEW RUN - Part A. Allways in SEQUENTIAL Mode (2012-10-15 - 4 files). Current file: *** s_3_m11_145b_1_sequence ***
+################################################################################
+
+2012-10-15 16:38h 22s - ### Start processing file #1 (s_3_m11_145b_1_sequence) ... ###
+2012-10-15 16:38h 22s -  ### Step 1.1. Map against reference genome: do the mapping with: s_3_m11_145b_1_sequence ###
+2012-10-16 09:29h 11s - 							[DONE]
+
+
+################################################################################
+			NEW RUN - Part A. Allways in SEQUENTIAL Mode (2012-10-16 - 4 files). Current file: *** s_3_m11_145b_2_sequence ***
+################################################################################
+
+2012-10-16 09:29h 15s - ### Start processing file #2 (s_3_m11_145b_2_sequence) ... ###
+2012-10-16 09:29h 15s -  ### Step 2.1. Map against reference genome: do the mapping with: s_3_m11_145b_2_sequence ###
+2012-10-17 08:22h 59s - 							[DONE]
+
+
+################################################################################
+			NEW RUN - Part A. Allways in SEQUENTIAL Mode (2012-10-17 - 4 files). Current file: *** s_4_m11_146b_1_sequence ***
+################################################################################
+
+2012-10-17 08:23h 04s - ### Start processing file #3 (s_4_m11_146b_1_sequence) ... ###
+2012-10-17 08:23h 04s -  ### Step 3.1. Map against reference genome: do the mapping with: s_4_m11_146b_1_sequence ###
+2012-10-18 02:18h 01s - 							[DONE]
+
+
+################################################################################
+			NEW RUN - Part A. Allways in SEQUENTIAL Mode (2012-10-18 - 4 files). Current file: *** s_4_m11_146b_2_sequence ***
+################################################################################
+
+2012-10-18 02:18h 07s - ### Start processing file #4 (s_4_m11_146b_2_sequence) ... ###
+2012-10-18 02:18h 07s -  ### Step 4.1. Map against reference genome: do the mapping with: s_4_m11_146b_2_sequence ###
+2012-10-19 01:48h 47s - 							[DONE]
+
+Time difference of 3.382375 days
+
+
+Relative duration since last step: Time difference of 9.243064 secs
+
+[1] TRUE
+[1] FALSE
