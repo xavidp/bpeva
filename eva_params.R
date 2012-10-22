@@ -19,35 +19,31 @@
 
 ##############################################################
 
-# Basic startup params
+# 0. Basic startup params
 # ---------------------------------------------------------------------
 startdate <- paste(format(Sys.Date(), "%y%m%d"), sep="")
-program_ueb <- "eva_main.R";
 
-
-# 0c. set some reasonable defaults for the options that are needed, but were not specified.
-# ---------------------------------------------------------------------
-# Set the working directory from either one of the two options (a and b) listed below
-## a) the hardcoded way
-#wd <- "/home/ueb/repo/peeva/"
-#
-## b) dynamically from the folder where the main script program_ueb is
-wd <- getwd()
-wdres <- system(paste("locate", program_ueb, "| grep", wd, sep=" "), intern=TRUE)
-wdres <- gsub(program_ueb, "", wdres, ignore.case = FALSE, perl = FALSE, fixed = TRUE)
-
-setwd(wdres)
-
-p_input    = "../dir_in" # "../test_in2"  # "../dir_in" # "test_in"	 # "dir_in"     
-p_output   = "../dir_out_293" # "../test_out2" # "../dir_out_293" # "test_out"	 # "dir_out_293"
+p_test     = 0 # 1/0; ### Is this a test run? ###
+                # 1 = test run, so that use the predefined values for a test run; 
+                # 0 = normal run
+if (p_test==1) {
+  p_input    = "./test_in2" # "../test_in2"  # "test_in"
+  p_output   = "./test_out2" # "../test_out2" # "test_out"
+  p_label    =  ".testrun" # "test-121002" # "test-foo"        # Run Label for output filenames
+  p_keep     = TRUE # Enable if run through editor and you want to keep temp files
+  p_filter   = ""            
+} else {
+  p_input    = "../dir_in" # "../dir_in" # "test_in"   # "dir_in"     
+  p_output   = "../dir_out_293" # "../dir_out_293" # "test_out"	 # "dir_out_293"
+  p_label    =  ".sg293_qa_sg3sg4" # "test-121002" # ".sg293_qa_sg3sg4"   # "test-121002" ".sara207_4s4cpu"        # Run Label for output filenames
+  p_keep     = TRUE # Enable if run through editor and you want to keep temp files
+  p_filter   = "BRCA"            
+}
 p_index    = FALSE         
-p_filter   = "BRCA"            
 p_log      = TRUE        
 p_summarize= TRUE          
-p_keep     = TRUE # Enable if run through editor and you want to keep temp files
 p_cpus     = 4             
-p_parallel = TRUE
-p_label    =  ".sg293_qa_sg3sg4" # "test-121002" # ".sg293_qa_sg3sg4"	 # "test-121002" ".sara207_4s4cpu"        # Run Label for output filenames
+p_parallel = TRUE # Do you want to allow running some parallelized processes at all? (which ones will be specified elsewhere in the code)
 p_bwa      = 2          # Algorythm for mapping with bwa - http://bio-bwa.sourceforge.net/bwa.shtml
                         # 1: bwa aln      + samse  (short reads, single ends, low errors);
                         # 2: bwa aln (x2) + sampe  (short reads, paired ends, low errors);
@@ -69,37 +65,36 @@ path_summarize_annovar = "/home/ueb/annovar/summarize_annovar.pl"
 #  wrapper.sequential (wseq)
 #----------------------------------
 #####
-runParam <- TRUE #######################
-####
-p_map.on.reference.genome       <- runParam
-p_foo_wseq <- runParam # dummy param to attempt to prevent error message "Error in cut.default(i, breaks) : 'breaks' are not unique" https://bugs.r-project.org/bugzilla3/show_bug.cgi?id=14898
+runParam <- FALSE #######################
+p_map.on.reference.genome.sequential     <- runParam # In case we run the mapping sequentially for all samples
+
+runParam <- FALSE # !runParam ####################### The opposite to map in sequential mode
+p_map.on.reference.genome.parallel       <- runParam # In case we run the mapping in parallel for n (p_cpus) samples at a time
 
 # Set all params inside a list, so that it's easier to send from main to functions
 # wseq : for function wrapper.sequential
 params_wseq <- list()
 params_wseq <- list(
-  p_foo_wseq = p_foo_wseq, # dummy param to attempt to prevent error message "Error in cut.default(i, breaks) : 'breaks' are not unique" https://bugs.r-project.org/bugzilla3/show_bug.cgi?id=14898
-  p_map.on.reference.genome = p_map.on.reference.genome
+  p_map.on.reference.genome.sequential  = p_map.on.reference.genome.sequential, 
+  p_map.on.reference.genome.parallel    = p_map.on.reference.genome.parallel
 )
 
 
 # 8b. Set flags as ON (TRUE) or OFF (FALSE) for all processes from function:
 #  wrapper2.parallelizable.per.sample (w2pps)
 #----------------------------------
+# p_map.on.reference.genome.parallel  is not defined here but in the previous chunk
 #####
-runParam <- FALSE #######################
+runParam <- TRUE #######################
 ####
 p_quality.control             <- runParam
 #####
-runParam <- FALSE  #######################
+runParam <- TRUE #######################
 ####
 p_sam2bam.and.sort		        <- runParam
 p_remove.pcr.dup		          <- runParam
 p_index.bam.file		          <- runParam
 p_stats			                  <- runParam
-#####
-runParam <- FALSE #######################
-####
 p_variant.calling		          <- runParam
 p_variant.filtering		        <- runParam
 p_convert2vcf4		            <- runParam
@@ -108,6 +103,9 @@ p_variant.annotation.regionb	<- runParam # skipped so far
 p_variant.annotation.filterb	<- runParam
 p_variant.annotation.summarize<- runParam
 p_grep.variants		            <- runParam
+#####
+runParam <- FALSE #######################
+####
 p_visualize.variants		      <- runParam
 
 
@@ -115,20 +113,21 @@ p_visualize.variants		      <- runParam
 # w2pps : for function wrapper2.parallelizable.per.sample
 params_w2pps <- list()
 params_w2pps <- list(
-  p_quality.control               = p_quality.control,
-  p_sam2bam.and.sort              = p_sam2bam.and.sort,
-  p_remove.pcr.dup                = p_remove.pcr.dup,
-  p_index.bam.file                = p_index.bam.file,
-  p_stats                         = p_stats,
-  p_variant.calling               = p_variant.calling,
-  p_variant.filtering             = p_variant.filtering,
-  p_convert2vcf4                  = p_convert2vcf4,
-  p_variant.annotation.geneb      = p_variant.annotation.geneb,
-  p_variant.annotation.regionb    = p_variant.annotation.regionb,
-  p_variant.annotation.filterb    = p_variant.annotation.filterb,
-  p_variant.annotation.summarize  = p_variant.annotation.summarize,
-  p_grep.variants                 = p_grep.variants,
-  p_visualize.variants            = p_visualize.variants
+  p_map.on.reference.genome.parallel  = p_map.on.reference.genome.parallel,
+  p_quality.control                   = p_quality.control,
+  p_sam2bam.and.sort                  = p_sam2bam.and.sort,
+  p_remove.pcr.dup                    = p_remove.pcr.dup,
+  p_index.bam.file                    = p_index.bam.file,
+  p_stats                             = p_stats,
+  p_variant.calling                   = p_variant.calling,
+  p_variant.filtering                 = p_variant.filtering,
+  p_convert2vcf4                      = p_convert2vcf4,
+  p_variant.annotation.geneb          = p_variant.annotation.geneb,
+  p_variant.annotation.regionb        = p_variant.annotation.regionb,
+  p_variant.annotation.filterb        = p_variant.annotation.filterb,
+  p_variant.annotation.summarize      = p_variant.annotation.summarize,
+  p_grep.variants                     = p_grep.variants,
+  p_visualize.variants                = p_visualize.variants
   )
 
 # 9b. Set flags as ON (TRUE) or OFF (FALSE) for all processes from function:

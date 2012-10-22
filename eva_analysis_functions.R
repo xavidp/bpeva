@@ -198,8 +198,11 @@ fun.index.reference.genome <- function(file2process.my2, step.my) {
     options00 <- "";
   }
   command = paste(command00, " ", options00, sep="");
-  system(command);
+  # Annotate the subprocess start time; launch the subprocess; and annotate the end time & duration
+  start.my <- Sys.time(); system(command); duration <- Sys.time()-start.my;
   print_done(file2process.my2);
+  # Show the duration of this subprocess
+  cat("\nRelative duration since last step: "); print(duration);
   
   gc() # Let's clean ouR garbage if possible
   return(step.my) # return nothing, since results are saved on disk from the system command
@@ -241,7 +244,10 @@ fun.map.on.reference.genome <- function(file2process.my2, step.my) {
     command00 = "bwa aln"; # next command.
     options00 = paste(params$path_genome, " ", file_in, " > ", file_out, sep="");
     command = paste(command00, " ", options00, sep="");
-    system(command);
+    # Annotate the subprocess start time; launch the subprocess; and annotate the end time & duration
+    start.my <- Sys.time(); system(command); duration <- Sys.time()-start.my;
+    # Show the duration of this subprocess
+    cat("\nRelative duration since last step: "); print(duration);
     
     # Example - 2nd part
     #bwa samse database.fasta aln_sa.sai short_read.fastq > aln.sam
@@ -250,7 +256,10 @@ fun.map.on.reference.genome <- function(file2process.my2, step.my) {
     command00 = "bwa samse"; # next command.
     options00 = paste(params$path_genome, " ", file_in_sai, " ", file_in, " > ", file_out, sep="");
     command = paste(command00, " ", options00, sep="");
-    system(command);
+    # Annotate the subprocess start time; launch the subprocess; and annotate the end time & duration
+    start.my <- Sys.time(); system(command); duration <- Sys.time()-start.my;
+    # Show the duration of this subprocess
+    cat("\nRelative duration since last step: "); print(duration);
   }
 
   if (params$opt$bwa == 2) # case to use algorythm 2 from bwa: aln (x2) + sampe  (short reads, paired ends, low errors);
@@ -262,8 +271,11 @@ fun.map.on.reference.genome <- function(file2process.my2, step.my) {
     command00 = "bwa aln"; # next command.
     options00 = paste(params$path_genome, " ", file_in, " > ", file_out, sep="");
     command = paste(command00, " ", options00, sep="");
-    system(command);
-
+    # Annotate the subprocess start time; launch the subprocess; and annotate the end time & duration
+    start.my <- Sys.time(); system(command); duration <- Sys.time()-start.my;
+    # Show the duration of this subprocess
+    cat("\nRelative duration since last step: "); print(duration);
+    
 #    file2process.my2 <- "s_4_m11_146b_1_sequence" #     file2process.my2
 #    file2process.my2 <- "s_4_m11_146b_2_sequence" #     file2process.my2
 #    tmp2 <- gsub("_sequence", "@", tmp)
@@ -283,7 +295,10 @@ fun.map.on.reference.genome <- function(file2process.my2, step.my) {
       command00 = "bwa sampe"; # next command.
       options00 = paste(params$path_genome, " ", file_in_sai1, " ", file_in_sai2, " ", file_in_fq1, " ", file_in_fq2, " > ", file_out, sep="");
       command = paste(command00, " ", options00, sep="");
-      system(command);
+      # Annotate the subprocess start time; launch the subprocess; and annotate the end time & duration
+      start.my <- Sys.time(); system(command); duration <- Sys.time()-start.my;
+      # Show the duration of this subprocess
+      cat("\nRelative duration since last step: "); print(duration);
     }
 
   }
@@ -293,7 +308,10 @@ fun.map.on.reference.genome <- function(file2process.my2, step.my) {
     command00 = "bwa bwasw"; # next command.
     options00 = paste(params$path_genome, " ", file_in, " > ", file_out, sep="");
     command = paste(command00, " ", options00, sep="");
-    system(command);
+    # Annotate the subprocess start time; launch the subprocess; and annotate the end time & duration
+    start.my <- Sys.time(); system(command); duration <- Sys.time()-start.my;
+    # Show the duration of this subprocess
+    cat("\nRelative duration since last step: "); print(duration);  
   }
   print_done(file2process.my2);
   
@@ -703,7 +721,7 @@ wrapper.sequential <- function(datastep.my) {
   # Define which processes to run (in later stage, this will be in an external R file sourced here)
   # names of control process are like functions but without the "fun." prefix.
   # -----------------------------
-  map.on.reference.genome               <- params_wseq$p_map.on.reference.genome
+  map.on.reference.genome.sequential               <- params_wseq$p_map.on.reference.genome.sequential
   # -----------------------------
   
   
@@ -714,21 +732,27 @@ wrapper.sequential <- function(datastep.my) {
   setwd(params$wd)
   step <- data.frame(datastep.my, 0)
   colnames(step) <- c("n","tmp")
-  
-  # Re-set the log file, if it exists already and log is requested
+
+  # Re-set the log file, if it exists already and log is requested. Create it.
   if (params$log) { 
     write(paste("\n", sep=""), file=paste(params$log.folder,"/log.", params$startdate, params$opt$label, ".", file2process.my1, ".txt", sep=""), append = FALSE, sep = "");
-    print_mes("\n################################################################################\n", file2process.my1);
-    print_mes(paste("			NEW RUN - Part A. Allways in SEQUENTIAL Mode (", Sys.Date()," - ", params$n_files, " files). Current file: *** ", file2process.my1, " ***\n", sep=""), file2process.my1);
-    print_mes("################################################################################\n\n", file2process.my1);
   }
+  
+  # Re-set the log file, if it exists already and log is requested
+  if (params$log && map.on.reference.genome.sequential) { 
+    write(paste("\n", sep=""), file=paste(params$log.folder,"/log.", params$startdate, params$opt$label, ".", file2process.my1, ".txt", sep=""), append = TRUE, sep = "");
+    print_mes("\n################################################################################\n", file2process.my1);
+    print_mes(paste("			NEW RUN - A. SEQUENTIAL. ", params$n_files, " files; Current: *** ", file2process.my1, " ***\n", sep=""), file2process.my1);
+    print_mes("################################################################################\n\n", file2process.my1);
+    
+    }
   
   print_doc(paste("### Start processing file #", datastep.my, " (", file2process.my1, ") ... ###\n", sep=""), file2process.my1);
   
   
   #--- Sequential Pipeline steps into wrapper.sequential function ###----------------------------------------
   
-  if (map.on.reference.genome) { 
+  if (map.on.reference.genome.sequential) { 
     # Next Step
     step <- fun.map.on.reference.genome(file2process.my2  = file2process.my1,
                                         step.my  = step)
@@ -749,21 +773,22 @@ wrapper2.parallelizable.per.sample <- function(datastep.my2) {
   # Define which processes to run (in later stage, this will be in an external R file sourced here)
   # names of control process are like functions but without the "fun." prefix.
   # -----------------------------
-
-  quality.control   	          <- params_w2pps$p_quality.control
-  sam2bam.and.sort	 	          <- params_w2pps$p_sam2bam.and.sort
-  remove.pcr.dup		            <- params_w2pps$p_remove.pcr.dup
-  index.bam.file		            <- params_w2pps$p_index.bam.file
-  stats			                    <- params_w2pps$p_stats
-  variant.calling		            <- params_w2pps$p_variant.calling
-  variant.filtering		          <- params_w2pps$p_variant.filtering
-  convert2vcf4		              <- params_w2pps$p_convert2vcf4
-  variant.annotation.geneb	    <- params_w2pps$p_variant.annotation.geneb
-  variant.annotation.regionb	  <- params_w2pps$p_variant.annotation.regionb
-  variant.annotation.filterb	  <- params_w2pps$p_variant.annotation.filterb
-  variant.annotation.summarize  <- params_w2pps$p_variant.annotation.summarize
-  grep.variants		              <- params_w2pps$p_grep.variants
-  visualize.variants		        <- params_w2pps$p_visualize.variants
+  
+  map.on.reference.genome.parallel  <- params_w2pps$p_map.on.reference.genome.parallel
+  quality.control   	              <- params_w2pps$p_quality.control
+  sam2bam.and.sort	 	              <- params_w2pps$p_sam2bam.and.sort
+  remove.pcr.dup		                <- params_w2pps$p_remove.pcr.dup
+  index.bam.file		                <- params_w2pps$p_index.bam.file
+  stats			                        <- params_w2pps$p_stats
+  variant.calling		                <- params_w2pps$p_variant.calling
+  variant.filtering		              <- params_w2pps$p_variant.filtering
+  convert2vcf4		                  <- params_w2pps$p_convert2vcf4
+  variant.annotation.geneb	        <- params_w2pps$p_variant.annotation.geneb
+  variant.annotation.regionb	      <- params_w2pps$p_variant.annotation.regionb
+  variant.annotation.filterb	      <- params_w2pps$p_variant.annotation.filterb
+  variant.annotation.summarize      <- params_w2pps$p_variant.annotation.summarize
+  grep.variants		                  <- params_w2pps$p_grep.variants
+  visualize.variants		            <- params_w2pps$p_visualize.variants
   
   # -----------------------------
   
@@ -774,12 +799,33 @@ wrapper2.parallelizable.per.sample <- function(datastep.my2) {
   setwd(params$wd)
   step <- data.frame(datastep.my2, 0)
   colnames(step) <- c("n","tmp")
+
+  # Continue with the log file when/where needed
+  if (params$log && map.on.reference.genome.parallel) { 
+    write(paste("\n", sep=""), file=paste(params$log.folder,"/log.", params$startdate, params$opt$label, ".", file2process.my1, ".txt", sep=""), append = TRUE, sep = "");
+    print_mes("\n################################################################################\n", file2process.my1);
+    print_mes(paste("	NEW RUN - A. PARALLELIZED. ", params$n_files, " files; Current: *** ", file2process.my1, " ***\n", sep=""), file2process.my1);
+    print_mes("################################################################################\n\n", file2process.my1);
+  }
+  
+
+  
+  #--- Parallel Pipeline steps into wrapper2.parallelizable.per.sample function ###----------------------------------------
+  
+  if (map.on.reference.genome.parallel) { 
+    # Report about the next step
+    print_doc(paste("### Start processing file #", datastep.my2, " (", file2process.my1, ") ... ###\n", sep=""), file2process.my1);
+    # Next Step
+    step <- fun.map.on.reference.genome(file2process.my2  = file2process.my1,
+                                        step.my  = step)
+  }
+  
   
   # Re-set the log file, if it exists already and log is requested
   if (params$log) { 
     #      write(paste("			### NEW RUN (", Sys.Date()," - ", params$n_files, " files) ###\n", sep=""), file=paste(params$log.folder,"/log.", params$startdate, ".", file2process.my1, ".txt", sep=""), append = FALSE, sep = "");
     print_mes("\n################################################################################\n", file2process.my1);
-    print_mes(paste("			NEW RUN - Part B. Can be run in PARALLELIZED Mode (", Sys.Date()," - ", params$n_files, " files). Current file: *** ", file2process.my1, " ***\n", sep=""), file2process.my1);
+    print_mes(paste(" NEW RUN - B. PARALLELIZABLE. ", params$n_files, " files; Current: *** ", file2process.my1, " ***\n", sep=""), file2process.my1);
     print_mes("################################################################################\n\n", file2process.my1);
   }
   #  step$n <- 0
@@ -787,7 +833,7 @@ wrapper2.parallelizable.per.sample <- function(datastep.my2) {
   print_doc(paste("### Start processing file #", datastep.my2, " (", file2process.my1, ") ... ###\n", sep=""), file2process.my1);
   
   
-  #--- Parallelized Pipeline steps insidewrapper.parallelizable function ###----------------------------------------
+  #--- Parallelized Pipeline steps inside wrapper.parallelizable function ###----------------------------------------
   
   if (quality.control) { 
     # First Step
@@ -917,7 +963,7 @@ wrapper2.parallelizable.final <- function(datastep.my2) {
   if (params$log) { 
     #      write(paste("			### NEW RUN (", Sys.Date()," - ", params$n_files, " files) ###\n", sep=""), file=paste(params$log.folder,"/log.", params$startdate, ".", file2process.my1, ".txt", sep=""), append = FALSE, sep = "");
     print_mes("\n################################################################################\n", file2process.my1);
-    print_mes(paste("			NEW RUN - Part C. Can be run in PARALLELIZED Mode also (", Sys.Date()," - ", params$n_files, " files).", sep=""), file2process.my1);
+    print_mes(paste("	NEW RUN - C. PARALLELIZABLE also. ", params$n_files, " files.", sep=""), file2process.my1);
     print_mes("################################################################################\n\n", file2process.my1);
   }
   #  step$n <- 0

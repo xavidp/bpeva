@@ -18,11 +18,25 @@
 ## * Aleix Ruiz de Villa, for comments and feedback.
 ## * Josep Lluis Mosquera, for comments and feedback.
 
+# 0. Basic startup process (for the working direectory)
+# ---------------------------------------------------------------------
+program_ueb <- "eva_main.R";
+
+# Set the working directory from either one of the two options (a and b) listed below
+## a) the hardcoded way
+#wd <- "/home/ueb/repo/peeva/"
+#
+## b) dynamically from the folder where the main script program_ueb is
+wd <- getwd()
+wdres <- system(paste("locate", program_ueb, "| grep", wd, sep=" "), intern=TRUE)
+wdres <- gsub(program_ueb, "", wdres, ignore.case = FALSE, perl = FALSE, fixed = TRUE)
+setwd(wdres)
+
+# Import Params for this EVA analysis run and the working directory for the whole project 
+source("./eva_params.R")
+
 # Import UEB Functions for the EVA analysis 
 source("./eva_analysis_functions.R")
-
-# Import Params for this EVA analysis run 
-source("./eva_params.R")
 
 ##############################################################################
 ##############################################################################
