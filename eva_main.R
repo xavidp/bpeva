@@ -28,8 +28,8 @@ program_ueb <- "eva_main.R";
 #
 ## b) dynamically from the folder where the main script program_ueb is
 wd <- getwd()
-wdres <- system(paste("locate", program_ueb, "| grep", wd, sep=" "), intern=TRUE)
-wdres <- gsub(program_ueb, "", wdres, ignore.case = FALSE, perl = FALSE, fixed = TRUE)
+#wdres <- system(paste("locate", program_ueb, "| grep", wd, sep=" "), intern=TRUE)
+#wdres <- gsub(program_ueb, "", wdres, ignore.case = FALSE, perl = FALSE, fixed = TRUE)
 setwd(wdres)
 
 # Import Params for this EVA analysis run and the working directory for the whole project 
@@ -257,6 +257,7 @@ sfExport("params",
          "fun.quality.control",
          "fun.index.reference.genome",
          "fun.map.on.reference.genome",
+         "fun.map.on.reference.genome",
          "fun.sam2bam.and.sort",
 	 "fun.remove.pcr.dup",
 	 "fun.index.bam.file",
@@ -289,10 +290,15 @@ sfExport("params",
   if (opt$index) { # index.reference.genome
     # Next Step
     start <- Sys.time(); 
-    step <- fun.index.reference.genome(file2process.my2  = file2process.my1,
-                      step.my  = step)
+    step <- data.frame(0, 0)
+    colnames(step) <- c("n","tmp")
+    
+    step <- fun.index.reference.genome(step.my  = step)
     duration <- Sys.time()-start;
     print(duration)
+  } else {
+    step <- data.frame(0, 0)
+    colnames(step) <- c("n","tmp")
   }
 
 

@@ -23,12 +23,12 @@
 # ---------------------------------------------------------------------
 startdate <- paste(format(Sys.Date(), "%y%m%d"), sep="")
 
-p_test     = 0 # 1/0; ### Is this a test run? ###
+p_test     = 1 # 1/0; ### Is this a test run? ###
                 # 1 = test run, so that use the predefined values for a test run; 
                 # 0 = normal run
 if (p_test==1) {
-  p_input    = "./test_in2" # "../test_in2"  # "test_in"
-  p_output   = "./test_out2" # "../test_out2" # "test_out"
+  p_input    = "test_in2" # "../test_in2"  # "test_in"
+  p_output   = "test_out2" # "../test_out2" # "test_out"
   p_label    =  ".testrun" # "test-121002" # "test-foo"        # Run Label for output filenames
   p_keep     = TRUE # Enable if run through editor and you want to keep temp files
   p_filter   = ""            
@@ -39,11 +39,11 @@ if (p_test==1) {
   p_keep     = TRUE # Enable if run through editor and you want to keep temp files
   p_filter   = "BRCA"            
 }
-p_index    = FALSE         
+p_index    = FALSE # TRUE         
 p_log      = TRUE        
 p_summarize= TRUE          
 p_cpus     = 4             
-p_parallel = TRUE # Do you want to allow running some parallelized processes at all? (which ones will be specified elsewhere in the code)
+p_parallel = TRUE #FALSE #TRUE # Do you want to allow running some parallelized processes at all? (which ones will be specified elsewhere in the code)
 p_bwa      = 2          # Algorythm for mapping with bwa - http://bio-bwa.sourceforge.net/bwa.shtml
                         # 1: bwa aln      + samse  (short reads, single ends, low errors);
                         # 2: bwa aln (x2) + sampe  (short reads, paired ends, low errors);
@@ -52,13 +52,28 @@ p_bwa      = 2          # Algorythm for mapping with bwa - http://bio-bwa.source
 
 # 2b. Define path params for all runs
 #----------------------------------
-path_fastq = "/home/ueb/fastqc/fastqc"
-path_genome = "/home/xavi/Data/Data_Genomes/hg19/hg19.fa"
-path_vcfutils = "/usr/share/samtools/vcfutils.pl"
-path_convert2annovar = "/home/ueb/annovar/convert2annovar.pl"
-path_annotate_variation = "/home/ueb/annovar/annotate_variation.pl"
-path_annotate_humandb = "/home/ueb/annovar/humandb/"
-path_summarize_annovar = "/home/ueb/annovar/summarize_annovar.pl"           
+# p_server = Choose machine where to get the paths for
+# 1 for MainHead,
+# 2 for B52,
+p_server <- 2 # Set the server number (see codes above)
+
+if (p_server==1) { # MainHead server
+  path_fastq = "/home/ueb/fastqc/fastqc" 
+  path_genome = "/home/xavi/Data/Data_Genomes/hg19/hg19.fa" 
+  path_vcfutils = "/usr/share/samtools/vcfutils.pl"
+  path_convert2annovar = "/home/ueb/annovar/convert2annovar.pl"
+  path_annotate_variation = "/home/ueb/annovar/annotate_variation.pl"
+  path_annotate_humandb = "/home/ueb/annovar/humandb/"
+  path_summarize_annovar = "/home/ueb/annovar/summarize_annovar.pl"           
+  } else if (p_server==2) { # B52 server
+    path_fastq = "/home/ueb/software/FastQC/fastqc"
+    path_genome = "/home/ueb/Data/Data_Genomes/hg19.fa" 
+    path_vcfutils = "/usr/share/samtools/vcfutils.pl"
+    path_convert2annovar = "/home/ueb/software/annovar/convert2annovar.pl"
+    path_annotate_variation = "/home/ueb/software/annovar/annotate_variation.pl"
+    path_annotate_humandb = "/home/ueb/software/annovar/humandb/"
+    path_summarize_annovar = "/home/ueb/software/annovar/summarize_annovar.pl"           
+  }
 
 
 # 7b. Set flags as ON (TRUE) or OFF (FALSE) for all processes from function:
@@ -85,7 +100,7 @@ params_wseq <- list(
 #----------------------------------
 # p_map.on.reference.genome.parallel  is not defined here but in the previous chunk
 #####
-runParam <- TRUE #######################
+runParam <- FALSE #######################
 ####
 p_quality.control             <- runParam
 #####
@@ -97,15 +112,15 @@ p_index.bam.file		          <- runParam
 p_stats			                  <- runParam
 p_variant.calling		          <- runParam
 p_variant.filtering		        <- runParam
+#####
+runParam <- FALSE #######################
+####
 p_convert2vcf4		            <- runParam
 p_variant.annotation.geneb	  <- runParam
 p_variant.annotation.regionb	<- runParam # skipped so far
 p_variant.annotation.filterb	<- runParam
 p_variant.annotation.summarize<- runParam
 p_grep.variants		            <- runParam
-#####
-runParam <- FALSE #######################
-####
 p_visualize.variants		      <- runParam
 
 

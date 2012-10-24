@@ -184,15 +184,15 @@ fun.quality.control <- function(file2process.my2, step.my) {
 ### FUNCTION fun.index.reference.genome
 ##########################
 
-fun.index.reference.genome <- function(file2process.my2, step.my) {
+fun.index.reference.genome <- function(step.my) {
   # update step number
   step.my$tmp <- step.my$tmp + 1
-  
-  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Map against reference genome: Index the reference genome (if needed)\n", sep=""), file2process.my2);
-  if ((params$opt$index) & (step.my$n == 1)) { # case to index the reference genome (time consuming, do only when really needed as requested)
+
+  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Map against reference genome: Index the reference genome (if needed) ###\n", sep=""), "Index the reference genome");
+  if ((params$opt$index) & (step.my$n == 0)) { # case to index the reference genome (time consuming, do only when really needed as requested)
     # Index the reference genome, if requested with argument -n and only for the first file if more than one sample to process
     command00 <- "bwa index"; # next command
-    options00 <- paste("  -a bwtsw", params$path_genome, sep="");
+    options00 <- paste("  -a bwtsw ", params$path_genome, sep="");
   } else	{ # skip the indexing of the reference genome
     command00 <- "echo '  ...skipped...'"; # next command.
     options00 <- "";
@@ -200,7 +200,7 @@ fun.index.reference.genome <- function(file2process.my2, step.my) {
   command = paste(command00, " ", options00, sep="");
   # Annotate the subprocess start time; launch the subprocess; and annotate the end time & duration
   start.my <- Sys.time(); system(command); duration <- Sys.time()-start.my;
-  print_done(file2process.my2);
+  print_done("Index reference genome");
   # Show the duration of this subprocess
   cat("\nRelative duration since last step: "); print(duration);
   
@@ -278,6 +278,8 @@ fun.map.on.reference.genome <- function(file2process.my2, step.my) {
     
 #    file2process.my2 <- "s_4_m11_146b_1_sequence" #     file2process.my2
 #    file2process.my2 <- "s_4_m11_146b_2_sequence" #     file2process.my2
+#    file2process.my2 <- "sample_a_1_sequence" #     file2process.my2
+#    file2process.my2 <- "sample_a_2_sequence" #     file2process.my2
 #    tmp2 <- gsub("_sequence", "@", tmp)
 #    length(grep("_1_sequence", file2process.my2)) == 1 # returns TRUE when matched the string
     if ( length(grep("_2_sequence", file2process.my2)) == 1 ) # returns TRUE when matched the string (2nd sample of the pair) 
