@@ -1,0 +1,2 @@
+/mnt/magatzem01/ngs/2012-09-SGutierrez-VHIO-293/peeva293/test_in2/sample_a_1_sequence.fastq
+/mnt/magatzem01/ngs/2012-09-SGutierrez-VHIO-293/peeva293/test_in2/sample_a_2_sequence.fastq
