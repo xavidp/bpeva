@@ -339,8 +339,32 @@ fun.map.on.reference.genome <- function(file2process.my2, step.my) {
 #    file2process.my2 <- "sample_a_2_sequence" #     file2process.my2
 #    tmp2 <- gsub("_sequence", "@", tmp)
 #    length(grep("_1_sequence", file2process.my2)) == 1 # returns TRUE when matched the string
-    if ( length(grep("_2_sequence", file2process.my2)) == 1 ) # returns TRUE when matched the string (2nd sample of the pair) 
+    
+#file2process.my2 <- "sample_a_2_sequence"
+
+    # Previous file of the 2 file set: first mate of the pair
+    #   (if we are analyzing here the sample_foo_2_sequence, 
+    #   then get the name corresponding to sample_foo_1_sequence)
+    file2process.mate1 <- params$file_list[match(file2process.my2, params$file_list) -1]
+    # get the file name of the lock file for the mate 1 of the pair 
+    # (it should have completed its sam file before attempting to merge it with the 2mate of the pair)
+    mate1.unfinished <- file.exists(paste(params$opt$output, "/", "log.",params$startdate, params$opt$label, ".",
+                      file2process.mate1, ".lock", sep=""))  
+    
+    
+    # Condition returns TRUE when matched the string and there is no lock file for the first sample of the paired-end set
+    if ( length(grep("_2_sequence", file2process.my2)) == 1 ) # returns TRUE when matched the string (2nd sample of the pair)
     {
+      if (mate1.unfinished) {
+        # Report the user that sam is not finished for mate1 of the sample pair
+        print_doc(paste(" ### Waiting for sam file for the mate1 of the pair to finish ###\n", sep=""), file2process.my2);
+        # If A lock file exists; wait a while and check again until no lock file from samples exist
+        while (file.exists(paste(params$opt$output, "/", "log.", params$startdate, params$opt$label, ".",
+                                 file2process.mate1, ".lock", sep=""))) {
+            cat(".")
+            Sys.sleep(5) # Wait 5 seconds while for the creation of the sam file for the mat1 sample file to finish, and check again
+        }       
+      } 
 
       # Provide temporal shorter base names for the 2 files of the paired-end set (remove "_1_sequence" and "_2_sequence")
       f2pbase <- gsub("_2_sequence", "", file2process.my2)
@@ -933,7 +957,7 @@ wrapper2.parallelizable.per.sample <- function(datastep.my2) {
 	      check_sample_lock_exists <- w.checklock.allsamples.pe(params$file_list) 
       
 	      if (check_sample_lock_exists) { # Suspend execution of R expressions for a given number of seconds
-          # eport the user that some process is still working in the background
+          # Report the user that some process is still working in the background
 	        print_doc(paste(" ### Waiting for the creation of all sam files from all samples ###\n", sep=""), file2process.my1);
 	        # If A lock file exists; wait a while and check again until no lock file from samples exist
 	        while (w.checklock.allsamples.pe(params$file_list)) {
