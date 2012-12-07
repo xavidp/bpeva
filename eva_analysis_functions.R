@@ -375,7 +375,7 @@ fun.map.on.reference.genome <- function(file2process.my2, step.my) {
       file_in_sai2 = paste(params$directory_out, "/", f2pbase, "_2_sequence", ".sai", sep="");
       file_in_fq1 = paste(params$directory_in, "/", f2pbase, "_1_sequence", ".fastq", sep="");
       file_in_fq2 = paste(params$directory_in, "/", f2pbase, "_2_sequence", ".fastq", sep="");
-      file_out = paste(params$directory_out, "/", f2pbase, "_12.sam", sep="");
+      file_out = paste(params$directory_out, "/", f2pbase, "_merged12.sam", sep="");
       command00 = "bwa sampe"; # next command.
       options00 = paste(params$path_genome, " ", file_in_sai1, " ", file_in_sai2, " ", file_in_fq1, " ", file_in_fq2, " > ", file_out, sep="");
       command = paste(command00, " ", options00, sep="");
@@ -970,10 +970,35 @@ wrapper2.parallelizable.per.sample <- function(datastep.my2) {
 	        system(paste("rm ", params$opt$output, "/", "log.",params$startdate, params$opt$label, ".fastq_pe_tmp.txt.lock", sep=""), TRUE)
         } # end of process to clean the general lock file 
 
-    } # end of check for parent lock file
+    } # end of check for parent lock file. No parent lock file left (removed).
+    
+	  # Remake the file list with the defintive filenames with merged reads (_merged12.sam), and not just all .fastq files
+    
+    # When input files contain paired end reads (_pe), a temporal (_tmp) file name will be used first until we combine the data from both strands
+    params$filename_list <- paste(params$opt$output, "/", "log.",params$startdate, params$opt$label, ".merged12_input_list.txt", sep="")
+	  # Get the list of files in "input" directory through a system call to "ls *" and save the result to a file on disk
+	  system(paste("ls ", params$opt$output,"/", "*merged12.sam > ", params$filename_list, sep=""), TRUE)
+  
+	  # Read the file with the list of files to be processed
+	  params$file_list <- read.table(params$filename_list, sep="")
+	  
+	  # Count the number of source files
+	  params$n_files = length(params$file_list[[1]])
+	  
+	  # remove the directory prefix from the names as well as the ending .fastq
+	  # through gsub, alternatively
+	  params$file_list <- gsub(paste(params$opt$output, "/", sep=""), "", params$file_list[[1]])
+	  params$file_list <- gsub(".sam","", params$file_list)
+
+    # Replace the file name to process from now onwards: divide by 2 and apply the floor function to it
+	  datastep.my2 <- floor(datastep.my2/2)
+	  file2process.my1 <- params$file_list[datastep.my2]
+	  
     
 	} # end of the case bwa=2 (paired end) ####################################
-    
+
+  
+  
   if (sam2bam.and.sort) {
     # Next Step
     step <- fun.sam2bam.and.sort(file2process.my2  = file2process.my1,

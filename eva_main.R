@@ -165,7 +165,7 @@ sfInit(parallel=opt$parallel, cpus=opt$cpus, useRscript=TRUE) # Amb parallel=TRU
 
 # 2a. Get the list of files to be processed 
 #----------------------------------
-abs_path_to_script = getwd() # Path absolut to the script
+abs_path_to_script = getwd() # Absolute path for the script
 rel_path_to_input_files = opt$input # Include both the trailing slash at the right of the folder name and the one at its left
 abs_path_to_input_files = paste(abs_path_to_script, "/", rel_path_to_input_files, "/", sep="")
 
@@ -242,17 +242,10 @@ w.output.run("*** Sys.info ***", unlist(Sys.info()),  abs_routlogfile )
 
 ##############################################################
 
-# 3. Define functions for the analysis (parallelizable or sequential)
+# 3. Create some files to log some data about the run
 #----------------------------------
 
-# Already defined in eva_analysis_functions.R and included in this script above
-
-### FUNCTION wrapper2.parallelizable.per.sample
-###   3a. Wrapper functions, One is run always sequentially. The other one, parallelized.
-### FUNCTION wrapper2.parallelizable.per.sample
-###   3b. Wrapper functions, to be run per input sample file, Can be parallelized.
-### FUNCTION wrapper2.parallelizable.final
-###   3c. Wrapper functions, parallelizable.
+#system(paste("touch ", paste(opt$out, "/", as.matrix(params$file_list) ,sep=""), sep=""))
 
 ##############################################################
 
@@ -345,7 +338,10 @@ unlist(result)
 #----------------------------------
 # Call the wrapper function to do the Job in child processes
 #start <- Sys.time(); result <- sfLapply(1:length(file_list), function(file2process) wrapper(datastep, abs_path_to_input_files, scriptparams)) ; Sys.time()-start
-start3 <- Sys.time(); result2 <- sfLapply(1:length(file_list), wrapper2.parallelizable.per.sample) ; duration <- Sys.time()-start3;
+
+# We changed the file_list parameter for the params$file_list parameter, so that in cases of paired-emnd mode, 
+# this file list will have been rewritten to the new one at this step, and therefore, we will be able to process at this time step half the number of initial fastq files
+start3 <- Sys.time(); result2 <- sfLapply(1:length(params$file_list), wrapper2.parallelizable.per.sample) ; duration <- Sys.time()-start3;
 cat("\nRelative duration since last step: ")
 print(duration)
 cat("\n")
