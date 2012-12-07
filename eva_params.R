@@ -43,7 +43,7 @@ p_index     <- FALSE # TRUE
 p_log       <- TRUE        
 p_summarize <- TRUE          
 p_cpus      <- 4             
-p_parallel  <- FALSE #TRUE #FALSE #TRUE # Do you want to allow running some parallelized processes at all? (which ones will be specified elsewhere in the code)
+p_parallel  <- TRUE #FALSE #TRUE # Do you want to allow running some parallelized processes at all? (which ones will be specified elsewhere in the code)
 p_bwa       <- 2          # Algorythm for mapping with bwa - http://bio-bwa.sourceforge.net/bwa.shtml
                         # 1: bwa aln      + samse  (short reads, single ends, low errors);
                         # 2: bwa aln (x2) + sampe  (short reads, paired ends, low errors);

@@ -122,7 +122,6 @@ w.output.samples <- function(mess, filename.my2)
   write(mess, file=paste(params$log.folder,"/log.",params$startdate, params$opt$label,".", filename.my2, ".txt", sep=""), append = TRUE, sep = "");
 }
 
-
 ##########################
 ### FUNCTION w.output.run
 ###
@@ -135,6 +134,45 @@ w.output.run <- function(label, mess, filename.my2)
   write.table(as.data.frame(mess), file=filename.my2, append = TRUE, row.names = TRUE, col.names = FALSE, sep = " = ");
   write("\n--------------------------------------------------------------", file=filename.my2, append = TRUE, sep = "");
 }
+
+
+##########################
+### FUNCTION w.lock.sample.pe
+###
+###   Create a lock file in the file system when using paired end data to prevent the pipeline to continue when there is still
+###   some sample pending to have the read merged from both strands (_1_sequence.fastq & _2_sequence.fastq) into one single file (_12.sam)
+##########################
+
+w.lock.sample.pe <- function(filename.my2)
+{
+	system(paste("touch ", params$opt$output, "/", "log.",params$startdate, params$opt$label, ".", filename.my2, ".lock", sep=""), TRUE)
+}
+
+##########################
+### FUNCTION w.checklock.allsamples.pe
+###
+###   Check if the lock file is present in the file system when using paired end data (it will indicate that this sample is still being processed and limiting
+###   the continuation of the pipeline; this sample have not yet had the reads merged from both strands (_1_sequence.fastq & _2_sequence.fastq) into one single file (_12.sam)
+##########################
+
+w.checklock.allsamples.pe <- function(file_list.my2)
+{
+  any(file.exists(paste(params$opt$output, "/", "log.",params$startdate, params$opt$label, ".",
+                    as.matrix(file_list.my2)[1:length(file_list.my2)], ".lock", sep="")))  
+}
+
+##########################
+### FUNCTION w.unlock.sample.pe
+###
+###   Remove the lock file in the file system when using paired end data to indicate that this sample is processed already and not limiting
+###   the continuation of the pipeline; this sample have had the reads merged from both strands (_1_sequence.fastq & _2_sequence.fastq) into one single file (_12.sam)
+##########################
+
+w.unlock.sample.pe <- function(filename.my2)
+{
+	system(paste("rm ", params$opt$output, "/", "log.",params$startdate, params$opt$label, ".", filename.my2, ".lock", sep=""), TRUE)
+}
+
 
 ##########################
 ### FUNCTION show_help
@@ -150,7 +188,7 @@ show_help <- function(program_ueb.my)
   cat("\n   -o: directory to save output files \t\t\t\t *** required ***\n")
   cat("\n   -n: -index (indexing of the reference genome)\t\t    [optional]\n")
   cat("\n   -w: -bwa (bwa algorythm: 1 aln+samse, 2 aln+sampe, 3 bwasw(se) ) [optional]\n")
-  cat("\n         for bwa: 2, use sufixes: *_1_sequence.fasq, *_2_sequence.fastq       \n")
+  cat("\n         for bwa: 2, use sufixes: *_1_sequence.fastq, *_2_sequence.fastq       \n")
   cat("\n   -s: summarize results with annotations in a single .csv file     [optional]\n")
   cat("\n   -f: filter results for these target genes \t\t\t    [optional]")
   cat("\n     with this syntax for one gene:")
@@ -240,7 +278,7 @@ fun.map.on.reference.genome <- function(file2process.my2, step.my) {
   ##    or 'bwa bwasw' (for longer reads and/or with higher errors).
   # 1: bwa aln      + samse  (short reads, single ends, low errors);
   # 2: bwa aln (x2) + sampe  (short reads, paired ends, low errors);
-  #        for bwa: 2, use sufixes: *_1_sequence.fasq, *_2_sequence.fastq
+  #        for bwa: 2, use sufixes: *_1_sequence.fastq, *_2_sequence.fastq
   # 3: bwa bwasw             (longer reads, single end only) 
   ##
   ## From: http://bio-bwa.sourceforge.net/bwa.shtml
@@ -280,6 +318,9 @@ fun.map.on.reference.genome <- function(file2process.my2, step.my) {
 
   if (params$opt$bwa == 2) # case to use algorythm 2 from bwa: aln (x2) + sampe  (short reads, paired ends, low errors);
   {
+    # Write the lock file to indicate that this sample is being processed from paired end reads dual file-set.
+    w.lock.sample.pe(file2process.my2)
+
     # Example - 1s part
     #bwa aln database.fasta short_read1.fastq > aln_sa1.sai
     #bwa aln database.fasta short_read2.fastq > aln_sa2.sai
@@ -300,6 +341,7 @@ fun.map.on.reference.genome <- function(file2process.my2, step.my) {
 #    length(grep("_1_sequence", file2process.my2)) == 1 # returns TRUE when matched the string
     if ( length(grep("_2_sequence", file2process.my2)) == 1 ) # returns TRUE when matched the string (2nd sample of the pair) 
     {
+
       # Provide temporal shorter base names for the 2 files of the paired-end set (remove "_1_sequence" and "_2_sequence")
       f2pbase <- gsub("_2_sequence", "", file2process.my2)
 
@@ -317,11 +359,15 @@ fun.map.on.reference.genome <- function(file2process.my2, step.my) {
       start.my <- Sys.time(); system(command); duration <- Sys.time()-start.my;
       # Show the duration of this subprocess
       cat("\nRelative duration since last step: "); print(duration);
-      cat("\nWe will now stop the pipeline. You need to tweak the eva_params.R file to stop any attemp to rerun the previous steps and continue from here");
-      stop()
+
+##      cat("\nWe will now stop the pipeline. You need to tweak the eva_params.R file to stop any attemp to rerun the previous steps and continue from here");
+##      stop()
       # geterrmessage()
     }
-
+    
+    # Remove the lock file from the paired-end process for this sample file.
+    w.unlock.sample.pe(file2process.my2)
+    
   }
   
   if (params$opt$bwa == 3) { # case to use algorythm 3 from bwa: bwasw (longer reads, single end only)
@@ -870,7 +916,40 @@ wrapper2.parallelizable.per.sample <- function(datastep.my2) {
     step <- fun.quality.control(file2process.my2  = file2process.my1,
                                 step.my  = step)
   }
+
   
+  # In cases of paired end data (p_bwa = 2), check if all files have been processed 
+  # to create the corresponding 1 sam file for each pair of files from paired end data 
+  # This can be checked against the presence of lock files in the file system.
+  # By default, there is one lock file for the whole run (whan you have paired data),
+  # and one other lock file per sample when each sample is being processed.
+  if (params$opt$bwa == 2) {
+    
+  	# Check if general lock file exist.   
+	  if ( file.exists(paste(params$abs_path_to_script, "/", params$filename_list, ".lock", sep="")) ) {
+
+        # lock for the whole run still found.
+        # check if any sample lock file is still present
+	      check_sample_lock_exists <- w.checklock.allsamples.pe(params$file_list) 
+      
+	      if (check_sample_lock_exists) { # Suspend execution of R expressions for a given number of seconds
+          # eport the user that some process is still working in the background
+	        print_doc(paste(" ### Waiting for the creation of all sam files from all samples ###\n", sep=""), file2process.my1);
+	        # If A lock file exists; wait a while and check again until no lock file from samples exist
+	        while (w.checklock.allsamples.pe(params$file_list)) {
+            cat(".")
+            Sys.sleep(5) # Suspend execution of R expressions for a given number of seconds
+	        }
+	      } else {
+	        # No lock file from samples exist any more; clean the general lock file
+	        # clean the lock file
+	        system(paste("rm ", params$opt$output, "/", "log.",params$startdate, params$opt$label, ".fastq_pe_tmp.txt.lock", sep=""), TRUE)
+        } # end of process to clean the general lock file 
+
+    } # end of check for parent lock file
+    
+	} # end of the case bwa=2 (paired end) ####################################
+    
   if (sam2bam.and.sort) {
     # Next Step
     step <- fun.sam2bam.and.sort(file2process.my2  = file2process.my1,
@@ -994,7 +1073,7 @@ wrapper2.parallelizable.final <- function(datastep.my2) {
     #      write(paste("			### NEW RUN (", Sys.Date()," - ", params$n_files, " files) ###\n", sep=""), file=paste(params$log.folder,"/log.", params$startdate, ".", file2process.my1, ".txt", sep=""), append = FALSE, sep = "");
     print_mes("\n################################################################################\n", file2process.my1);
     print_mes(paste("	NEW RUN - C. PARALLELIZABLE also. ", params$n_files, " files.", sep=""), file2process.my1);
-    print_mes("################################################################################\n\n", file2process.my1);
+    print_mes("\n################################################################################\n\n", file2process.my1);
   }
   #  step$n <- 0
   #  step$tmp <- 0

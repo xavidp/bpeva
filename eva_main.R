@@ -28,8 +28,8 @@ program_ueb <- "eva_main.R";
 #
 ## b) dynamically from the folder where the main script program_ueb is
 wd <- getwd()
-#wdres <- system(paste("locate", program_ueb, "| grep", wd, sep=" "), intern=TRUE)
-#wdres <- gsub(program_ueb, "", wdres, ignore.case = FALSE, perl = FALSE, fixed = TRUE)
+wdres <- system(paste("locate", program_ueb, "| grep", wd, sep=" "), intern=TRUE)
+wdres <- gsub(program_ueb, "", wdres, ignore.case = FALSE, perl = FALSE, fixed = TRUE)
 setwd(wdres)
 
 # Import Params for this EVA analysis run and the working directory for the whole project 
@@ -168,12 +168,23 @@ sfInit(parallel=opt$parallel, cpus=opt$cpus, useRscript=TRUE) # Amb parallel=TRU
 abs_path_to_script = getwd() # Path absolut to the script
 rel_path_to_input_files = opt$input # Include both the trailing slash at the right of the folder name and the one at its left
 abs_path_to_input_files = paste(abs_path_to_script, "/", rel_path_to_input_files, "/", sep="")
-file_list_name = paste(opt$output, "/", "log.",startdate, opt$label, ".fastq_input_list.txt", sep="")
 
-# Get the list of files in "input" directory through a system call to "ls *" and save the result to a file on disk
-system(paste("ls ",abs_path_to_input_files,"*.fastq > ", file_list_name, sep=""), TRUE)
+# When input files contain paired end reads (_pe), a temporal (_tmp) file name will be used first until we combine the data from both strands
+if (p_bwa == 2) {
+	filename_list = paste(opt$output, "/", "log.",startdate, opt$label, ".fastq_pe_tmp.txt", sep="")
+	# Get the list of files in "input" directory through a system call to "ls *" and save the result to a file on disk
+	system(paste("ls ",abs_path_to_input_files,"*_sequence.fastq > ", filename_list, sep=""), TRUE)
+	# Add a lock file to indicate that paired end sample data is to be processed. This lock file will be removed only after all couples of files from samples have been merged into one file per sample
+	system(paste("touch ", filename_list, ".lock", sep=""), TRUE)
+} else {
+	# When input files contained single end short reads, or long reads, the definitive file list will be created here in this step already 
+	filename_list = paste(opt$output, "/", "log.",startdate, opt$label, ".fastq_input_list.txt", sep="")
+	# Get the list of files in "input" directory through a system call to "ls *" and save the result to a file on disk
+	system(paste("ls ",abs_path_to_input_files,"*.fastq > ", filename_list, sep=""), TRUE)
+}
+
 # Read the file with the list of files to be processed
-file_list <- read.table(file_list_name, sep="")
+file_list <- read.table(filename_list, sep="")
 
 # Count the number of source files
 n_files = length(file_list[[1]])
@@ -193,6 +204,8 @@ params <- list(startdate = startdate,
                opt = opt, # command line arguments passed to the program run
                #scriptparams = "-i ./test_in -o ./test_out -s -k | tee /dev/tty ./logs/log_both.txt
                file_list = file_list,
+               abs_path_to_script = abs_path_to_script, 
+               filename_list = filename_list,
                n_files = n_files,
                wd = wd, # the working directory
                directory_in = opt$input,
@@ -227,11 +240,6 @@ w.output.run("*** .Machine ***", unlist(.Machine),  abs_routlogfile )
 w.output.run("*** R.version ***", unlist(R.version), abs_routlogfile )
 w.output.run("*** Sys.info ***", unlist(Sys.info()),  abs_routlogfile )
 
-# .Platform
-# .Machine
-# R.version
-# Sys.info()
-
 ##############################################################
 
 # 3. Define functions for the analysis (parallelizable or sequential)
@@ -265,6 +273,9 @@ sfExport("params",
          "print_error",
          "print_mes",
          "w.output.samples",
+         "w.lock.sample.pe",
+         "w.checklock.allsamples.pe",
+         "w.unlock.sample.pe",
          "check2clean",
          "fun.quality.control",
          "fun.index.reference.genome",
