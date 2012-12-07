@@ -40,7 +40,7 @@ print_doc <- function(mess, filename.my1)
   mess <- paste(now(), mess, sep="")
   cat(mess)
   if (params$log) { 
-    w.output(mess, filename.my1)
+    w.output.samples(mess, filename.my1)
   }
 }
 
@@ -55,7 +55,7 @@ print_mes <- function(mess, filename.my1) # Similar to print_doc but without add
   # ---------------------------------------------------------------------
   cat(mess)
   if (params$log) { 
-    w.output(mess, filename.my1)
+    w.output.samples(mess, filename.my1)
   }
 }
 
@@ -71,7 +71,7 @@ print_done <- function(filename.my1)
   mess <- paste(now(), "\t\t\t\t\t\t\t[DONE]\n\n", sep="")
   cat(mess)
   if (params$log) { 
-    w.output(mess, filename.my1)
+    w.output.samples(mess, filename.my1)
   }
 }
 
@@ -88,7 +88,7 @@ print_error <- function(mess, filename.my1)
   mess <- paste(now(), "\t\t\t\t\t\t\t[ERROR]\n\n", sep="")
   cat(mess)
   if (params$log) { 
-    w.output(mess, filename.my1)
+    w.output.samples(mess, filename.my1)
   }
 }
 
@@ -112,14 +112,28 @@ check2clean <- function(my.option, filename.my1)
 }
 
 ##########################
-### FUNCTION w.output
+### FUNCTION w.output.samples
 ###
 ### 	Write output to log files on disk
 ##########################
 
-w.output <- function(mess, filename.my2)
+w.output.samples <- function(mess, filename.my2)
 {
   write(mess, file=paste(params$log.folder,"/log.",params$startdate, params$opt$label,".", filename.my2, ".txt", sep=""), append = TRUE, sep = "");
+}
+
+
+##########################
+### FUNCTION w.output.run
+###
+###   Write output with info from SnowFall (when used), params for the run and system info
+##########################
+
+w.output.run <- function(label, mess, filename.my2)
+{
+  write(paste("\n", label, "\n", sep=""), file=filename.my2, append = TRUE, sep = "");
+  write.table(as.data.frame(mess), file=filename.my2, append = TRUE, row.names = TRUE, col.names = FALSE, sep = " = ");
+  write("\n--------------------------------------------------------------", file=filename.my2, append = TRUE, sep = "");
 }
 
 ##########################
@@ -458,7 +472,8 @@ fun.variant.filtering <- function(file2process.my2, step.my) {
   file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam.samtools.var.raw.vcf", sep="");
   file_out = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam.samtools.var.filtered.vcf", sep="");
   command00 = params$path_vcfutils ; # next command.
-  options00 = paste(" varFilter -Q 10 -d 15 -a 5 ", file_in, " > ", file_out, sep="");
+#  options00 = paste(" varFilter -Q 10 -d 15 -a 5 ", file_in, " > ", file_out, sep="");
+  options00 = paste(" varFilter -Q1 -d2 -D10000000 -a2 -S1 ", file_in, " > ", file_out, sep="");
   command = paste(command00, " ", options00, sep="");
   system(command);
   check2clean(file_in, file2process.my2);
@@ -483,7 +498,9 @@ fun.convert2vcf4 <- function(file2process.my2, step.my) {
   file_in =  paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam.samtools.var.filtered.vcf", sep="");
   file_out = paste(params$directory_out, "/", file2process.my2, ".f.vcf4", sep=""); # shorten the name a bit
   command00 = params$path_convert2annovar; # next command.
-  options00 = paste(" ", file_in, " -format vcf4 > ", file_out, sep="");
+  # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
+  file_stderr = paste(params$log.folder,"/log.",params$startdate, params$opt$label,".", file2process.my2, ".txt", sep="");
+  options00 = paste(" ", file_in, " -format vcf4 -includeinfo --allallele > ", file_out, " 2>> ", file_stderr, sep="");
   command = paste(command00, " ", options00, sep="");
   system(command);
   # check2clean(file_in, file2process.my2); #  # Commented out so that samtools standard .vcf files (and not only the converted to .vcf4 - .vcf.annovar - format) are also always kept.
@@ -523,7 +540,9 @@ fun.variant.annotation.geneb <- function(file2process.my2, step.my) {
   file_in  = paste(params$directory_out, "/", file2process.my2, ".f.vcf4", sep=""); 
   file_out = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.exonic_variant_function_gene", sep=""); 
   command00 = "perl"; # next command.
-  options00 = paste(" ", params$path_annotate_variation, " -geneanno --buildver hg19 ", file_in, " ", params$path_annotate_humandb, sep="");
+  # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
+  file_stderr = paste(params$log.folder,"/log.",params$startdate, params$opt$label,".", file2process.my2, ".txt", sep="");
+  options00 = paste(" ", params$path_annotate_variation, " -geneanno --buildver hg19 ", file_in, " ", params$path_annotate_humandb, " 2>> ", file_stderr, sep="");
   command = paste(command00, " ", options00, sep="");
   system(command);
   # We don't do check2clean here  either since we will still use the .vcf.annovar file in the next steps
@@ -572,7 +591,9 @@ fun.variant.annotation.filterb <- function(file2process.my2, step.my) {
   #  file_out_dropped = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.hg19_snp132_dropped", sep=""); 
   #  file_out_passed = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.hg19_snp132_filtered", sep=""); 
   command00 = "perl"; # next command.
-  options00 = paste(" ", params$path_annotate_variation, " -filter --buildver hg19 -dbtype snp132 ", file_in, " ", params$path_annotate_humandb, sep="");
+  # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
+  file_stderr = paste(params$log.folder,"/log.",params$startdate, params$opt$label,".", file2process.my2, ".txt", sep="");
+  options00 = paste(" ", params$path_annotate_variation, " -filter --buildver hg19 -dbtype snp132 ", file_in, " ", params$path_annotate_humandb, " 2>> ", file_stderr, sep="");
   command = paste(command00, " ", options00, sep="");
   system(command);
   # We don't do check2clean here  either since we will still use the .vcf.annovar file in the next steps (summarizing annotations and filtering)
@@ -603,7 +624,9 @@ fun.variant.annotation.summarize <- function(file2process.my2, step.my) {
   file_in = paste(params$directory_out, "/", file2process.my2, ".f.vcf4", sep=""); 
   file_out = paste(file_in, ".sum", sep=""); # summarize_annovar.pl adds the extension .exome_summary.csv, and many other partial .csv files (hardcoded in annovar). 
   command00 = "perl"; # next command.
-  options00 = paste(" ", params$path_summarize_annovar, " --buildver hg19 --verdbsnp 132 ", file_in, " ", params$path_annotate_humandb, " --outfile ", file_out, sep="");
+  # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
+  file_stderr = paste(params$log.folder,"/log.",params$startdate, params$opt$label,".", file2process.my2, ".txt", sep="");
+  options00 = paste(" ", params$path_summarize_annovar, " --buildver hg19 --verdbsnp 132 ", file_in, " ", params$path_annotate_humandb, " --outfile ", file_out, " 2>> ", file_stderr, sep="");
   command = paste(command00, " ", options00, sep="");
   system(command);
   # # We don't do check2clean here  either since we will still use the .vcf.annovar file in the next steps (filtering)

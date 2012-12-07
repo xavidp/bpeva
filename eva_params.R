@@ -55,7 +55,7 @@ p_bwa      = 2          # Algorythm for mapping with bwa - http://bio-bwa.source
 # p_server = Choose machine where to get the paths for
 # 1 for MainHead,
 # 2 for B52,
-p_server <- 2 # Set the server number (see codes above)
+p_server <- 1 # Set the server number (see codes above)
 
 if (p_server==1) { # MainHead server
   path_fastq = "/home/ueb/fastqc/fastqc" 

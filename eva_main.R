@@ -24,13 +24,14 @@ program_ueb <- "eva_main.R";
 
 # Set the working directory from either one of the two options (a and b) listed below
 ## a) the hardcoded way
-#wd <- "/home/ueb/repo/peeva/"
+wd <- "/mnt/magatzem01/ngs/2011-08-SGutierrez-VHIO-207/peeva207/"
+setwd(wd)
 #
 ## b) dynamically from the folder where the main script program_ueb is
-wd <- getwd()
+#wd <- getwd()
 #wdres <- system(paste("locate", program_ueb, "| grep", wd, sep=" "), intern=TRUE)
 #wdres <- gsub(program_ueb, "", wdres, ignore.case = FALSE, perl = FALSE, fixed = TRUE)
-setwd(wdres)
+#setwd(wdres)
 
 # Import Params for this EVA analysis run and the working directory for the whole project 
 source("./eva_params.R")
@@ -207,14 +208,25 @@ params <- list(startdate = startdate,
                path_summarize_annovar = path_summarize_annovar           
 )
 
-routlogfile <- paste("log.", startdate, opt$label, ".SnowFall.Rout", sep="") # SnowFall R output file
+#routlogfile <- paste("log.", startdate, opt$label, ".SnowFall.Rout", sep="") # SnowFall R output file
+routlogfile <- paste("log.", startdate, opt$label, ".run.txt", sep="") # Output file with info from SnowFall (when used), params for the run and system info
 abs_routlogfile <- paste(opt$output, "/", routlogfile, sep="")
 system(paste("touch ", abs_routlogfile, sep=""))
-#w.output(unlist(.Platform), routlogfile )
-#w.output(unlist(.Machine),  routlogfile )
-#w.output(unlist(R.version), routlogfile )
-#w.output(unlist(Sys.info()),  routlogfile )
+
+# First write the output from SnowFall (because it's not appending content but creating the file from scratch)
 sink(abs_routlogfile , split=TRUE)
+
+# After that, you can append extra information from the run to the same file
+w.output.run("*** opt ***", unlist(opt),  abs_routlogfile )
+w.output.run("*** params ***", unlist(params),  abs_routlogfile )
+w.output.run("*** params_wseq ***", unlist(params_wseq),  abs_routlogfile )
+w.output.run("*** params_w2pps ***", unlist(params_w2pps),  abs_routlogfile )
+w.output.run("*** params_w2pf ***", unlist(params_w2pf),  abs_routlogfile )
+w.output.run("*** .Platform ***", unlist(.Platform), abs_routlogfile )
+w.output.run("*** .Machine ***", unlist(.Machine),  abs_routlogfile )
+w.output.run("*** R.version ***", unlist(R.version), abs_routlogfile )
+w.output.run("*** Sys.info ***", unlist(Sys.info()),  abs_routlogfile )
+
 # .Platform
 # .Machine
 # R.version
@@ -252,7 +264,7 @@ sfExport("params",
          "print_done",
          "print_error",
          "print_mes",
-         "w.output",
+         "w.output.samples",
          "check2clean",
          "fun.quality.control",
          "fun.index.reference.genome",
