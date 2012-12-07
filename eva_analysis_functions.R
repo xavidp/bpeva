@@ -177,8 +177,10 @@ fun.quality.control <- function(file2process.my2, step.my) {
   step.my$tmp <- step.my$tmp + 1
   print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Quality Control and Preprocessing: ", file2process.my2, " ###\n", sep=""), file2process.my2);
   
-  # Remove .fastq (substitute it with nothing) from file names
-  name = sub(".fastq","",file2process.my2,  ignore.case = FALSE, perl = FALSE, fixed = TRUE);
+#  # Remove .fastq (substitute it with nothing) from file names
+#  name = sub(".fastq","",file2process.my2,  ignore.case = FALSE, perl = FALSE, fixed = TRUE);
+#^unneded since this is done in eva_main.R for the whole file_list at once at the beginning
+  
   #  print_doc("$now -   Step $step_n.$step_tmp Quality Control and Preprocessing: $name ...");
   file_in = paste(params$directory_in, "/", file2process.my2, ".fastq", sep="");
   #  $file_out = "$directory_out/$name.txt";
@@ -307,7 +309,7 @@ fun.map.on.reference.genome <- function(file2process.my2, step.my) {
       file_in_sai2 = paste(params$directory_out, "/", f2pbase, "_2_sequence", ".sai", sep="");
       file_in_fq1 = paste(params$directory_in, "/", f2pbase, "_1_sequence", ".fastq", sep="");
       file_in_fq2 = paste(params$directory_in, "/", f2pbase, "_2_sequence", ".fastq", sep="");
-      file_out = paste(params$directory_out, "/", file2process.my2, ".sam", sep="");
+      file_out = paste(params$directory_out, "/", f2pbase, "_12.sam", sep="");
       command00 = "bwa sampe"; # next command.
       options00 = paste(params$path_genome, " ", file_in_sai1, " ", file_in_sai2, " ", file_in_fq1, " ", file_in_fq2, " > ", file_out, sep="");
       command = paste(command00, " ", options00, sep="");
@@ -315,6 +317,9 @@ fun.map.on.reference.genome <- function(file2process.my2, step.my) {
       start.my <- Sys.time(); system(command); duration <- Sys.time()-start.my;
       # Show the duration of this subprocess
       cat("\nRelative duration since last step: "); print(duration);
+      cat("\nWe will now stop the pipeline. You need to tweak the eva_params.R file to stop any attemp to rerun the previous steps and continue from here");
+      stop()
+      # geterrmessage()
     }
 
   }

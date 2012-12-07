@@ -24,20 +24,19 @@ program_ueb <- "eva_main.R";
 
 # Set the working directory from either one of the two options (a and b) listed below
 ## a) the hardcoded way
-wd <- "/mnt/magatzem01/ngs/2011-08-SGutierrez-VHIO-207/peeva207/"
-setwd(wd)
+#wd <- "/home/ueb/repo/peeva/"
 #
 ## b) dynamically from the folder where the main script program_ueb is
-#wd <- getwd()
+wd <- getwd()
 #wdres <- system(paste("locate", program_ueb, "| grep", wd, sep=" "), intern=TRUE)
 #wdres <- gsub(program_ueb, "", wdres, ignore.case = FALSE, perl = FALSE, fixed = TRUE)
-#setwd(wdres)
+setwd(wdres)
 
 # Import Params for this EVA analysis run and the working directory for the whole project 
-source("./eva_params.R")
+source("eva_params.R")
 
 # Import UEB Functions for the EVA analysis 
-source("./eva_analysis_functions.R")
+source("eva_analysis_functions.R")
 
 ##############################################################################
 ##############################################################################
@@ -57,6 +56,7 @@ library(snowfall, quietly = TRUE)
 # Command to run on Debian machines to install some of the requriements
 # ---------------------------------------------------------------------
 # sudo apt-get install perl perl-suid
+# sudo apt-get install bwa samtools
 # sudo wget http://bioinform.usc.edu/annovar/xmpVO9ISYx/annovar.tar.gz (Versión from May 2012)
 #
 # For annovar to work, you need to download many annotation db to your hard disk
@@ -178,7 +178,7 @@ file_list <- read.table(file_list_name, sep="")
 # Count the number of source files
 n_files = length(file_list[[1]])
 
-# remove the directory prefix from the names
+# remove the directory prefix from the names as well as the ending .fastq
 # through gsub, alternatively
 file_list <- gsub(abs_path_to_input_files,"", file_list[[1]])
 file_list <- gsub(".fastq","", file_list)

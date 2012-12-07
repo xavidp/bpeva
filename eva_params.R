@@ -27,24 +27,24 @@ p_test     = 1 # 1/0; ### Is this a test run? ###
                 # 1 = test run, so that use the predefined values for a test run; 
                 # 0 = normal run
 if (p_test==1) {
-  p_input    = "test_in2" # "../test_in2"  # "test_in"
-  p_output   = "test_out2" # "../test_out2" # "test_out"
-  p_label    =  ".testrun" # "test-121002" # "test-foo"        # Run Label for output filenames
-  p_keep     = TRUE # Enable if run through editor and you want to keep temp files
-  p_filter   = ""            
+  p_input    <- "test_in2" # "../test_in2"  # "test_in"
+  p_output   <- "test_out2" # "../test_out2" # "test_out"
+  p_label    <-  ".testrun" # "test-121002" # "test-foo"        # Run Label for output filenames
+  p_keep     <- TRUE # Enable if run through editor and you want to keep temp files
+  p_filter   <- ""            
 } else {
-  p_input    = "../dir_in" # "../dir_in" # "test_in"   # "dir_in"     
-  p_output   = "../dir_out_293" # "../dir_out_293" # "test_out"	 # "dir_out_293"
-  p_label    =  ".sg293_qa_sg3sg4" # "test-121002" # ".sg293_qa_sg3sg4"   # "test-121002" ".sara207_4s4cpu"        # Run Label for output filenames
-  p_keep     = TRUE # Enable if run through editor and you want to keep temp files
-  p_filter   = "BRCA"            
+  p_input    <- "../dir_in" # "../dir_in" # "test_in"   # "dir_in"     
+  p_output   <- "../dir_out_293" # "../dir_out_293" # "test_out"	 # "dir_out_293"
+  p_label    <-  ".sg293_qa_sg3sg4" # "test-121002" # ".sg293_qa_sg3sg4"   # "test-121002" ".sara207_4s4cpu"        # Run Label for output filenames
+  p_keep     <- TRUE # Enable if run through editor and you want to keep temp files
+  p_filter   <- "BRCA"            
 }
-p_index    = FALSE # TRUE         
-p_log      = TRUE        
-p_summarize= TRUE          
-p_cpus     = 4             
-p_parallel = TRUE #FALSE #TRUE # Do you want to allow running some parallelized processes at all? (which ones will be specified elsewhere in the code)
-p_bwa      = 2          # Algorythm for mapping with bwa - http://bio-bwa.sourceforge.net/bwa.shtml
+p_index     <- FALSE # TRUE         
+p_log       <- TRUE        
+p_summarize <- TRUE          
+p_cpus      <- 4             
+p_parallel  <- FALSE #TRUE #FALSE #TRUE # Do you want to allow running some parallelized processes at all? (which ones will be specified elsewhere in the code)
+p_bwa       <- 2          # Algorythm for mapping with bwa - http://bio-bwa.sourceforge.net/bwa.shtml
                         # 1: bwa aln      + samse  (short reads, single ends, low errors);
                         # 2: bwa aln (x2) + sampe  (short reads, paired ends, low errors);
                         # 3: bwa bwasw             (longer reads, single end only) 
@@ -80,7 +80,7 @@ if (p_server==1) { # MainHead server
 #  wrapper.sequential (wseq)
 #----------------------------------
 #####
-runParam <- FALSE #######################
+runParam <- TRUE #######################
 p_map.on.reference.genome.sequential     <- runParam # In case we run the mapping sequentially for all samples
 
 runParam <- FALSE # !runParam ####################### The opposite to map in sequential mode
