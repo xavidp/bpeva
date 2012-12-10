@@ -57,7 +57,16 @@ library(snowfall, quietly = TRUE)
 # ---------------------------------------------------------------------
 # sudo apt-get install perl perl-suid
 # sudo apt-get install bwa samtools
-# sudo wget http://bioinform.usc.edu/annovar/xmpVO9ISYx/annovar.tar.gz (Versión from May 2012)
+# Annovar:
+## fetch, uncompress somewhere, and update the path in ueb_params.R accordingly
+### wget http://bioinform.usc.edu/annovar/xmpVO9ISYx/annovar.tar.gz (Versión from May 2012)
+# snpEff:
+## Fetch program and db for organism. See http://snpeff.sourceforge.net/manual.html
+## Program: uncompress and leave as ~/snpEff
+### wget http://sourceforge.net/projects/snpeff/files/snpEff_latest_core.zip/download # v3.1 as of Dec 2012, 10th.
+## DB for organism (hg19 in this example): fetch, uncompress, and leave file as ~/snpEff/data/hg19/snpEffectPredictor.bin
+### wget http://sourceforge.net/projects/snpeff/files/databases/v3_1/snpEff_v3_1_hg19.zip/download 
+
 #
 # For annovar to work, you need to download many annotation db to your hard disk
 # with commands like:
@@ -293,6 +302,7 @@ sfExport("params",
 	 "fun.variant.annotation.summarize",
 	 "fun.grep.variants",
 	 "fun.visualize.variants",
+   "fun.variant.eff.report",
    "fun.build.html.report") # functions can be passed also to workers from master
 
 ##############################################################

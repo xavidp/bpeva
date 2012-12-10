@@ -807,6 +807,75 @@ fun.visualize.variants <- function(file2process.my2, step.my) {
   # TODO XXX
 }
 
+##########################
+### FUNCTION fun.variant.eff.report
+###
+###   Report the effects from the variants detected, with snpEff, which is a variant annotation and effect prediction tool.
+###   It annotates and predicts the effects of variants on genes (such as amino acid changes).
+###   See http://snpeff.sourceforge.net/manual.html
+###
+###   Typical usage :
+###
+###   Input: The inputs are predicted variants (SNPs, insertions, deletions and MNPs). 
+###     The input file is usually obtained as a result of a sequencing experiment, and it is usually in variant call format (VCF).
+###   Output: SnpEff analyzes the input variants. It annotates the variants and calculates the effects they produce on known genes (e.g. amino acid changes).
+###     A list of effects and annotations that SnpEff can calculate can be found here.
+##########################
+
+fun.variant.eff.report <- function(file2process.my2, step.my) {
+
+  # update step number
+  step.my$tmp <- step.my$tmp + 1
+  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Variant Annotation & Effect prediction with snpEff: ", file2process.my2, " ###\n", sep=""), file2process.my2);
+  
+  file_in  = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam.samtools.var.filtered.vcf", sep=""); 
+  file_out = paste(params$directory_out, "/", file2process.my2, ".f.snpEff.vcf", sep=""); 
+  file_out_base = paste(params$directory_out, "/", file2process.my2, ".f.snpEff", sep=""); 
+  command00 = "java -jar"; # next command.
+  # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
+  file_stderr = paste(params$log.folder,"/log.",params$startdate, params$opt$label,".", file2process.my2, ".txt", sep="");
+  options00 = paste(" ", params$path_snpEff, "/snpEff.jar -c ", params$path_snpEff, "/snpEff.config hg19 ", file_in, 
+                    "-a 0 -i vcf -o vcf -chr chr -stats ", file_out_base,"_summary.html > ", file_out,
+                    " 2>> ", file_stderr, sep="");
+
+  # Documentation from snpEff: "Calculate variant effects: snpEff [eff]" http://snpeff.sourceforge.net/manual.html 
+  #
+  #   Input file: Default is STDIN
+  #   
+  #   Options:
+  #   -a , -around            : Show N codons and amino acids around change (only in coding regions). Default is 0 codons.
+  #   -i format               : Input format [ vcf, txt, pileup, bed ]. Default: VCF.
+  #   -o format               : Ouput format [ txt, vcf, gatk, bed, bedAnn ]. Default: VCF.
+  #   -interval               : Use a custom interval file (you may use this option many times)
+  #   -chr string             : Prepend 'string' to chromosome name (e.g. 'chr1' instead of '1'). Only on TXT output.
+  #   -s,  -stats             : Name of stats file (summary). Default is 'snpEff_summary.html'
+  #   -t                      : Use multiple threads (implies '-noStats'). Default 'off'
+  
+  command = paste(command00, " ", options00, sep="");
+  system(command);
+  # # We don't do check2clean here  since the output are results
+  print_done(file2process.my2);
+  
+#   # a mà la instrucció al mainhead és:
+#   ####### test in
+#   #   tmp_file_in = "/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a/s_4_m11_146b_merged12.f.vcf4"; 
+#      tmp_file_in = "/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a/s_4_m11_146b_merged12.sam.sorted.noDup.bam.samtools.var.filtered.vcf"; 
+#     tmp_file_out = "/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a/00snpeff_146b_merged12.vcf"; 
+#     tmp_command00 = "java -Xmx4g -jar"; # next command. -Xmx4g stands for indicating the computer to use at least 4Gb of RAM because the Human Genome Database is large
+# #   #tmp_file_stderr = "/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a/log.121207.sg293a.s_4_m11_146b_merged12.txt";
+#    tmp_file_stderr = "/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a/00snpeff_log.txt";
+#    tmp_options00 = paste("/home/ueb/snpEff/snpEff.jar -c /home/ueb/snpEff/snpEff.config hg19 ", tmp_file_in, 
+#                      " -a 0 -i vcf -o vcf -chr chr -stats /mnt/magatzem02/tmp/run_sara_293a/dir_out_293a/snpEff_summary.html > ", tmp_file_out, " 2>> ", tmp_file_stderr, sep="");
+#    tmp_command = paste(tmp_command00, " ", tmp_options00, sep="");
+#    system(tmp_command);
+####### test out
+  
+  gc() # Let's clean ouR garbage if possible
+  return(step.my) # return nothing, since results are saved on disk from the system command
+  
+  # TODO XXX
+}
+
 
 
 ##########################
@@ -889,6 +958,7 @@ wrapper2.parallelizable.per.sample <- function(datastep.my2) {
   variant.annotation.summarize      <- params_w2pps$p_variant.annotation.summarize
   grep.variants		                  <- params_w2pps$p_grep.variants
   visualize.variants		            <- params_w2pps$p_visualize.variants
+  variant.eff.report                <- params_w2pps$p_variant.eff.report
   
   # -----------------------------
   
@@ -1077,6 +1147,13 @@ wrapper2.parallelizable.per.sample <- function(datastep.my2) {
     step <- fun.visualize.variants(file2process.my2  = file2process.my1,
                                    step.my  = step)
   }
+
+  if (variant.eff.report) {
+    # Next Step
+    step <- fun.variant.eff.report(file2process.my2  = file2process.my1,
+                                             step.my  = step)
+  }
+  
   
   step$tmp <- step$tmp+1;
   print_doc(paste("	End of processing this file: ", file2process.my1, "\n", sep=""), file2process.my1);

@@ -35,8 +35,8 @@ if (p_test==1) {
   p_filter   <- ""            
 } else {
   path_input_absolute <- "1" # Define whether the p_input is absolute or relative
-  p_input    <- "/mnt/magatzem02/tmp/run_sara_293a/dir_in_293a2" # "../dir_in" # "test_in"   # "dir_in"     
-  p_output   <- "/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a2" #../dir_out_293" # "../dir_out_293" # "test_out"	 # "dir_out_293"
+  p_input    <- "/mnt/magatzem02/tmp/run_sara_293a/dir_in_293a" # "../dir_in" # "test_in"   # "dir_in"     
+  p_output   <- "/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a" #../dir_out_293" # "../dir_out_293" # "test_out"	 # "dir_out_293"
   p_label    <-  ".sg293a2" # "test-121002" # ".sg293_qa_sg3sg4"   # "test-121002" ".sara207_4s4cpu"        # Run Label for output filenames
   p_keep     <- TRUE # Enable if run through editor and you want to keep temp files
 #  p_filter   <- "BRCA"
@@ -61,13 +61,14 @@ p_bwa       <- 2          # Algorythm for mapping with bwa - http://bio-bwa.sour
 p_server <- 1 # Set the server number (see codes above)
 
 if (p_server==1) { # MainHead server
-  path_fastq = "/home/ueb/fastqc/fastqc" 
-  path_genome = "/home/xavi/Data/Data_Genomes/hg19/hg19.fa" 
-  path_vcfutils = "/usr/share/samtools/vcfutils.pl"
-  path_convert2annovar = "/home/ueb/annovar/convert2annovar.pl"
-  path_annotate_variation = "/home/ueb/annovar/annotate_variation.pl"
-  path_annotate_humandb = "/home/ueb/annovar/humandb/"
-  path_summarize_annovar = "/home/ueb/annovar/summarize_annovar.pl"           
+    path_fastq = "/home/ueb/fastqc/fastqc" 
+    path_genome = "/home/xavi/Data/Data_Genomes/hg19/hg19.fa" 
+    path_vcfutils = "/usr/share/samtools/vcfutils.pl"
+    path_convert2annovar = "/home/ueb/annovar/convert2annovar.pl"
+    path_annotate_variation = "/home/ueb/annovar/annotate_variation.pl"
+    path_annotate_humandb = "/home/ueb/annovar/humandb/"
+    path_summarize_annovar = "/home/ueb/annovar/summarize_annovar.pl"           
+    path_snpEff = "/home/ueb/snpEff/snpEff.jar"           
   } else if (p_server==2) { # B52 server
     path_fastq = "/home/ueb/software/FastQC/fastqc"
     path_genome = "/home/ueb/Data/Data_Genomes/hg19.fa" 
@@ -76,6 +77,7 @@ if (p_server==1) { # MainHead server
     path_annotate_variation = "/home/ueb/software/annovar/annotate_variation.pl"
     path_annotate_humandb = "/home/ueb/software/annovar/humandb/"
     path_summarize_annovar = "/home/ueb/software/annovar/summarize_annovar.pl"           
+    path_snpEff = "/home/ueb/snpEff/snpEff.jar"           
   }
 
 
@@ -122,6 +124,7 @@ p_variant.annotation.filterb	<- runParam
 p_variant.annotation.summarize<- runParam
 p_grep.variants		            <- runParam
 p_visualize.variants		      <- runParam
+p_variant.eff.report          <- runParam
 #####
 runParam <- FALSE #######################
 ####
