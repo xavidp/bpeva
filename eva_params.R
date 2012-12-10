@@ -23,26 +23,29 @@
 # ---------------------------------------------------------------------
 startdate <- paste(format(Sys.Date(), "%y%m%d"), sep="")
 
-p_test     = 1 # 1/0; ### Is this a test run? ###
+p_test     = 0 # 1/0; ### Is this a test run? ###
                 # 1 = test run, so that use the predefined values for a test run; 
                 # 0 = normal run
 if (p_test==1) {
+  path_input_absolute <- "0" # Define whether the p_input is absolute or relative
   p_input    <- "test_in2" # "../test_in2"  # "test_in"
   p_output   <- "test_out2" # "../test_out2" # "test_out"
   p_label    <-  ".testrun" # "test-121002" # "test-foo"        # Run Label for output filenames
   p_keep     <- TRUE # Enable if run through editor and you want to keep temp files
   p_filter   <- ""            
 } else {
-  p_input    <- "../dir_in" # "../dir_in" # "test_in"   # "dir_in"     
-  p_output   <- "../dir_out_293" # "../dir_out_293" # "test_out"	 # "dir_out_293"
-  p_label    <-  ".sg293_qa_sg3sg4" # "test-121002" # ".sg293_qa_sg3sg4"   # "test-121002" ".sara207_4s4cpu"        # Run Label for output filenames
+  path_input_absolute <- "1" # Define whether the p_input is absolute or relative
+  p_input    <- "/mnt/magatzem02/tmp/run_sara_293a/dir_in_293a2" # "../dir_in" # "test_in"   # "dir_in"     
+  p_output   <- "/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a2" #../dir_out_293" # "../dir_out_293" # "test_out"	 # "dir_out_293"
+  p_label    <-  ".sg293a2" # "test-121002" # ".sg293_qa_sg3sg4"   # "test-121002" ".sara207_4s4cpu"        # Run Label for output filenames
   p_keep     <- TRUE # Enable if run through editor and you want to keep temp files
-  p_filter   <- "BRCA"            
+#  p_filter   <- "BRCA"
+  p_filter   <- "BRCA1|BRCA2|CHEK2|PALB2|BRIP1|TP53|PTEN|STK11|CDH1|ATM|BARD1|APC|MLH1|MRE11|MSH2|MSH6|MUTYH|NBN|PMS1|PMS2|RAD50|RAD51D|RAD51C|XRCC2|UIMC1|FAM175A|ERCC4|RAD51|RAD51B|XRCC3|FANCA|FANCB|FANCC|FANCD2|FANCE|FANCF|FANCG|FANCI|FANCL|FANCM|SLX4|CASP8|FGFR2|TOX3|MAP3K1|MRPS30|SLC4A7|NEK10|COX11|ESR1|CDKN2A|CDKN2B|ANKRD16|FBXO18|ZNF365|ZMIZ1|BABAM1|LSP1|ANKLE1|TOPBP1|BCCIP|53BP1"            
 }
 p_index     <- FALSE # TRUE         
 p_log       <- TRUE        
 p_summarize <- TRUE          
-p_cpus      <- 4             
+p_cpus      <- 6             
 p_parallel  <- TRUE #FALSE #TRUE # Do you want to allow running some parallelized processes at all? (which ones will be specified elsewhere in the code)
 p_bwa       <- 2          # Algorythm for mapping with bwa - http://bio-bwa.sourceforge.net/bwa.shtml
                         # 1: bwa aln      + samse  (short reads, single ends, low errors);
@@ -80,10 +83,10 @@ if (p_server==1) { # MainHead server
 #  wrapper.sequential (wseq)
 #----------------------------------
 #####
-runParam <- TRUE #######################
+runParam <- FALSE #######################
 p_map.on.reference.genome.sequential     <- runParam # In case we run the mapping sequentially for all samples
 
-runParam <- FALSE # !runParam ####################### The opposite to map in sequential mode
+runParam <- TRUE # !runParam ####################### The opposite to map in sequential mode
 p_map.on.reference.genome.parallel       <- runParam # In case we run the mapping in parallel for n (p_cpus) samples at a time
 
 # Set all params inside a list, so that it's easier to send from main to functions
@@ -100,11 +103,11 @@ params_wseq <- list(
 #----------------------------------
 # p_map.on.reference.genome.parallel  is not defined here but in the previous chunk
 #####
-runParam <- FALSE #######################
+runParam <- TRUE #######################
 ####
 p_quality.control             <- runParam
 #####
-runParam <- TRUE #######################
+runParam <- FALSE #######################
 ####
 p_sam2bam.and.sort		        <- runParam
 p_remove.pcr.dup		          <- runParam
@@ -112,9 +115,6 @@ p_index.bam.file		          <- runParam
 p_stats			                  <- runParam
 p_variant.calling		          <- runParam
 p_variant.filtering		        <- runParam
-#####
-runParam <- FALSE #######################
-####
 p_convert2vcf4		            <- runParam
 p_variant.annotation.geneb	  <- runParam
 p_variant.annotation.regionb	<- runParam # skipped so far
@@ -122,6 +122,9 @@ p_variant.annotation.filterb	<- runParam
 p_variant.annotation.summarize<- runParam
 p_grep.variants		            <- runParam
 p_visualize.variants		      <- runParam
+#####
+runParam <- FALSE #######################
+####
 
 
 # Set all params inside a list, so that it's easier to send from main to functions

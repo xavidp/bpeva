@@ -165,9 +165,15 @@ sfInit(parallel=opt$parallel, cpus=opt$cpus, useRscript=TRUE) # Amb parallel=TRU
 
 # 2a. Get the list of files to be processed 
 #----------------------------------
-abs_path_to_script = getwd() # Absolute path for the script
-rel_path_to_input_files = opt$input # Include both the trailing slash at the right of the folder name and the one at its left
-abs_path_to_input_files = paste(abs_path_to_script, "/", rel_path_to_input_files, "/", sep="")
+if (path_input_absolute == 0) {
+  abs_path_to_script = getwd() # Absolute path for the script
+  rel_path_to_input_files = opt$input # Include both the trailing slash at the right of the folder name and the one at its left
+  abs_path_to_input_files = paste(abs_path_to_script, "/", rel_path_to_input_files, "/", sep="")
+} else {
+  # Absolute path for the script
+  abs_path_to_script = getwd() # Absolute path for the script
+  abs_path_to_input_files = paste(opt$input, "/", sep="") # Include both the trailing slash at the right of the folder name and the one at its left
+}
 
 # When input files contain paired end reads (_pe), a temporal (_tmp) file name will be used first until we combine the data from both strands
 if (p_bwa == 2) {
