@@ -23,14 +23,14 @@
 # ---------------------------------------------------------------------
 startdate <- paste(format(Sys.Date(), "%y%m%d"), sep="")
 
-p_test     = 0 # 1/0; ### Is this a test run? ###
+p_test     = 1 # 1/0; ### Is this a test run? ###
                 # 1 = test run, so that use the predefined values for a test run; 
                 # 0 = normal run
 if (p_test==1) {
   path_input_absolute <- "0" # Define whether the p_input is absolute or relative
   p_input    <- "test_in2" # "../test_in2"  # "test_in"
   p_output   <- "test_out2" # "../test_out2" # "test_out"
-  p_label    <-  ".testrun" # "test-121002" # "test-foo"        # Run Label for output filenames
+  p_label    <-  ".testrunParallel" # "test-121002" # "test-foo"        # Run Label for output filenames
   p_keep     <- TRUE # Enable if run through editor and you want to keep temp files
   p_filter   <- ""            
 } else {
@@ -40,17 +40,24 @@ if (p_test==1) {
   p_label    <-  ".sg293a2" # "test-121002" # ".sg293_qa_sg3sg4"   # "test-121002" ".sara207_4s4cpu"        # Run Label for output filenames
   p_keep     <- TRUE # Enable if run through editor and you want to keep temp files
 #  p_filter   <- "BRCA"
-  p_filter   <- "BRCA1|BRCA2|CHEK2|PALB2|BRIP1|TP53|PTEN|STK11|CDH1|ATM|BARD1|APC|MLH1|MRE11|MSH2|MSH6|MUTYH|NBN|PMS1|PMS2|RAD50|RAD51D|RAD51C|XRCC2|UIMC1|FAM175A|ERCC4|RAD51|RAD51B|XRCC3|FANCA|FANCB|FANCC|FANCD2|FANCE|FANCF|FANCG|FANCI|FANCL|FANCM|SLX4|CASP8|FGFR2|TOX3|MAP3K1|MRPS30|SLC4A7|NEK10|COX11|ESR1|CDKN2A|CDKN2B|ANKRD16|FBXO18|ZNF365|ZMIZ1|BABAM1|LSP1|ANKLE1|TOPBP1|BCCIP|53BP1"            
+  p_filter   <- "BRCA1\\|BRCA2\\|CHEK2\\|PALB2\\|BRIP1\\|TP53\\|PTEN\\|STK11\\|CDH1\\|ATM\\|BARD1\\|APC\\|MLH1\\|MRE11\\|MSH2\\|MSH6\\|MUTYH\\|NBN\\|PMS1\\|PMS2\\|RAD50\\|RAD51D\\|RAD51C\\|XRCC2\\|UIMC1\\|FAM175A\\|ERCC4\\|RAD51\\|RAD51B\\|XRCC3\\|FANCA\\|FANCB\\|FANCC\\|FANCD2\\|FANCE\\|FANCF\\|FANCG\\|FANCI\\|FANCL\\|FANCM\\|SLX4\\|CASP8\\|FGFR2\\|TOX3\\|MAP3K1\\|MRPS30\\|SLC4A7\\|NEK10\\|COX11\\|ESR1\\|CDKN2A\\|CDKN2B\\|ANKRD16\\|FBXO18\\|ZNF365\\|ZMIZ1\\|BABAM1\\|LSP1\\|ANKLE1\\|TOPBP1\\|BCCIP\\|53BP1"            
 }
 p_index     <- FALSE # TRUE         
 p_log       <- TRUE        
 p_summarize <- TRUE          
-p_cpus      <- 6             
+p_cpus      <- 4             
 p_parallel  <- TRUE #FALSE #TRUE # Do you want to allow running some parallelized processes at all? (which ones will be specified elsewhere in the code)
 p_bwa       <- 2          # Algorythm for mapping with bwa - http://bio-bwa.sourceforge.net/bwa.shtml
                         # 1: bwa aln      + samse  (short reads, single ends, low errors);
                         # 2: bwa aln (x2) + sampe  (short reads, paired ends, low errors);
                         # 3: bwa bwasw             (longer reads, single end only) 
+
+# Reporting by email at the end of the run
+p_from <- "xavier.depdedro@vhir.org"
+p_to <- "xdpedro@ir.vhebron.net"
+p_subject <- paste("EVA Pipeline run finished - ", p_label, sep="")
+p_body <- paste(p_subject, " - from ", program_ueb," - See some log information attached", sep="")                   
+p_smtp="smtp.ir.vhebron.net"
 
 
 # 2b. Define path params for all runs
@@ -148,7 +155,8 @@ params_w2pps <- list(
   p_variant.annotation.filterb        = p_variant.annotation.filterb,
   p_variant.annotation.summarize      = p_variant.annotation.summarize,
   p_grep.variants                     = p_grep.variants,
-  p_visualize.variants                = p_visualize.variants
+  p_visualize.variants                = p_visualize.variants,
+  p_variant.eff.report                = p_variant.eff.report
   )
 
 # 9b. Set flags as ON (TRUE) or OFF (FALSE) for all processes from function:

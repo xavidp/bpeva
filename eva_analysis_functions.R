@@ -175,6 +175,64 @@ w.unlock.sample.pe <- function(filename.my2)
 
 
 ##########################
+### FUNCTION mail.send
+###
+###   Send an email (eventually with attachments) when requested at the end of the whole run. 
+###   
+###   attachmentPath <- "subfolder/log.txt" # needs full path if not in working directory
+###   attachmentName <- "log.txt" # same as attachmentPath if not in working directory
+##########################
+mail.send <- function(attachmentPath, attachmentName)
+{
+  if(!require(sendmailR)){ install.packages("sendmailR") }
+  require(sendmailR)
+  
+  # Get param values as defined in eva_params.R
+  from <- params$p_from
+  to <- params$p_to
+  subject <- params$p_subject
+  body <- params$p_body                     
+  mailControl=list(smtpServer=params$p_smtp)
+  
+  # #####send plain email
+  # sendmail(from=from,to=to,subject=subject,msg=body,control=mailControl)
+  
+  #####send same email with attachment
+  #needs full path if not in working directory
+  #attachmentPath <- "subfolder/log.txt"
+  #attachmentPath <- abs_routlogfile
+  
+  #same as attachmentPath if using working directory
+  #attachmentName <- "log.txt"
+  #attachmentName <- routlogfile
+  
+  #key part for attachments, put the body and the mime_part in a list for msg
+  attachmentObject <- mime_part(x=attachmentPath,name=attachmentName)
+  bodyWithAttachment <- list(body,attachmentObject)
+
+  ## If more than one attachment, use this syntax
+  #attachmentObject <- mime_part(x="subfolder/log.txt",name="log.txt")
+  #attachmentObject2 <- mime_part(x="subfolder/log2.txt",name="log2.txt")
+  #bodyWithAttachment <- list(body,attachmentObject,attachmentObject2)
+  
+  # Send the email. This procedure works only with non-parallel runs. 
+  # When parallel run, no email received :-()
+#  sendmail(from=from,to=to,subject=subject,msg=bodyWithAttachment,control=mailControl)
+
+  # Testing another way to send the email through a direct system call.
+  # To check whether this also works in parallel-run mode.
+  params$p_subject <- "EVA_Pipeline_run_finished"
+  params$p_body <- paste(params$p_subject, " _ See some log information attached", sep="")                   
+  system(paste("sendEmail -f ", params$p_from, " -t ", params$p_to, " -u ", params$p_subject,
+               " -m ", params$p_body, " -s ", params$p_smtp, " -a ", attachmentPath,
+               " >> ", attachmentPath, sep=""))
+#  return() # return nothing
+}
+
+##########################
+
+
+##########################
 ### FUNCTION show_help
 ##########################
 
@@ -857,7 +915,16 @@ fun.variant.eff.report <- function(file2process.my2, step.my) {
   print_done(file2process.my2);
   
 #   # a mà la instrucció al mainhead és:
-#   ####### test in
+# Estudi 293
+# java  -Xmx4g -jar /home/ueb/snpEff/snpEff.jar  -c /home/ueb/snpEff/snpEff.config hg19 /mnt/magatzem02/tmp/run_sara_293a/dir_out_293a/s_4_m11_146b_merged12.sam.sorted.noDup.bam.samtools.var.filtered.vcf -a 0 -i vcf -o vcf -chr chr -stats /mnt/magatzem02/tmp/run_sara_293a/dir_out_293a/s_4_m11_146b_merged12.f.snpEff_summary.html > /mnt/magatzem02/tmp/run_sara_293a/dir_out_293a/s_4_m11_146b_merged12.f.snpEff.vcf
+# java  -Xmx4g -jar /home/ueb/snpEff/snpEff.jar  -c /home/ueb/snpEff/snpEff.config hg19 /mnt/magatzem02/tmp/run_sara_293a/dir_out_293a/s_3_m11_145b_merged12.sam.sorted.noDup.bam.samtools.var.filtered.vcf -a 0 -i vcf -o vcf -chr chr -stats /mnt/magatzem02/tmp/run_sara_293a/dir_out_293a/s_3_m11_145b_merged12.f.snpEff_summary.html > /mnt/magatzem02/tmp/run_sara_293a/dir_out_293a/s_3_m11_145b_merged12.f.snpEff.vcf
+#Estudi 207
+# java  -Xmx4g -jar /home/ueb/snpEff/snpEff.jar  -c /home/ueb/snpEff/snpEff.config hg19 /mnt/magatzem02/tmp/run_sara_207v05/G_A_I.sam.sorted.noDup.bam.samtools.var.filtered.vcf -a 0 -i vcf -o vcf -chr chr -stats /mnt/magatzem02/tmp/run_sara_207v05/G_A_I.f.snpEff_summary.html > /mnt/magatzem02/tmp/run_sara_207v05/G_A_I.f.snpEff.vcf
+# java  -Xmx4g -jar /home/ueb/snpEff/snpEff.jar  -c /home/ueb/snpEff/snpEff.config hg19 /mnt/magatzem02/tmp/run_sara_207v05/G_A_S.sam.sorted.noDup.bam.samtools.var.filtered.vcf -a 0 -i vcf -o vcf -chr chr -stats /mnt/magatzem02/tmp/run_sara_207v05/G_A_S.f.snpEff_summary.html > /mnt/magatzem02/tmp/run_sara_207v05/G_A_S.f.snpEff.vcf
+# java  -Xmx4g -jar /home/ueb/snpEff/snpEff.jar  -c /home/ueb/snpEff/snpEff.config hg19 /mnt/magatzem02/tmp/run_sara_207v05/G_B_I.sam.sorted.noDup.bam.samtools.var.filtered.vcf -a 0 -i vcf -o vcf -chr chr -stats /mnt/magatzem02/tmp/run_sara_207v05/G_B_I.f.snpEff_summary.html > /mnt/magatzem02/tmp/run_sara_207v05/G_B_I.f.snpEff.vcf
+# java  -Xmx4g -jar /home/ueb/snpEff/snpEff.jar  -c /home/ueb/snpEff/snpEff.config hg19 /mnt/magatzem02/tmp/run_sara_207v05/G_B_S.sam.sorted.noDup.bam.samtools.var.filtered.vcf -a 0 -i vcf -o vcf -chr chr -stats /mnt/magatzem02/tmp/run_sara_207v05/G_B_S.f.snpEff_summary.html > /mnt/magatzem02/tmp/run_sara_207v05/G_B_S.f.snpEff.vcf
+  
+  #   ####### test in
 #   #   tmp_file_in = "/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a/s_4_m11_146b_merged12.f.vcf4"; 
 #      tmp_file_in = "/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a/s_4_m11_146b_merged12.sam.sorted.noDup.bam.samtools.var.filtered.vcf"; 
 #     tmp_file_out = "/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a/00snpeff_146b_merged12.vcf"; 
@@ -1194,6 +1261,7 @@ wrapper2.parallelizable.final <- function(datastep.my2) {
   step <- data.frame(datastep.my2, 0)
   colnames(step) <- c("n","tmp")
   
+
   # Re-set the log file, if it exists already and log is requested
   if (params$log) { 
     #      write(paste("			### NEW RUN (", Sys.Date()," - ", params$n_files, " files) ###\n", sep=""), file=paste(params$log.folder,"/log.", params$startdate, ".", file2process.my1, ".txt", sep=""), append = FALSE, sep = "");
@@ -1215,10 +1283,11 @@ wrapper2.parallelizable.final <- function(datastep.my2) {
                                   step.my  = step)
   }
   
+  
   step$tmp <- step$tmp+1;
   print_doc(paste("	End of EVA UEB pipeline", "\n", sep=""), file2process.my1);
   print_mes("\n--------------------------------------------------------------------------------\n\n", file2process.my1);
-  
+
   # XXX...
   
   

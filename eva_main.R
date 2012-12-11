@@ -57,6 +57,8 @@ library(snowfall, quietly = TRUE)
 # ---------------------------------------------------------------------
 # sudo apt-get install perl perl-suid
 # sudo apt-get install bwa samtools
+# sudo apt-get install sendemail
+
 # Annovar:
 ## fetch, uncompress somewhere, and update the path in ueb_params.R accordingly
 ### wget http://bioinform.usc.edu/annovar/xmpVO9ISYx/annovar.tar.gz (Versión from May 2012)
@@ -227,6 +229,11 @@ params <- list(startdate = startdate,
                directory_out = opt$output,
                log = opt$log,
                log.folder = opt$output, # "logs",
+               p_from = p_from,
+               p_to = p_to,
+               p_subject  = p_subject,
+               p_body = p_body,
+               p_mailControl = p_mailControl,
                path_fastq = path_fastq,
                path_genome = path_genome,
                path_vcfutils = path_vcfutils,
@@ -284,6 +291,9 @@ sfExport("params",
          "w.lock.sample.pe",
          "w.checklock.allsamples.pe",
          "w.unlock.sample.pe",
+         "abs_routlogfile", 
+         "routlogfile",
+         "mail.send",
          "check2clean",
          "fun.quality.control",
          "fun.index.reference.genome",
@@ -318,7 +328,6 @@ sfExport("params",
 
 # 6. Run Sequential and unique initial processes for the whole sample set
 #----------------------------------
-
   if (opt$index) { # index.reference.genome
     # Next Step
     start <- Sys.time(); 
@@ -370,7 +379,7 @@ unlist(result2)
 # 9. Distribute final Parallelizable calculation 
 #----------------------------------
 # Call the wrapper function to do the Job in child processes
-start3 <- Sys.time(); result3 <- sfLapply(1, wrapper2.parallelizable.final) ; duration <- Sys.time()-start3;
+start3 <- Sys.time(); result3 <- sfLapply(1:2, wrapper2.parallelizable.final) ; duration <- Sys.time()-start3;
 cat("\nRelative duration since last step: ")
 print(duration)
 cat("\n")
@@ -387,6 +396,12 @@ sfStop()
 # Close the R output connection to the file
 sink()
 
+##############################################################
+
+# 11. Send email to notify everything is done (it only works when run in sequential mode, it seems)
+cat("\nAttempting to send the email confirming the run is finished... ")
+mail.send(abs_routlogfile, routlogfile)
+cat("\nEmail (in theory) sent. ")
 
 #signal success and exit. 
 #q(status=0); # To be un-commented out at the very end of the development process,
