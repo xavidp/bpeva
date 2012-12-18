@@ -4,16 +4,18 @@
 # SCOPE:  Main program that performs Exoma Variant Analysis. 
 #         Equivalent to the procesa.R from the other UEB scripts  
 # Author: Xavier de Pedro (2011-2012)
-#        xavier.depedro@vhir.org
+#         xavier.depedro@vhir.org
+#         http://ueb.vhir.org/tools/EVA
 ###################################################
 
-## Licensed under the Creative Commons Attribution-ShareAlike 3.0 License
-## cc-by-sa 3.0
+## Dual Licensed under the following copyright licenses:
+## a) Creative Commons Attribution-ShareAlike 3.0 License : cc-by-sa 3.0
+## b) GNU/LGPL : http://www.gnu.org/copyleft/lesser.html
 ##
-## Derived from ideas and code from Michael Zeller, Harry Mangalam and Vinh Nguyen
-## http://blog.nguyenvq.com/
+##
 ##
 ## Acknowledgements: 
+## * Michael Zeller, Harry Mangalam and Vinh Nguyen for http://blog.nguyenvq.com
 ## * Alex Sánchez Pla, for comments and feedback.
 ## * Aleix Ruiz de Villa, for comments and feedback.
 ## * Josep Lluis Mosquera, for comments and feedback.
@@ -153,7 +155,10 @@ if ( is.null(opt$bwa      ) ) { opt$bwa      = p_bwa          } # 1: bwa aln (sh
 #----------------------------------
 # (if used with sfCluster, just call sfInit())
 sfInit(parallel=opt$parallel, cpus=opt$cpus, useRscript=TRUE) # Amb parallel=TRUE s'envien les feines als nodes fills
-#useRscript : Change startup behavior (snow>0.3 needed): use shell scripts or R-script for startup (R-scripts beeing the new variant, but not working with sfCluster.
+
+#useRscript : Change startup behavior (snow>0.3 needed):
+# use shell scripts or R-script for startup 
+# (R-scripts beeing the new variant, but not working with sfCluster).
 
 # Si es posa "parallel=FALSE" no ho paralelitzara 
 # i mostrara els missatges d'error per pantalla de forma normal. 
@@ -165,14 +170,9 @@ sfInit(parallel=opt$parallel, cpus=opt$cpus, useRscript=TRUE) # Amb parallel=TRU
 
 #options(error = recover)
 
-# 2. Loading data (from a package in this example), or from elsewhere (adapt accordingly).
-#----------------------------------
-
-## if(!require(ExamplePackage)){ install.packages("ExamplePackage") }
-## require(ExamplePackage)
-## data(MyDataset)
-
 ##############################################################
+
+# 2. Get the list of files to be processed and define params list for the whole run 
 
 # 2a. Get the list of files to be processed 
 #----------------------------------
@@ -213,8 +213,8 @@ file_list <- gsub(".fastq","", file_list)
 
 ##############################################################
 
-# 2b. Define params list for all runs
-#----------------------------------
+# 2 Define params list for the whole run (for all samples)
+#---------------------------------------------------------
 params <- list()
 params <- list(startdate = startdate,
                scriptname = program_ueb, # Adapted version to work from this R script to be parallelized
@@ -233,41 +233,38 @@ params <- list(startdate = startdate,
                p_to = p_to,
                p_subject  = p_subject,
                p_body = p_body,
-               p_mailControl = p_mailControl,
+               p_smtp = p_smtp,
+               p_label = p_label,
                path_fastq = path_fastq,
                path_genome = path_genome,
                path_vcfutils = path_vcfutils,
                path_convert2annovar = path_convert2annovar,
                path_annotate_variation = path_annotate_variation,
                path_annotate_humandb = path_annotate_humandb,
-               path_summarize_annovar = path_summarize_annovar           
+               path_summarize_annovar = path_summarize_annovar,
+               path_snpEff = path_snpEff
 )
-
-#routlogfile <- paste("log.", startdate, opt$label, ".SnowFall.Rout", sep="") # SnowFall R output file
-routlogfile <- paste("log.", startdate, opt$label, ".run.txt", sep="") # Output file with info from SnowFall (when used), params for the run and system info
-abs_routlogfile <- paste(opt$output, "/", routlogfile, sep="")
-system(paste("touch ", abs_routlogfile, sep=""))
-
-# First write the output from SnowFall (because it's not appending content but creating the file from scratch)
-sink(abs_routlogfile , split=TRUE)
-
-# After that, you can append extra information from the run to the same file
-w.output.run("*** opt ***", unlist(opt),  abs_routlogfile )
-w.output.run("*** params ***", unlist(params),  abs_routlogfile )
-w.output.run("*** params_wseq ***", unlist(params_wseq),  abs_routlogfile )
-w.output.run("*** params_w2pps ***", unlist(params_w2pps),  abs_routlogfile )
-w.output.run("*** params_w2pf ***", unlist(params_w2pf),  abs_routlogfile )
-w.output.run("*** .Platform ***", unlist(.Platform), abs_routlogfile )
-w.output.run("*** .Machine ***", unlist(.Machine),  abs_routlogfile )
-w.output.run("*** R.version ***", unlist(R.version), abs_routlogfile )
-w.output.run("*** Sys.info ***", unlist(Sys.info()),  abs_routlogfile )
 
 ##############################################################
 
 # 3. Create some files to log some data about the run
 #----------------------------------
 
-#system(paste("touch ", paste(opt$out, "/", as.matrix(params$file_list) ,sep=""), sep=""))
+routlogfile <- paste("log.", startdate, opt$label, ".run.txt", sep="") # Output file with info from SnowFall (when used), params for the run and system info
+abs_routlogfile <- paste(opt$output, "/", routlogfile, sep="")
+if (file.exists(abs_routlogfile)) {
+  system(paste("rm ", abs_routlogfile, sep=""))
+}
+# If it does not exist from a previous run in the same day, create it
+system(paste("touch ", abs_routlogfile, sep=""))
+
+# First write the output from SnowFall (because it's not appending content but creating the file from scratch)
+sink(abs_routlogfile, split=TRUE)
+
+# If loging run info, create the header of the file
+if (params$log) { 
+  w.routlogfile.header(abs_routlogfile)
+}
 
 ##############################################################
 
@@ -299,6 +296,7 @@ sfExport("params",
          "fun.index.reference.genome",
          "fun.map.on.reference.genome",
          "fun.map.on.reference.genome",
+         "fun.convert.file.list.pe",
          "fun.sam2bam.and.sort",
 	 "fun.remove.pcr.dup",
 	 "fun.index.bam.file",
@@ -312,7 +310,9 @@ sfExport("params",
 	 "fun.variant.annotation.summarize",
 	 "fun.grep.variants",
 	 "fun.visualize.variants",
+   "fun.variant.dbsnp.pre.snpeff",
    "fun.variant.eff.report",
+   "fun.grep.post.snpeff.variants",
    "fun.build.html.report") # functions can be passed also to workers from master
 
 ##############################################################
@@ -336,12 +336,28 @@ sfExport("params",
     
     step <- fun.index.reference.genome(step.my  = step)
     duration <- Sys.time()-start;
+    cat("\n(Chunk 6) Relative duration since last step: ")
     print(duration)
   } else {
     step <- data.frame(0, 0)
     colnames(step) <- c("n","tmp")
   }
 
+# If paired end data, and the user has not requested to merge the 2 sai files into one merged12.sam file (in mapping genome, sequentially or in parallel)
+# and the user explicitly requested to have the list of files to process converted to the merged12.sam file ones, then do it here.
+# Otherwise, the list will be converted just after the merged12.sam files have been created
+if (params$opt$bwa == 2 && (!params_wseq$p_map.on.reference.genome.sequential && !params_wseq$p_map.on.reference.genome.parallel)
+                        && params_w2pps$p_convert.file.list.pe) {
+  # Next Step
+  print_mes(paste(" ### 1st call to fun.convert.file.list.pe ###\n", sep=""), routlogfile);
+  list.collected <- fun.convert.file.list.pe(file2process.my2  = routlogfile,
+                                   step.my  = step)
+  step.my           <- list.collected[[1]]
+  params$file_list  <- list.collected[[2]]
+  params$n_files    <- list.collected[[3]]
+  file_list  <- list.collected[[2]]
+  n_files    <- list.collected[[3]]
+}
 
 ##############################################################
 
@@ -349,8 +365,9 @@ sfExport("params",
 #----------------------------------
 # Call the wrapper function to do the Job in child processes
 #start <- Sys.time(); result <- sfLapply(1:length(file_list), function(file2process) wrapper(datastep, abs_path_to_input_files, scriptparams)) ; Sys.time()-start
-start2 <- Sys.time(); result <- lapply(1:length(file_list), wrapper.sequential) ; duration <- Sys.time()-start2;
+start2 <- Sys.time(); result <- lapply(1:length(params$file_list), wrapper.sequential) ; duration <- Sys.time()-start2;
 #start2 <- Sys.time(); for (ii in 1:length(file_list)) wrapper.sequential(ii, params); duration <- Sys.time()-start2;
+cat("\n(Chunk 7) Relative duration since last step: ")
 print(duration)
 cat("\n")
 # Result is always in list form.
@@ -367,7 +384,7 @@ unlist(result)
 # We changed the file_list parameter for the params$file_list parameter, so that in cases of paired-emnd mode, 
 # this file list will have been rewritten to the new one at this step, and therefore, we will be able to process at this time step half the number of initial fastq files
 start3 <- Sys.time(); result2 <- sfLapply(1:length(params$file_list), wrapper2.parallelizable.per.sample) ; duration <- Sys.time()-start3;
-cat("\nRelative duration since last step: ")
+cat("\n(Chunk 8) Relative duration since last step: ")
 print(duration)
 cat("\n")
 
@@ -380,7 +397,7 @@ unlist(result2)
 #----------------------------------
 # Call the wrapper function to do the Job in child processes
 start3 <- Sys.time(); result3 <- sfLapply(1:2, wrapper2.parallelizable.final) ; duration <- Sys.time()-start3;
-cat("\nRelative duration since last step: ")
+cat("\n(Chunk 9) Relative duration since last step: ")
 print(duration)
 cat("\n")
 
@@ -393,15 +410,34 @@ unlist(result3)
 #----------------------------------
 sfStop() 
 
+# After that, you can append extra information from the run to the same file
+w.output.run("\n##################################################", 
+             paste("PARAMS FROM THIS RUN: ", params$p_label, sep=""),
+             abs_routlogfile )
+w.output.run("*** opt ***", unlist(opt),  abs_routlogfile )
+w.output.run("*** params ***", unlist(params),  abs_routlogfile )
+w.output.run("*** params_wseq ***", unlist(params_wseq),  abs_routlogfile )
+w.output.run("*** params_w2pps ***", unlist(params_w2pps),  abs_routlogfile )
+w.output.run("*** params_w2pf ***", unlist(params_w2pf),  abs_routlogfile )
+w.output.run("*** .Platform ***", unlist(.Platform), abs_routlogfile )
+w.output.run("*** .Machine ***", unlist(.Machine),  abs_routlogfile )
+w.output.run("*** R.version ***", unlist(R.version), abs_routlogfile )
+w.output.run("*** Sys.info ***", unlist(Sys.info()),  abs_routlogfile )
+
+# Suspend writing anything else to this log file for some seconds to avoid overwritting the file
+Sys.sleep(5)
+
 # Close the R output connection to the file
 sink()
 
 ##############################################################
 
 # 11. Send email to notify everything is done (it only works when run in sequential mode, it seems)
-cat("\nAttempting to send the email confirming the run is finished... ")
-mail.send(abs_routlogfile, routlogfile)
-cat("\nEmail (in theory) sent. ")
+if (p_mail.send==1) {
+  cat("\nAttempting to send the email confirming the run is finished... ")
+  mail.send(abs_routlogfile, routlogfile)
+  cat("\nEmail sent. ")  
+}
 
 #signal success and exit. 
 #q(status=0); # To be un-commented out at the very end of the development process,
