@@ -1076,7 +1076,7 @@ fun.variant.eff.report <- function(file2process.my2, step.my) {
   print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Variant Annotation & Effect prediction with snpEff: ", file2process.my2, " ###\n", sep=""), file2process.my2);
 
   file_in  = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam.samtools.var.filtered.vcf", sep=""); 
-  file_out = paste(params$directory_out, "/", file2process.my2, ".f.snpEff.vcf", sep=""); 
+  file_out = paste(params$directory_out, "/", file2process.my2, ".f.snpEff.", params$opt$snpeff.of, sep=""); 
   file_out_base = paste(params$directory_out, "/", file2process.my2, ".f.snpEff", sep="");     
   command00 = "java -jar"; # next command.
   # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
@@ -1175,11 +1175,11 @@ fun.grep.post.snpeff.variants <- function(file2process.my2, step.my) {
   
   if (!is.null(params$opt$filter) && (params$opt$filter != "")) {
     #######################
-    # 1st part - sample.*.snpEff.vcf
+    # 1st part - sample.*.snpEff.[params$opt$snpeff.of] (= .vcf, .txt, ...)
     #-------------------------------
-    file_in  = paste(params$directory_out, "/", file2process.my2, ".f.snpEff.vcf", sep=""); 
-    file_out = paste(params$directory_out, "/", file2process.my2, ".f.snpEff.fg.vcf", sep=""); 
-    command00 = "grep"; # next command.
+    file_in  = paste(params$directory_out, "/", file2process.my2, ".f.snpEff.", params$opt$snpeff.of, sep=""); 
+    file_out = paste(params$directory_out, "/", file2process.my2, ".f.snpEff.fg.", params$opt$snpeff.of, sep=""); 
+    command00 = "grep -P"; # next command.
     options00 = paste(" '", params$opt$filter,"' ", file_in, " > ", file_out, sep="");
     # Remember that the values in the previous opt$filter variable needs to be like: 'BRCA1\|BRCA2' 
     # in order to end up performing a command like:
@@ -1264,7 +1264,7 @@ wrapper.sequential <- function(datastep.my) {
   if (params$log && map.on.reference.genome.sequential) { 
     write(paste("\n", sep=""), file=paste(params$log.folder,"/log.", params$startdate, params$opt$label, ".", file2process.my1, ".txt", sep=""), append = TRUE, sep = "");
     print_mes("\n################################################################################\n", file2process.my1);
-    print_mes(paste("			NEW RUN - A. SEQUENTIAL. ", params$n_files, " files; Current: *** ", file2process.my1, " ***\n", sep=""), file2process.my1);
+    print_mes(paste("			Part A. SEQUENTIAL. ", params$n_files, " files; Current: *** ", file2process.my1, " ***\n", sep=""), file2process.my1);
     print_mes("################################################################################\n\n", file2process.my1);
     
     }
@@ -1330,7 +1330,7 @@ wrapper2.parallelizable.per.sample <- function(datastep.my2) {
   if (params$log && map.on.reference.genome.parallel) { 
     write(paste("\n", sep=""), file=paste(params$log.folder,"/log.", params$startdate, params$opt$label, ".", file2process.my1, ".txt", sep=""), append = TRUE, sep = "");
     print_mes("\n################################################################################\n", file2process.my1);
-    print_mes(paste("	NEW RUN - A. PARALLELIZED. ", params$n_files, " files; Current: *** ", file2process.my1, " ***\n", sep=""), file2process.my1);
+    print_mes(paste("	Part A. PARALLELIZED. ", params$n_files, " files; Current: *** ", file2process.my1, " ***\n", sep=""), file2process.my1);
     print_mes("################################################################################\n\n", file2process.my1);
   }
   
@@ -1351,7 +1351,7 @@ wrapper2.parallelizable.per.sample <- function(datastep.my2) {
   if (params$log) { 
     #      write(paste("			### NEW RUN (", Sys.Date()," - ", params$n_files, " files) ###\n", sep=""), file=paste(params$log.folder,"/log.", params$startdate, ".", file2process.my1, ".txt", sep=""), append = FALSE, sep = "");
     print_mes("\n################################################################################\n", file2process.my1);
-    print_mes(paste(" NEW RUN - B. PARALLELIZABLE. ", params$n_files, " files; Current: *** ", file2process.my1, " ***\n", sep=""), file2process.my1);
+    print_mes(paste(" Part B. PARALLELIZABLE. ", params$n_files, " files; Current: *** ", file2process.my1, " ***\n", sep=""), file2process.my1);
     print_mes("################################################################################\n\n", file2process.my1);
   }
   #  step$n <- 0
@@ -1560,7 +1560,7 @@ wrapper2.parallelizable.final <- function(datastep.my2) {
   if (params$log) { 
     #      write(paste("			### NEW RUN (", Sys.Date()," - ", params$n_files, " files) ###\n", sep=""), file=paste(params$log.folder,"/log.", params$startdate, ".", file2process.my1, ".txt", sep=""), append = FALSE, sep = "");
     print_mes("\n################################################################################\n", file2process.my1);
-    print_mes(paste("	NEW RUN - C. PARALLELIZABLE also. ", params$n_files, " files.", sep=""), file2process.my1);
+    print_mes(paste("	Part C. PARALLELIZABLE also. ", params$n_files, " files.", sep=""), file2process.my1);
     print_mes("\n################################################################################\n\n", file2process.my1);
   }
   #  step$n <- 0
