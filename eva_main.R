@@ -414,15 +414,15 @@ sfStop()
 w.output.run("\n##################################################", 
              paste("PARAMS FROM THIS RUN: ", params$p_label, sep=""),
              abs_routlogfile )
-w.output.run("*** opt ***", unlist(opt),  abs_routlogfile )
 w.output.run("*** params ***", unlist(params),  abs_routlogfile )
 w.output.run("*** params_wseq ***", unlist(params_wseq),  abs_routlogfile )
 w.output.run("*** params_w2pps ***", unlist(params_w2pps),  abs_routlogfile )
 w.output.run("*** params_w2pf ***", unlist(params_w2pf),  abs_routlogfile )
 w.output.run("*** .Platform ***", unlist(.Platform), abs_routlogfile )
 w.output.run("*** .Machine ***", unlist(.Machine),  abs_routlogfile )
-w.output.run("*** R.version ***", unlist(R.version), abs_routlogfile )
 w.output.run("*** Sys.info ***", unlist(Sys.info()),  abs_routlogfile )
+w.output.run("*** R.version ***", unlist(R.version), abs_routlogfile )
+w.output.run("*** Installed R Packages & versions ***", unlist(installed.packages()),  abs_routlogfile )
 
 # Suspend writing anything else to this log file for some seconds to avoid overwritting the file
 Sys.sleep(5)
