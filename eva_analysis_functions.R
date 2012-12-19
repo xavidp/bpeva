@@ -1082,7 +1082,7 @@ fun.variant.eff.report <- function(file2process.my2, step.my) {
   # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
   file_stderr = paste(params$log.folder,"/log.",params$startdate, params$opt$label,".", file2process.my2, ".txt", sep="");
   options00 = paste(" ", params$path_snpEff, "/snpEff.jar -c ", params$path_snpEff, "/snpEff.config hg19 ", file_in, 
-                    " -a 0 -i vcf -o vcf -chr chr -stats ", file_out_base,"_summary.html > ", file_out,
+                    " -a 0 -i vcf -o ", params$opt$snpeff.of," -chr chr -stats ", file_out_base,"_summary.html > ", file_out,
                     " 2>> ", file_stderr, sep="");
 
   # Documentation from snpEff: "Calculate variant effects: snpEff [eff]" http://snpeff.sourceforge.net/manual.html 
@@ -1098,6 +1098,19 @@ fun.variant.eff.report <- function(file2process.my2, step.my) {
   #   -s,  -stats             : Name of stats file (summary). Default is 'snpEff_summary.html'
   #   -t                      : Use multiple threads (implies '-noStats'). Default 'off'
   
+  
+  #   Sequence change filter options:
+  #     -del                    : Analyze deletions only
+  #   -ins                    : Analyze insertions only
+  #   -hom                    : Analyze homozygous variants only
+  #   -het                    : Analyze heterozygous variants only
+  #   -minQ X, -minQuality X  : Filter out variants with quality lower than X
+  #   -maxQ X, -maxQuality X  : Filter out variants with quality higher than X
+  #   -minC X, -minCoverage X : Filter out variants with coverage lower than X
+  #   -maxC X, -maxCoverage X : Filter out variants with coverage higher than X
+  #   -nmp                    : Only MNPs (multiple nucleotide polymorphisms)
+  #   -snp                    : Only SNPs (single nucleotide polymorphisms)
+     
   command = paste(command00, " ", options00, sep="");
   system(command);
   # Show errors (if any)

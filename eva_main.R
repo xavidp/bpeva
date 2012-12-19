@@ -142,12 +142,12 @@ if ( is.null(opt$index    ) ) { opt$index    = p_index         }
 if ( is.null(opt$filter   ) ) { opt$filter   = p_filter           }
 if ( is.null(opt$log) || opt$log ==1) { opt$log      = p_log        }
 if ( is.null(opt$summarize) ) { opt$summarize= p_summarize          }
+if ( is.null(opt$snpeff.of) ) { opt$snpeff.of= p_snpeff.of          }
 if ( is.null(opt$keep     ) ) { opt$keep     = p_keep         } # Enable if run through editor and you want to keep temp files
 if ( is.null(opt$cpus     ) ) { opt$cpus     = p_cpus             }
 if ( is.null(opt$parallel ) ) { opt$parallel = p_parallel        }
 if ( is.null(opt$label    ) ) { opt$label    = p_label	} # ".sara207_4s4cpu"        } # Run Label for output filenames
 if ( is.null(opt$bwa      ) ) { opt$bwa      = p_bwa          } # 1: bwa aln (short reads, low errors, allowing paired end also); 2= bwa bwasw (longer reads, single end only) # Algorythm for mapping with bwa
-
 
 ##############################################################
 
