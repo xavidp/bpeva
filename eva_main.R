@@ -421,6 +421,7 @@ w.output.run("*** params_w2pf ***", unlist(params_w2pf),  abs_routlogfile )
 w.output.run("*** .Platform ***", unlist(.Platform), abs_routlogfile )
 w.output.run("*** .Machine ***", unlist(.Machine),  abs_routlogfile )
 w.output.run("*** Sys.info ***", unlist(Sys.info()),  abs_routlogfile )
+w.output.run("*** sessionInfo ***", unlist(sessionInfo()),  abs_routlogfile )
 w.output.run("*** R.version ***", unlist(R.version), abs_routlogfile )
 w.output.run("*** Installed R Packages & versions ***", unlist(installed.packages()),  abs_routlogfile )
 
