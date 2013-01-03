@@ -1,9 +1,9 @@
 #!/home/ueb/repo/peeva/eva_main.R
 #
 # SCRIPT: eva_main.R
-# SCOPE:  Main program that performs Exoma Variant Analysis. 
+# SCOPE:  Main program that performs Exom Variant Analysis. 
 #         Equivalent to the procesa.R from the other UEB scripts  
-# Author: Xavier de Pedro (2011-2012)
+# Author: Xavier de Pedro (2011-2013)
 #         xavier.depedro@vhir.org
 #         http://ueb.vhir.org/tools/EVA
 ###################################################
@@ -54,12 +54,34 @@ library('getopt', quietly = TRUE);
 if(!require(snowfall)){ install.packages("snowfall") }
 library(snowfall, quietly = TRUE)
 
+#Bioconductor packages
+if(!exists("biocLite")){
+  source("http://bioconductor.org/biocLite.R")
+}
+if(!require(Rsamtools)){ biocLite("Rsamtools") }
+library(Rsamtools, quietly = TRUE)
+
+if(!require(GenomicFeatures)){ biocLite("GenomicFeatures") }
+library(GenomicFeatures, quietly = TRUE)
+
+if(!require(TxDb.Hsapiens.UCSC.hg19.knownGene)){ biocLite("TxDb.Hsapiens.UCSC.hg19.knownGene") }
+library(org.Hs.eg.db, quietly = TRUE)
+
+if(!require(org.Hs.eg.db)){ biocLite("org.Hs.eg.db") }
+library(org.Hs.eg.db, quietly = TRUE)
+
+# if(!require(annotate)){ biocLite("annotate") }
+# library(annotate, quietly = TRUE)
 
 # Command to run on Debian machines to install some of the requriements
 # ---------------------------------------------------------------------
-# sudo apt-get install perl perl-suid
-# sudo apt-get install bwa samtools
-# sudo apt-get install sendemail
+# sudo apt-get install bwa samtools picard bedtools 
+#   bwa       needed for alignments
+#   samtools  needed for processing alignments and variant calling 
+#   picard    needed for gatk to perform some tasks
+#   bedtools  optionally needed for some eventual operations with bam files
+# sudo apt-get install sendemail # optionally needed for one case of the email sending fucntion.
+# sudo apt-get install perl perl-suid # deprecated; formerly needed for the perl pipeline, but no more used since mid 2012
 
 # Annovar:
 ## fetch, uncompress somewhere, and update the path in ueb_params.R accordingly
@@ -242,7 +264,12 @@ params <- list(startdate = startdate,
                path_annotate_variation = path_annotate_variation,
                path_annotate_humandb = path_annotate_humandb,
                path_summarize_annovar = path_summarize_annovar,
-               path_snpEff = path_snpEff
+               path_snpEff = path_snpEff,
+               path_gatk = path_gatk,
+               path_gatk_key = path_gatk_key,
+               path_dbSNP = path_dbSNP,
+               path_exon_capture_file1 = path_exon_capture_file1,
+               path_exon_capture_file2 = path_exon_capture_file2
 )
 
 ##############################################################
@@ -275,45 +302,51 @@ if (params$log) {
 # # Install dependency of sfClusterSetupRNG() if not yet installed
 # if(!require(cmprsk)){ install.packages("cmprsk") }
 # sfLibrary(cmprsk) 
-sfExport("params", 
-         "params_wseq",
-         "params_w2pps",
-         "params_w2pf",
-         "now",
-         "print_doc",
-         "print_done",
-         "print_error",
-         "print_mes",
-         "w.output.samples",
-         "w.lock.sample.pe",
-         "w.checklock.allsamples.pe",
-         "w.unlock.sample.pe",
-         "abs_routlogfile", 
-         "routlogfile",
-         "mail.send",
-         "check2clean",
-         "fun.quality.control",
-         "fun.index.reference.genome",
-         "fun.map.on.reference.genome",
-         "fun.map.on.reference.genome",
-         "fun.convert.file.list.pe",
-         "fun.sam2bam.and.sort",
-	 "fun.remove.pcr.dup",
-	 "fun.index.bam.file",
-	 "fun.stats",
-	 "fun.variant.calling",
-	 "fun.variant.filtering",
-	 "fun.convert2vcf4",
-	 "fun.variant.annotation.geneb",
-	 "fun.variant.annotation.regionb",
-	 "fun.variant.annotation.filterb",
-	 "fun.variant.annotation.summarize",
-	 "fun.grep.variants",
-	 "fun.visualize.variants",
-   "fun.variant.dbsnp.pre.snpeff",
-   "fun.variant.eff.report",
-   "fun.grep.post.snpeff.variants",
-   "fun.build.html.report") # functions can be passed also to workers from master
+sfExport( "params", 
+          "params_wseq",
+          "params_w2pps",
+          "params_w2pf",
+          "now",
+          "print_doc",
+          "print_done",
+          "print_error",
+          "print_mes",
+          "w.output.samples",
+          "w.lock.sample.pe",
+          "w.checklock.allsamples.pe",
+          "w.unlock.sample.pe",
+          "abs_routlogfile", 
+          "routlogfile",
+          "mail.send",
+          "check2clean",
+          "fun.quality.control",
+          "fun.index.reference.genome",
+          "fun.map.on.reference.genome",
+          "fun.map.on.reference.genome",
+          "fun.convert.file.list.pe",
+          "fun.sam2bam.and.sort",
+	        "fun.remove.pcr.dup",
+          "fun.gatk.local.realign.step1",
+          "fun.gatk.local.realign.step2",
+          "fun.gatk.local.realign.step3",
+          "fun.index.bam.file",
+	        "fun.stats",
+          "fun.snpeff.count.reads",
+          "fun.exon.coverage",
+          "fun.variant.calling",
+	        "fun.variant.filtering",
+          "fun.gatk.combine.vcfs",
+	        "fun.convert2vcf4",
+	        "fun.variant.annotation.geneb",
+	        "fun.variant.annotation.regionb",
+	        "fun.variant.annotation.filterb",
+	        "fun.variant.annotation.summarize",
+	        "fun.grep.variants",
+	        "fun.visualize.variants",
+          "fun.variant.dbsnp.pre.snpeff",
+          "fun.variant.eff.report",
+          "fun.grep.post.snpeff.variants",
+          "fun.build.html.report") # functions can be passed also to workers from master
 
 ##############################################################
 
@@ -334,7 +367,7 @@ sfExport("params",
     step <- data.frame(0, 0)
     colnames(step) <- c("n","tmp")
     
-    step <- fun.index.reference.genome(step.my  = step)
+    step <- fun.index.reference.genome(step.my  = step, , abs_routlogfile)
     duration <- Sys.time()-start;
     cat("\n(Chunk 6) Relative duration since last step: ")
     print(duration)
@@ -342,22 +375,6 @@ sfExport("params",
     step <- data.frame(0, 0)
     colnames(step) <- c("n","tmp")
   }
-
-# If paired end data, and the user has not requested to merge the 2 sai files into one merged12.sam file (in mapping genome, sequentially or in parallel)
-# and the user explicitly requested to have the list of files to process converted to the merged12.sam file ones, then do it here.
-# Otherwise, the list will be converted just after the merged12.sam files have been created
-if (params$opt$bwa == 2 && (!params_wseq$p_map.on.reference.genome.sequential && !params_wseq$p_map.on.reference.genome.parallel)
-                        && params_w2pps$p_convert.file.list.pe) {
-  # Next Step
-  print_mes(paste(" ### 1st call to fun.convert.file.list.pe ###\n", sep=""), routlogfile);
-  list.collected <- fun.convert.file.list.pe(file2process.my2  = routlogfile,
-                                   step.my  = step)
-  step.my           <- list.collected[[1]]
-  params$file_list  <- list.collected[[2]]
-  params$n_files    <- list.collected[[3]]
-  file_list  <- list.collected[[2]]
-  n_files    <- list.collected[[3]]
-}
 
 ##############################################################
 
@@ -373,6 +390,23 @@ cat("\n")
 # Result is always in list form.
 unlist(result)
 
+
+# If paired end data, and the user has not requested to merge the 2 sai files into one merged12.sam file (in mapping genome, sequentially or in parallel)
+# and the user explicitly requested to have the list of files to process converted to the merged12.sam file ones, then do it here.
+# Otherwise, the list will be converted just after the merged12.sam files have been created
+#if ( (params$opt$bwa == 2) && (!params_wseq$p_map.on.reference.genome.sequential && !params_wseq$p_map.on.reference.genome.parallel)
+#     && params_w2pps$p_convert.file.list.pe) {
+  if (params$opt$bwa == 2 && params_w2pps$p_convert.file.list.pe) {
+  # Next Step
+  print_mes(paste(" ### 1st call to fun.convert.file.list.pe ###\n", sep=""), routlogfile);
+  list.collected <- fun.convert.file.list.pe(file2process.my2  = routlogfile,
+                                             step.my  = step)
+  step.my           <- list.collected[[1]]
+  params$file_list  <- list.collected[[2]]
+  params$n_files    <- list.collected[[3]]
+  file_list  <- list.collected[[2]]
+  n_files    <- list.collected[[3]]
+}
 
 ##############################################################
 
@@ -396,7 +430,14 @@ unlist(result2)
 # 9. Distribute final Parallelizable calculation 
 #----------------------------------
 # Call the wrapper function to do the Job in child processes
-start3 <- Sys.time(); result3 <- sfLapply(1:2, wrapper2.parallelizable.final) ; duration <- Sys.time()-start3;
+
+# This last part could be run in parallel, whenever we know how to split it inn chunks; 
+# but it has no sense to repeat several times the same process, so disabling for the time being (Jan 2013)
+#start3 <- Sys.time(); result3 <- sfLapply(1:2, wrapper2.parallelizable.final) ; duration <- Sys.time()-start3;
+
+# Running the function normally just once. 
+start3 <- Sys.time(); result3 <- wrapper2.parallelizable.final( length(params$file_list) ) ; duration <- Sys.time()-start3;
+
 cat("\n(Chunk 9) Relative duration since last step: ")
 print(duration)
 cat("\n")
@@ -435,7 +476,7 @@ sink()
 
 # 11. Send email to notify everything is done (it only works when run in sequential mode, it seems)
 if (p_mail.send==1) {
-  cat("\nAttempting to send the email confirming the run is finished... ")
+  cat("\nSending the email confirming the run is finished... ")
   mail.send(abs_routlogfile, routlogfile)
   cat("\nEmail sent. ")  
 }

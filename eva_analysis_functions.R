@@ -2,17 +2,19 @@
 #
 # SCRIPT: eva_analysis_functions.R
 # SCOPE: to be called from other scripts, such as eva_main.R
-# Author: Xavier de Pedro (2011-2012)
-#        xavier.depedro@vhir.org
+# Author: Xavier de Pedro (2011-2013)
+#         xavier.depedro@vhir.org
+#         http://ueb.vhir.org/tools/EVA
 ###################################################
 
-## Licensed under the Creative Commons Attribution-ShareAlike 3.0 License
-## cc-by-sa 3.0
+## Dual Licensed under the following copyright licenses:
+## a) Creative Commons Attribution-ShareAlike 3.0 License : cc-by-sa 3.0
+## b) GNU/LGPL : http://www.gnu.org/copyleft/lesser.html
 ##
-## Derived from ideas and code from Michael Zeller, Harry Mangalam and Vinh Nguyen
-## http://blog.nguyenvq.com/
+##
 ##
 ## Acknowledgements: 
+## * Michael Zeller, Harry Mangalam and Vinh Nguyen for http://blog.nguyenvq.com
 ## * Alex Sánchez Pla, for comments and feedback.
 ## * Aleix Ruiz de Villa, for comments and feedback.
 ## * Josep Lluis Mosquera, for comments and feedback.
@@ -211,7 +213,7 @@ w.checklock.allsamples.pe <- function(file_list.my2)
 
 w.unlock.sample.pe <- function(filename.my2)
 {
-	print_mes(paste("Trying to unlock: ", params$opt$output, "/", "log.",params$startdate, params$opt$label, ".", filename.my2, ".lock", sep=""), filename.my2)
+	print_mes(paste(now(), "Removing lock: ", params$opt$output, "/", "log.",params$startdate, params$opt$label, ".", filename.my2, ".lock \n", sep=""), filename.my2)
   system(paste("rm ", params$opt$output, "/", "log.",params$startdate, params$opt$label, ".", filename.my2, ".lock", sep=""), TRUE)
 }
 
@@ -338,7 +340,7 @@ fun.quality.control <- function(file2process.my2, step.my) {
 ### FUNCTION fun.index.reference.genome
 ##########################
 
-fun.index.reference.genome <- function(step.my) {
+fun.index.reference.genome <- function(step.my, filename.my1) {
   # update step number
   step.my$tmp <- step.my$tmp + 1
 
@@ -346,7 +348,7 @@ fun.index.reference.genome <- function(step.my) {
   if ((params$opt$index) & (step.my$n == 0)) { # case to index the reference genome (time consuming, do only when really needed as requested)
     # Index the reference genome, if requested with argument -n and only for the first file if more than one sample to process
     command00 <- "bwa index"; # next command
-    options00 <- paste("  -a bwtsw ", params$path_genome, sep="");
+    options00 <- paste("  -a bwtsw ", params$path_genome, " >> ", filename.my1, sep="");
   } else	{ # skip the indexing of the reference genome
     command00 <- "echo '  ...skipped...'"; # next command.
     options00 <- "";
@@ -388,6 +390,21 @@ fun.map.on.reference.genome <- function(file2process.my2, step.my) {
   ##   It does gapped global alignment w.r.t. queries, supports paired-end reads, and is one of the fastest short read alignment algorithms to date while also visiting suboptimal hits. 
   ## The second algorithm, BWA-SW, is designed for long reads with more errors. It performs heuristic Smith-Waterman-like alignment to find high-scoring local hits (and thus chimera). 
   ##   On low-error short queries, BWA-SW is slower and less accurate than the first algorithm, but on long queries, it is better
+
+  ## Jan 2013: GATK requires that you specify a read group tag when aligning your sequences with BWA. 
+  ##    Just add the following argument within the bwa sampe step
+  ##      -r "@RG\tID:sample\tLB:sample\tPL:ILLUMINA\tSM:sample"
+  ##    RG: defines a ReadGroup, 
+  ##    ID: specifies the name of the ReadGroup, 
+  ##    LB: defines the name of the library sequenced
+  ##    SM: defines the individual sample, 
+  ##    PL: defines the platform you used.
+  ##  You can leave all of them as sample (or anything else) in case you really got a single sample you wish to analyze. 
+  ##  You might wonder what that could be good for: These tags are used when merging BAM files from different samples to distinguish between the different samples.
+  ##
+  ## Alternatively, you could add the read group by means of 'picard' software programs:
+  ## http://seqanswers.com/forums/showthread.php?t=23332
+  
   file_in = paste(params$directory_in, "/", file2process.my2, ".fastq", sep="");
   
   if (params$opt$bwa == 1) # case to use algorythm 1 from bwa: aln + samse  (short reads, single ends, low errors);
@@ -396,7 +413,9 @@ fun.map.on.reference.genome <- function(file2process.my2, step.my) {
     #bwa aln database.fasta short_read.fastq > aln_sa.sai
     file_out = paste(params$directory_out, "/", file2process.my2, ".sai", sep="");
     command00 = "bwa aln"; # next command.
-    options00 = paste(params$path_genome, " ", file_in, " > ", file_out, sep="");
+    # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
+    file_stderr = paste(params$log.folder,"/log.",params$startdate, params$opt$label,".", file2process.my2, ".txt", sep="");
+    options00 = paste(params$path_genome, " ", file_in, " > ", file_out, " 2>> ", file_stderr, sep="");
     command = paste(command00, " ", options00, sep="");
     # Annotate the subprocess start time; launch the subprocess; and annotate the end time & duration
     start.my <- Sys.time(); system(command); duration <- Sys.time()-start.my;
@@ -408,7 +427,11 @@ fun.map.on.reference.genome <- function(file2process.my2, step.my) {
     file_in_sai = paste(params$directory_out, "/", file2process.my2, ".sai", sep="");
     file_out = paste(params$directory_out, "/", file2process.my2, ".sam", sep="");
     command00 = "bwa samse"; # next command.
-    options00 = paste(params$path_genome, " ", file_in_sai, " ", file_in, " > ", file_out, sep="");
+    # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
+    file_stderr = paste(params$log.folder,"/log.",params$startdate, params$opt$label,".", file2process.my2, ".txt", sep="");
+    options00 = paste(params$path_genome, " ", file_in_sai, " ", file_in, 
+                      " -r \"@RG\tID:", file2process.my2, "\tLB:", file2process.my2, "\tPL:ILLUMINA\tSM:", 
+                      file2process.my2, "\"", " > ", file_out, " 2>> ", file_stderr, sep="");
     command = paste(command00, " ", options00, sep="");
     # Annotate the subprocess start time; launch the subprocess; and annotate the end time & duration
     start.my <- Sys.time(); system(command); duration <- Sys.time()-start.my;
@@ -426,7 +449,9 @@ fun.map.on.reference.genome <- function(file2process.my2, step.my) {
     #bwa aln database.fasta short_read2.fastq > aln_sa2.sai
     file_out = paste(params$directory_out, "/", file2process.my2, ".sai", sep="");
     command00 = "bwa aln"; # next command.
-    options00 = paste(params$path_genome, " ", file_in, " > ", file_out, sep="");
+    # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
+    file_stderr = paste(params$log.folder,"/log.",params$startdate, params$opt$label,".", file2process.my2, ".txt", sep="");
+    options00 = paste(params$path_genome, " ", file_in, " > ", file_out,  " 2>> ", file_stderr, sep="");
     command = paste(command00, " ", options00, sep="");
     # Annotate the subprocess start time; launch the subprocess; and annotate the end time & duration
     start.my <- Sys.time(); system(command); duration <- Sys.time()-start.my;
@@ -477,7 +502,12 @@ fun.map.on.reference.genome <- function(file2process.my2, step.my) {
       file_in_fq2 = paste(params$directory_in, "/", f2pbase, "_2_sequence", ".fastq", sep="");
       file_out = paste(params$directory_out, "/", f2pbase, "_merged12.sam", sep="");
       command00 = "bwa sampe"; # next command.
-      options00 = paste(params$path_genome, " ", file_in_sai1, " ", file_in_sai2, " ", file_in_fq1, " ", file_in_fq2, " > ", file_out, sep="");
+      # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
+      file_stderr = paste(params$log.folder,"/log.",params$startdate, params$opt$label,".", file2process.my2, ".txt", sep="");
+      #      options00 = paste(params$path_genome, " ", file_in_sai1, " ", file_in_sai2, " ", file_in_fq1, " ", file_in_fq2, " > ", file_out, sep="");
+      options00 = paste(params$path_genome, " ", file_in_sai1, " ", file_in_sai2, " ", file_in_fq1, " ", file_in_fq2,
+                        " -r \"@RG\tID:", file2process.my2, "\tLB:", file2process.my2, "\tPL:ILLUMINA\tSM:", 
+                        file2process.my2, "\"", " > ", file_out,       " 2>> ", file_stderr, sep="");
       command = paste(command00, " ", options00, sep="");
       # Annotate the subprocess start time; launch the subprocess; and annotate the end time & duration
       start.my <- Sys.time(); system(command); duration <- Sys.time()-start.my;
@@ -497,7 +527,12 @@ fun.map.on.reference.genome <- function(file2process.my2, step.my) {
   if (params$opt$bwa == 3) { # case to use algorythm 3 from bwa: bwasw (longer reads, single end only)
     file_out = paste(params$directory_out, "/", file2process.my2, ".sam", sep="");
     command00 = "bwa bwasw"; # next command.
-    options00 = paste(params$path_genome, " ", file_in, " > ", file_out, sep="");
+    # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
+    file_stderr = paste(params$log.folder,"/log.",params$startdate, params$opt$label,".", file2process.my2, ".txt", sep="");
+    #    options00 = paste(params$path_genome, " ", file_in, " > ", file_out, sep="");
+    options00 = paste(params$path_genome, " ", file_in,
+                      " -r \"@RG\tID:", file2process.my2, "\tLB:", file2process.my2, "\tPL:Roche454\tSM:", 
+                      file2process.my2, "\"", " > ", file_out,  " 2>> ", file_stderr, sep="");
     command = paste(command00, " ", options00, sep="");
     # Annotate the subprocess start time; launch the subprocess; and annotate the end time & duration
     start.my <- Sys.time(); system(command); duration <- Sys.time()-start.my;
@@ -576,7 +611,9 @@ fun.sam2bam.and.sort <- function(file2process.my2, step.my) {
   file_in = paste(params$directory_out, "/", file2process.my2, ".sam", sep="");
   file_out = paste(file_in, ".sorted", sep="");
   command00 = "samtools"; # next command.
-  options00 = paste(" view -bS ", file_in, " | ", command00, " sort - ", file_out, sep="");
+  # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
+  file_stderr = paste(params$log.folder,"/log.",params$startdate, params$opt$label,".", file2process.my2, ".txt", sep="");
+  options00 = paste(" view -bS ", file_in, " | ", command00, " sort - ", file_out,   " 2>> ", file_stderr, sep="");
   command = paste(command00, " ", options00, sep="");
   system(command);
   check2clean(file_in, file2process.my2);
@@ -601,7 +638,96 @@ fun.remove.pcr.dup <- function(file2process.my2, step.my) {
   file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.bam", sep="");
   file_out = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam", sep="");
   command00 = "samtools"; # next command.
-  options00 = paste("rmdup -s ", file_in, " ", file_out, sep="");
+  # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
+  file_stderr = paste(params$log.folder,"/log.",params$startdate, params$opt$label,".", file2process.my2, ".txt", sep="");
+  options00 = paste("rmdup -s ", file_in, " ", file_out,  " 2>> ", file_stderr, sep="");
+  command = paste(command00, " ", options00, sep="");
+  system(command);
+  check2clean(file_in, file2process.my2);
+  print_done(file2process.my2);
+  
+  gc() # Let's clean ouR garbage if possible
+  return(step.my) # return nothing, since results are saved on disk from the system command
+}
+
+
+##########################
+### FUNCTION fun.gatk.local.realign.step1
+###
+###   Local Realignment with GATK - Step 1: Generating interval file for sample_sorted.bam
+##########################
+
+fun.gatk.local.realign.step1 <- function(file2process.my2, step.my) {
+  # update step number
+  step.my$tmp <- step.my$tmp + 1
+  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Local Realignment with GATK - Step 1: Generating interval file: ", file2process.my2, " ###\n", sep=""), file2process.my2);
+  
+  file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam", sep="");
+  file_out = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.intervals", sep="");
+  command00 = "java -jar "; # next command.
+  # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
+  file_stderr = paste(params$log.folder,"/log.",params$startdate, params$opt$label,".", file2process.my2, ".txt", sep="");
+  options00 = paste(params$path_gatk, " -T RealignerTargetCreator -R ", params$path_genome, " -I ", 
+                    file_in, " -known:dbsnp,vcf ", params$path_dbSNP,
+                    " -L ", params$path_exon_capture_file1 , " -o ", file_out, 
+                    " -et NO_ET -K ", params$path_gatk_key,
+                    " >> ", file_stderr, " 2>> ", file_stderr, sep="");
+    # Former option -B:dbsnp,vcf has been converted into -known:dbsnp,vcf. See http://seqanswers.com/forums/showthread.php?t=14013  
+
+  command = paste(command00, " ", options00, sep="");
+  system(command);
+  check2clean(file_in, file2process.my2);
+  print_done(file2process.my2);
+  
+  gc() # Let's clean ouR garbage if possible
+  return(step.my) # return nothing, since results are saved on disk from the system command
+}
+
+##########################
+### FUNCTION fun.gatk.local.realign.step2
+###
+###   Local Realignment with GATK - Step 2:
+##########################
+
+fun.gatk.local.realign.step2 <- function(file2process.my2, step.my) {
+  # update step number
+  step.my$tmp <- step.my$tmp + 1
+  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Local Realignment with GATK - Step 1: Generating interval file: ", file2process.my2, " ###\n", sep=""), file2process.my2);
+  
+  file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam", sep="");
+  file_out = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.intervals", sep="");
+  command00 = "java -jar "; # next command.
+  options00 = paste(params$path_gatk, " -T RealignerTargetCreator -R ", params$path_genome, " -I ", 
+                    file_in, " -B:dbsnp,vcf ", params$path_dbSNP, " -log intervals.log -L",
+                    params$path_exon_capture_file1 , " -o ", file_out, sep="");
+  
+  command = paste(command00, " ", options00, sep="");
+  system(command);
+  check2clean(file_in, file2process.my2);
+  print_done(file2process.my2);
+  
+  gc() # Let's clean ouR garbage if possible
+  return(step.my) # return nothing, since results are saved on disk from the system command
+}
+
+##########################
+### FUNCTION fun.gatk.local.realign.step3
+###
+###   Local Realignment with GATK - Step 3:
+##########################
+
+fun.gatk.local.realign.step3 <- function(file2process.my2, step.my) {
+  # update step number
+  step.my$tmp <- step.my$tmp + 1
+  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Local Realignment with GATK - Step 1: Generating interval file: ", file2process.my2, " ###\n", sep=""), file2process.my2);
+  
+  file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam", sep="");
+  file_out = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.intervals", sep="");
+  command00 = "java -jar "; # next command.
+  options00 = paste(params$path_gatk, " -T RealignerTargetCreator -R ", params$path_genome, " -I ", 
+                    file_in, " -B:dbsnp,vcf ", params$path_dbSNP, " -log intervals.log -L",
+                    params$path_exon_capture_file1 , " -o ", file_out, sep="");
+  
   command = paste(command00, " ", options00, sep="");
   system(command);
   check2clean(file_in, file2process.my2);
@@ -649,7 +775,9 @@ fun.stats <- function(file2process.my2, step.my) {
   file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam", sep="");
   #  file_out = paste(file_in, ".foo", sep="");
   command00 = "samtools"; # next command.
-  options00 = paste(" flagstat ", file_in, sep="");
+  # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
+  file_stderr = paste(params$log.folder,"/log.",params$startdate, params$opt$label,".", file2process.my2, ".txt", sep="");
+  options00 = paste(" flagstat ", file_in,  " >> ", file_stderr,  " 2>> ", file_stderr, sep="");
   command = paste(command00, " ", options00, sep="");
   system(command);
   # Don't check for check2clean("$file_in") since we still need it for the variant calling
@@ -659,6 +787,79 @@ fun.stats <- function(file2process.my2, step.my) {
   return(step.my) # return nothing, since results are saved on disk from the system command
 }
 
+
+##########################
+### FUNCTION fun.snpeff.count.reads
+###
+###   Count Reads through snpEff software [optional]
+##########################
+
+fun.snpeff.count.reads <- function(file2process.my2, step.my) {
+  # update step number
+  step.my$tmp <- step.my$tmp + 1
+  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Count Reads using snpEff [optional]: ", file2process.my2, " ###\n", sep=""), file2process.my2);
+  
+  file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam", sep="");
+  file_out = paste(file_in, ".cr.txt", sep="");
+  command00 = "java -Xmx4g -jar "; # next command.
+  options00 = paste(params$path_snpEff, "/snpEff.jar  -c ", params$path_snpEff, "/snpEff.config countReads hg19 ", file_in, " > ", file_out, sep="");
+  command = paste(command00, " ", options00, sep="");
+  system(command);
+  # Don't check for check2clean("$file_in") since we still need it for the variant calling
+  print_done(file2process.my2);
+  
+  gc() # Let's clean ouR garbage if possible
+  return(step.my) # return nothing, since results are saved on disk from the system command
+}
+
+##########################
+### FUNCTION fun.exon.coverage
+###
+###   Gene Exons Coverage
+##########################
+
+fun.exon.coverage <- function(file2process.my2, step.my) {
+  # update step number
+  step.my$tmp <- step.my$tmp + 1
+  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Gene Exons Coverage: ", file2process.my2, " ###\n", sep=""), file2process.my2);
+  
+  # From http://www.bioconductor.org/help/workflows/variants/
+  #   > ## get entrez ids from gene symbols
+  #     > library(org.Hs.eg.db)
+  #   > genesym <- c("TRPV1", "TRPV2", "TRPV3")
+  #   > geneid <- select(org.Hs.eg.db, keys=genesym, keytype="SYMBOL",
+  #                      +                  cols="ENTREZID")
+  #   > geneid
+  #   SYMBOL ENTREZID
+  #   1  TRPV1     7442
+  #   2  TRPV2    51393
+  #   3  TRPV3   162514
+
+  library(org.Hs.eg.db)
+  genesym <- c("BRCA1", "BRCA2", "MSH2")
+  geneid <- select(org.Hs.eg.db, keys=genesym, keytype="SYMBOL",
+                    cols="ENTREZID")
+  geneid
+  
+  library(TxDb.Hsapiens.UCSC.hg19.knownGene)
+  txdb <- TxDb.Hsapiens.UCSC.hg19.knownGene #shorthand (for convenience)
+  txdb
+  exons(txdb)[1:10]
+  head(exons(txdb))
+  tail(exons(txdb))
+  
+#   file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam", sep="");
+#   file_out = paste(file_in, ".samtools.var.raw.vcf", sep="");
+#   command00 = "samtools"; # next command.
+#   options00 = paste(" mpileup -uf ", params$path_genome, " ", file_in, " | bcftools view -vcg - >  ", file_out, sep="");
+#   command = paste(command00, " ", options00, sep="");
+#   system(command);
+#   check2clean(file_in, file2process.my2);
+#   print_done(file2process.my2);
+  
+  gc() # Let's clean ouR garbage if possible
+  return(step.my) # return nothing, since results are saved on disk from the system command
+}
 
 ##########################
 ### FUNCTION fun.variant.calling
@@ -710,6 +911,34 @@ fun.variant.filtering <- function(file2process.my2, step.my) {
   return(step.my) # return nothing, since results are saved on disk from the system command
 }
 
+
+##########################
+### FUNCTION fun.gatk.combine.vcfs
+###
+###   Combine variants from various VCF through GATK's CombineVariants (ToDo)
+###   See http://www.broadinstitute.org/gatk/gatkdocs/org_broadinstitute_sting_gatk_walkers_variantutils_CombineVariants.html
+##########################
+
+fun.gatk.combine.vcfs <- function(file2process.my2, step.my) {
+  # update step number
+  step.my$tmp <- step.my$tmp + 1
+  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Combine variants from various VCF: ", file2process.my2, " ###\n", sep=""), file2process.my2);
+  
+# code to come here XXX
+  # Taken from here: http://crocea.mednet.ucla.edu/research/variation/next-gen-sequence-how-to
+  # Combine variants from various VCF through GATK's CombineVariants
+  # combine two single-sample VCF into one
+  # java  -Xmx2g -jar /home/crocea/script/gatk/dist/GenomeAnalysisTK.jar -R  /Network/Data/vervet/db/individual_sequence/524_superContigsMinSize2000.fasta -T CombineVariants  -o tmp/CombineSAMtools555_556.vcf -V:foo tmp/SelectSAMtoolsContig0_555_15_1987079_GA_vs_524.vcf -V:foo1 tmp/SelectSAMtoolsContig0_556_16_1985088_GA_vs_524.vcf
+
+  #but see also full documentation here: http://www.broadinstitute.org/gatk/gatkdocs/org_broadinstitute_sting_gatk_walkers_variantutils_CombineVariants.html
+  command = paste(command00, " ", options00, sep="");
+  system(command);
+  # check2clean(file_in, file2process.my2); #  # Commented out so that samtools standard .vcf files (and not only the converted to .vcf4 - .vcf.annovar - format) are also always kept.
+  print_done(file2process.my2);
+  
+  gc() # Let's clean ouR garbage if possible
+  return(step.my) # return nothing, since results are saved on disk from the system command
+}
 
 ##########################
 ### FUNCTION fun.convert2vcf4
@@ -1150,8 +1379,16 @@ fun.variant.eff.report <- function(file2process.my2, step.my) {
 
   # Other stuff snpEff related
   # v3.1 (2012-11): SnpEff 'countReads' count number of reads and bases (form a BAM file) on each gene, transcript, exon, intron, etc. 
-   
+  # See https://ueb.vhir.org/PEEVA+4+Execuci%C3%B3+detalls&no_bl=y#Other_calculations_for_the_report
   
+#   file.in.report2 <- paste(params$directory_out, "/", "s_7_m11_149b_merged12.f.snpEff.txt", sep=""); 
+#   r2_data <- read.delim(file.in.report2, skip="2", header=TRUE, comment.char="")
+#   table(r2_data$Exon_Rank, useNA="ifany")
+#   table(r2_data$Exon_Rank, addNA(r2_data$Quality))
+#   stem(r2_data$Exon_Rank)
+#   exon.max <- max(r2_data$Exon_Rank, na.rm=TRUE)
+#   hist(r2_data$Exon_Rank, breaks=exon.max, main="Exons holding variants", xlab="Exon Number", )
+#   
   gc() # Let's clean ouR garbage if possible
   return(step.my) # return nothing, since results are saved on disk from the system command
   
@@ -1231,361 +1468,3 @@ fun.grep.post.snpeff.variants <- function(file2process.my2, step.my) {
   return(step.my) # return nothing, since results are saved on disk from the system command
 }
 
-##########################
-### FUNCTION wrapper.sequential
-###
-###   7a. Wrapper functions, One (here) is run always sequentially. The other one (further below), parallelized.
-##########################
-#----------------------------------
-wrapper.sequential <- function(datastep.my) {
-  
-  # -----------------------------
-  # Define which processes to run (in later stage, this will be in an external R file sourced here)
-  # names of control process are like functions but without the "fun." prefix.
-  # -----------------------------
-  map.on.reference.genome.sequential               <- params_wseq$p_map.on.reference.genome.sequential
-  # -----------------------------
-  
-  
-  # Get the file name to process now
-  file2process.my1 <- params$file_list[datastep.my]
-  
-  # Re-set working directory while in child worker, just in case
-  setwd(params$wd)
-  step <- data.frame(datastep.my, 0)
-  colnames(step) <- c("n","tmp")
-
-  # Re-set the log file, if it exists already and log is requested. Create it.
-  if (params$log) { 
-    write(paste("\n", sep=""), file=paste(params$log.folder,"/log.", params$startdate, params$opt$label, ".", file2process.my1, ".txt", sep=""), append = FALSE, sep = "");
-  }
-  
-  # Re-set the log file, if it exists already and log is requested
-  if (params$log && map.on.reference.genome.sequential) { 
-    write(paste("\n", sep=""), file=paste(params$log.folder,"/log.", params$startdate, params$opt$label, ".", file2process.my1, ".txt", sep=""), append = TRUE, sep = "");
-    print_mes("\n################################################################################\n", file2process.my1);
-    print_mes(paste("			Part A. SEQUENTIAL. ", params$n_files, " files; Current: *** ", file2process.my1, " ***\n", sep=""), file2process.my1);
-    print_mes("################################################################################\n\n", file2process.my1);
-    
-    }
-  
-  print_doc(paste("### Start processing file #", datastep.my, " (", file2process.my1, ") ... ###\n", sep=""), file2process.my1);
-  
-  
-  #--- Sequential Pipeline steps into wrapper.sequential function ###----------------------------------------
-  
-  if (map.on.reference.genome.sequential) { 
-    # Next Step
-    step <- fun.map.on.reference.genome(file2process.my2  = file2process.my1,
-                                        step.my  = step)
-  }
-  
-  
-}
-
-##############################################################
-
-##########################
-### FUNCTION wrapper2.parallelizable.per.sample
-###
-###   3b. Wrapper functions, to be run per input sample file, Can be parallelized.
-##########################
-wrapper2.parallelizable.per.sample <- function(datastep.my2) {
-  # -----------------------------
-  # Define which processes to run (in later stage, this will be in an external R file sourced here)
-  # names of control process are like functions but without the "fun." prefix.
-  # -----------------------------
-  
-  map.on.reference.genome.parallel  <- params_w2pps$p_map.on.reference.genome.parallel
-  quality.control   	              <- params_w2pps$p_quality.control
-  convert.file.list.pe              <- params_w2pps$p_convert.file.list.pe
-  sam2bam.and.sort	 	              <- params_w2pps$p_sam2bam.and.sort
-  remove.pcr.dup		                <- params_w2pps$p_remove.pcr.dup
-  index.bam.file		                <- params_w2pps$p_index.bam.file
-  stats			                        <- params_w2pps$p_stats
-  variant.calling		                <- params_w2pps$p_variant.calling
-  variant.filtering		              <- params_w2pps$p_variant.filtering
-  convert2vcf4		                  <- params_w2pps$p_convert2vcf4
-  variant.annotation.geneb	        <- params_w2pps$p_variant.annotation.geneb
-  variant.annotation.regionb	      <- params_w2pps$p_variant.annotation.regionb
-  variant.annotation.filterb	      <- params_w2pps$p_variant.annotation.filterb
-  variant.annotation.summarize      <- params_w2pps$p_variant.annotation.summarize
-  grep.variants		                  <- params_w2pps$p_grep.variants
-  visualize.variants		            <- params_w2pps$p_visualize.variants
-  variant.dbsnp.pre.snpeff          <- params_w2pps$p_variant.dbsnp.pre.snpeff
-  variant.eff.report                <- params_w2pps$p_variant.eff.report
-  grep.post.snpeff.variants          <- params_w2pps$p_grep.post.snpeff.variants
-  
-  # -----------------------------
-  
-  # Get the file name to process now
-  file2process.my1 <- params$file_list[datastep.my2]
-  
-  # Re-set working directory while in child worker, just in case
-  setwd(params$wd)
-  step <- data.frame(datastep.my2, 0)
-  colnames(step) <- c("n","tmp")
-
-  # Continue with the log file when/where needed
-  if (params$log && map.on.reference.genome.parallel) { 
-    write(paste("\n", sep=""), file=paste(params$log.folder,"/log.", params$startdate, params$opt$label, ".", file2process.my1, ".txt", sep=""), append = TRUE, sep = "");
-    print_mes("\n################################################################################\n", file2process.my1);
-    print_mes(paste("	Part A. PARALLELIZED. ", params$n_files, " files; Current: *** ", file2process.my1, " ***\n", sep=""), file2process.my1);
-    print_mes("################################################################################\n\n", file2process.my1);
-  }
-  
-
-  
-  #--- Parallel Pipeline steps into wrapper2.parallelizable.per.sample function ###----------------------------------------
-  
-  if (map.on.reference.genome.parallel) { 
-    # Report about the next step
-    print_doc(paste("### Start processing file #", datastep.my2, " (", file2process.my1, ") ... ###\n", sep=""), file2process.my1);
-    # Next Step
-    step <- fun.map.on.reference.genome(file2process.my2  = file2process.my1,
-                                        step.my  = step)
-  }
-  
-  
-  # Re-set the log file, if it exists already and log is requested
-  if (params$log) { 
-    #      write(paste("			### NEW RUN (", Sys.Date()," - ", params$n_files, " files) ###\n", sep=""), file=paste(params$log.folder,"/log.", params$startdate, ".", file2process.my1, ".txt", sep=""), append = FALSE, sep = "");
-    print_mes("\n################################################################################\n", file2process.my1);
-    print_mes(paste(" Part B. PARALLELIZABLE. ", params$n_files, " files; Current: *** ", file2process.my1, " ***\n", sep=""), file2process.my1);
-    print_mes("################################################################################\n\n", file2process.my1);
-  }
-  #  step$n <- 0
-  #  step$tmp <- 0
-  print_doc(paste("### Start processing file #", datastep.my2, " (", file2process.my1, ") ... ###\n", sep=""), file2process.my1);
-  
-  
-  #--- Parallelized Pipeline steps inside wrapper.parallelizable function ###----------------------------------------
-  
-  if (quality.control) { 
-    # First Step
-    step <- fun.quality.control(file2process.my2  = file2process.my1,
-                                step.my  = step)
-  }
-
-  
-  # In cases of paired end data (p_bwa = 2), check if all files have been processed 
-  # to create the corresponding 1 sam file for each pair of files from paired end data 
-  # This can be checked against the presence of lock files in the file system.
-  # By default, there is one lock file for the whole run (whan you have paired data),
-  # and one other lock file per sample when each sample is being processed.
-  if (params$opt$bwa == 2 && convert.file.list.pe) {
-    
-  	# Check if general lock file exist.   
-#	  if ( file.exists(paste(params$abs_path_to_script, "/", params$filename_list, ".lock", sep="")) ) {
-	  if ( file.exists(paste(params$filename_list, ".lock", sep="")) ) {
-	      
-        # lock for the whole run still found.
-        # check if any sample lock file is still present
-	      check_sample_lock_exists <- w.checklock.allsamples.pe(params$file_list) 
-      
-	      if (check_sample_lock_exists) { # Suspend execution of R expressions for a given number of seconds
-          # Report the user that some process is still working in the background
-	        print_doc(paste(" ### Waiting for the creation of all sam files from all samples ###\n", sep=""), file2process.my1);
-	        # If A lock file exists; wait a while and check again until no lock file from samples exist
-	        while (w.checklock.allsamples.pe(params$file_list)) {
-            cat(".")
-            Sys.sleep(60) # Suspend execution of R expressions for a given number of seconds
-	        }
-	      } else {
-	        # No lock file from samples exist any more; clean the general lock file
-	        # clean the lock file
-#	        system(paste("rm ", params$opt$output, "/", "log.",params$startdate, params$opt$label, ".fastq_pe_tmp.txt.lock", sep=""), TRUE)
-	        print_mes(paste(" ### Removing the general lock file ###\n", sep=""), file2process.my1);
-	        system(paste("rm ", params$filename_list, ".lock", sep=""), TRUE)
-	      } # end of process to clean the general lock file 
-
-    } # end of check for parent lock file. No parent lock file left (removed).
-    
-	  # Remake the file list with the defintive filenames with merged reads (_merged12.sam), and not just all .fastq files
-    
-	  if (params$opt$bwa == 2 && (params_wseq$p_map.on.reference.genome.sequential || params_wseq$p_map.on.reference.genome.parallel)) {
-	    # Next Step
-	    list.collected <- fun.convert.file.list.pe(file2process.my2  = routlogfile,
-	                                 step.my  = step)
-	    print_mes(paste(" ### 2nd call to fun.convert.file.list.pe ###\n", sep=""), routlogfile);
-	    step.my           <- list.collected[[1]]
-	    params$file_list  <- list.collected[[2]]
-	    params$n_files    <- list.collected[[3]]
-	    file2process.my1 <- params$file_list[datastep.my2]
-	    
-	  }
-    
-	} # end of the case bwa=2 (paired end) ####################################
-
-  
-  if (sam2bam.and.sort) {
-    # Next Step
-    step <- fun.sam2bam.and.sort(file2process.my2  = file2process.my1,
-                                 step.my  = step)
-  }
-  
-  if (remove.pcr.dup) {
-    # Next Step
-    step <- fun.remove.pcr.dup(file2process.my2  = file2process.my1,
-                               step.my  = step)
-  }
-  
-  if (index.bam.file) {
-    # Next Step
-    step <- fun.index.bam.file(file2process.my2  = file2process.my1,
-                               step.my  = step)
-  }
-  
-  if (stats) {
-    # Next Step
-    step <- fun.stats(file2process.my2  = file2process.my1,
-                      step.my  = step)
-  }
-  
-  if (variant.calling) {
-    # Next Step
-    step <- fun.variant.calling(file2process.my2  = file2process.my1,
-                                step.my  = step)
-  }
-  
-  if (variant.filtering) {
-    # Next Step
-    step <- fun.variant.filtering(file2process.my2  = file2process.my1,
-                                  step.my  = step)
-  }
-  
-  if (convert2vcf4) {
-    # Next Step
-    step <- fun.convert2vcf4(file2process.my2  = file2process.my1,
-                             step.my  = step)
-  }
-  
-  if (variant.annotation.geneb) {
-    # Next Step
-    step <- fun.variant.annotation.geneb(file2process.my2  = file2process.my1,
-                                         step.my  = step)
-  }
-  
-  ## fun.variant.annotation.regionb skipped so far
-  #  if (variant.annotation.regionb) {
-  #    # Next Step
-  #    step <- fun.variant.annotation.regionb(file2process.my2  = file2process.my1,
-  #                      step.my  = step)
-  #  }
-  
-  if (variant.annotation.filterb) {
-    # Next Step
-    step <- fun.variant.annotation.filterb(file2process.my2  = file2process.my1,
-                                           step.my  = step)
-  }
-  
-  if (variant.annotation.summarize) {
-    # Next Step
-    step <- fun.variant.annotation.summarize(file2process.my2  = file2process.my1,
-                                             step.my  = step)
-  }
-  
-  if (grep.variants) {
-    # Next Step
-    step <- fun.grep.variants(file2process.my2  = file2process.my1,
-                              step.my  = step)
-  }
-  
-  if (visualize.variants) {
-    # Next Step
-    step <- fun.visualize.variants(file2process.my2  = file2process.my1,
-                                   step.my  = step)
-  }
-
-  if (variant.dbsnp.pre.snpeff) {
-    # Next Step
-    step <- fun.variant.dbsnp.pre.snpeff(file2process.my2  = file2process.my1,
-                                         step.my  = step)
-  }
-  
-  if (variant.eff.report) {
-    # Next Step
-    step <- fun.variant.eff.report(file2process.my2  = file2process.my1,
-                                             step.my  = step)
-  }
-  
-  if (grep.post.snpeff.variants) {
-    # Next Step
-    step <- fun.grep.post.snpeff.variants(file2process.my2  = file2process.my1,
-                                          step.my  = step)
-  }
-  
-  
-  step$tmp <- step$tmp+1;
-  print_doc(paste("	End of processing this file: ", file2process.my1, "\n", sep=""), file2process.my1);
-  print_mes("\n--------------------------------------------------------------------------------\n\n", file2process.my1);
-  
-  # XXX...
-  
-  
-  # Last step of wrapper
-  #  gc() # Let's clean ouR garbage if possible
-  return(NULL) # return nothing, since results are saved on disk from the perl script
-} # end of wrapper function
-
-##############################################################
-
-
-##########################
-### FUNCTION wrapper2.parallelizable.final
-###
-###   3c. Wrapper functions, parallelizable.
-##########################
-wrapper2.parallelizable.final <- function(datastep.my2) {
-  # -----------------------------
-  # Define which processes to run (in later stage, this will be in an external R file sourced here)
-  # names of control process are like functions but without the "fun." prefix.
-  # -----------------------------
-  
-  build.html.report  	<- params_w2pf$p_build.html.report
-  
-  
-  # -----------------------------
-  
-  # Get the file name to process now
-  file2process.my1 <- params$file_list[datastep.my2]
-  
-  # Re-set working directory while in child worker, just in case
-  setwd(params$wd)
-  step <- data.frame(datastep.my2, 0)
-  colnames(step) <- c("n","tmp")
-  
-
-  # Re-set the log file, if it exists already and log is requested
-  if (params$log) { 
-    #      write(paste("			### NEW RUN (", Sys.Date()," - ", params$n_files, " files) ###\n", sep=""), file=paste(params$log.folder,"/log.", params$startdate, ".", file2process.my1, ".txt", sep=""), append = FALSE, sep = "");
-    print_mes("\n################################################################################\n", file2process.my1);
-    print_mes(paste("	Part C. PARALLELIZABLE also. ", params$n_files, " files.", sep=""), file2process.my1);
-    print_mes("\n################################################################################\n\n", file2process.my1);
-  }
-  #  step$n <- 0
-  #  step$tmp <- 0
-  print_doc(paste("### Start processing file #", datastep.my2, " (", file2process.my1, ") ... ###\n", sep=""), file2process.my1);
-  
-  
-  #--- Parallelized Pipeline steps inside wrapper.parallelizable.final function ###----------------------------------------
-  
-  
-  if (build.html.report) {
-    # Next Step
-    step <- fun.build.html.report(file2process.my2  = file2process.my1,
-                                  step.my  = step)
-  }
-  
-  
-  step$tmp <- step$tmp+1;
-  print_doc(paste("	End of EVA UEB pipeline", "\n", sep=""), file2process.my1);
-  print_mes("\n--------------------------------------------------------------------------------\n\n", file2process.my1);
-
-  # XXX...
-  
-  
-  # Last step of wrapper
-  #  gc() # Let's clean ouR garbage if possible
-  return(NULL) # return nothing, since results are saved on disk from the perl script
-} # end of wrapper function
