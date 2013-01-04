@@ -19,6 +19,7 @@
 ## * Alex Sánchez Pla, for comments and feedback.
 ## * Aleix Ruiz de Villa, for comments and feedback.
 ## * Josep Lluis Mosquera, for comments and feedback.
+## * Ferran Briansó Castilla, for comments and feedback.
 
 # 0. Basic startup process (for the working direectory)
 # ---------------------------------------------------------------------
@@ -39,6 +40,9 @@ source("eva_params.R")
 
 # Import UEB Functions for the EVA analysis 
 source("eva_analysis_functions.R")
+
+# Import UEB Function Wrappers for the EVA analysis 
+source("eva_analysis_wrappers.R")
 
 ##############################################################################
 ##############################################################################
@@ -64,8 +68,9 @@ library(Rsamtools, quietly = TRUE)
 if(!require(GenomicFeatures)){ biocLite("GenomicFeatures") }
 library(GenomicFeatures, quietly = TRUE)
 
-if(!require(TxDb.Hsapiens.UCSC.hg19.knownGene)){ biocLite("TxDb.Hsapiens.UCSC.hg19.knownGene") }
-library(org.Hs.eg.db, quietly = TRUE)
+# Check for the TxDb.Hsapiens.UCSC.hg19.knownGene or TxDb.Hsapiens.UCSC.hg18.knownGene dynamically 
+# based on the contents of param opt$genver, where hg19 or hg18 is set. 
+# See below after the opt$genver is defined
 
 if(!require(org.Hs.eg.db)){ biocLite("org.Hs.eg.db") }
 library(org.Hs.eg.db, quietly = TRUE)
@@ -131,11 +136,13 @@ my.options <- c(
   'help'     , 'h', 0, "logical"  , # "show help on usage # Optional",
   'input'    , 'i', 1, "character", # "Directory with __I__nput data files # Compulsory",
   'output'   , 'o', 1, "character", # "Directory with __O_utput data files # Compulsory",
+  'genver'   , 'g', 1, "character", #, "__G__enome version used. E.g.: hg18, hg19, even if only hg19 is supported as of Jan 2013",
   'index'    , 'n', 0, "logical"  , # "i__N__dex the reference genome # Optional",
   'bwa'      , 'w', 1, "integer"  , #, "b__W__a algorythm used. See http://bio-bwa.sourceforge.net/bwa.shtml ".
   'filter'   , 'f', 1, "character", # "__F__ilter results for these target genes # Optional",
   'log'      , 'l', 1, "integer"  , # "__L__og info about the process into a log file # Optional",
   'summarize', 's', 0, "logical"  , # "__S__summarize results in a single .csv file with annotations # Optional",
+  'dbsnp'    , 'd', 1, "integer"  , #, "__d__bSNP version used. E.g.: 132, 135, 137, ...".
   'keep'     , 'k', 0, "logical"  , #, "__K__eep temporal dummy files after they have been used # Optional",
   'cpus'     , 'c', 1, "integer"  , #, "__C__pus to use from the multicore computer or cluster # Optional".
   'parallel' , 'p', 0, "logical"  , #, "__P__arallel processing using SnowFall package # Optional"
@@ -160,16 +167,31 @@ if ( !is.null(opt$help) || ((length(commandArgs()) >3 )
 # ---------------------------------------------------------------------
 if ( is.null(opt$input    ) ) { opt$input    = p_input  } # "dir_in_sara_207"     }
 if ( is.null(opt$output   ) ) { opt$output   = p_output	} # "dir_out_sara_207"    }
+if ( is.null(opt$genver   ) ) { opt$genver   = p_genver        }
 if ( is.null(opt$index    ) ) { opt$index    = p_index         }
 if ( is.null(opt$filter   ) ) { opt$filter   = p_filter           }
 if ( is.null(opt$log) || opt$log ==1) { opt$log      = p_log        }
+if ( is.null(opt$dbsnp    ) ) { opt$dbsnp    = p_dbsnp              }
 if ( is.null(opt$summarize) ) { opt$summarize= p_summarize          }
 if ( is.null(opt$snpeff.of) ) { opt$snpeff.of= p_snpeff.of          }
 if ( is.null(opt$keep     ) ) { opt$keep     = p_keep         } # Enable if run through editor and you want to keep temp files
 if ( is.null(opt$cpus     ) ) { opt$cpus     = p_cpus             }
 if ( is.null(opt$parallel ) ) { opt$parallel = p_parallel        }
-if ( is.null(opt$label    ) ) { opt$label    = p_label	} # ".sara207_4s4cpu"        } # Run Label for output filenames
+if ( is.null(opt$label    ) ) { opt$label    = p_label	} # "sara207_4s4cpu"        } # Run Label for output filenames
 if ( is.null(opt$bwa      ) ) { opt$bwa      = p_bwa          } # 1: bwa aln (short reads, low errors, allowing paired end also); 2= bwa bwasw (longer reads, single end only) # Algorythm for mapping with bwa
+
+
+# 0d. Check requirements for the libraries dependent on params added by the user in the program run (such as genome version hg18 or hg19, etc)
+# ---------------------------------------------------------------------
+# Check for the TxDb.Hsapiens.UCSC.hg19.knownGene or TxDb.Hsapiens.UCSC.hg18.knownGene dynamically 
+# based on the contents of param opt$genver, where hg19 or hg18 is set. 
+# As of January 2013, only hg19 is supported in all functions of this pipeline (use hg18 at your own risk for local partial tests, if needed)
+if(!require(paste("TxDb.Hsapiens.UCSC.", opt$genver,".knownGene", sep=""), character.only = TRUE)) {
+  biocLite(paste("TxDb.Hsapiens.UCSC.", opt$genver,".knownGene", sep="")) }
+library(paste("TxDb.Hsapiens.UCSC.", opt$genver,".knownGene", sep=""),
+        quietly = TRUE,  character.only = TRUE)
+
+
 
 ##############################################################
 
@@ -210,14 +232,14 @@ if (path_input_absolute == 0) {
 
 # When input files contain paired end reads (_pe), a temporal (_tmp) file name will be used first until we combine the data from both strands
 if (p_bwa == 2) {
-	filename_list = paste(opt$output, "/", "log.",startdate, opt$label, ".fastq_pe_tmp.txt", sep="")
+	filename_list = paste(opt$output, "/", "log.",startdate, ".", opt$label, ".fastq_pe_tmp.txt", sep="")
 	# Get the list of files in "input" directory through a system call to "ls *" and save the result to a file on disk
 	system(paste("ls ",abs_path_to_input_files,"*_sequence.fastq > ", filename_list, sep=""), TRUE)
 	# Add a lock file to indicate that paired end sample data is to be processed. This lock file will be removed only after all couples of files from samples have been merged into one file per sample
 	system(paste("touch ", filename_list, ".lock", sep=""), TRUE)
 } else {
 	# When input files contained single end short reads, or long reads, the definitive file list will be created here in this step already 
-	filename_list = paste(opt$output, "/", "log.",startdate, opt$label, ".fastq_input_list.txt", sep="")
+	filename_list = paste(opt$output, "/", "log.",startdate, ".", opt$label, ".fastq_input_list.txt", sep="")
 	# Get the list of files in "input" directory through a system call to "ls *" and save the result to a file on disk
 	system(paste("ls ",abs_path_to_input_files,"*.fastq > ", filename_list, sep=""), TRUE)
 }
@@ -277,7 +299,7 @@ params <- list(startdate = startdate,
 # 3. Create some files to log some data about the run
 #----------------------------------
 
-routlogfile <- paste("log.", startdate, opt$label, ".run.txt", sep="") # Output file with info from SnowFall (when used), params for the run and system info
+routlogfile <- paste("log.", startdate, ".", opt$label, ".run.txt", sep="") # Output file with info from SnowFall (when used), params for the run and system info
 abs_routlogfile <- paste(opt$output, "/", routlogfile, sep="")
 if (file.exists(abs_routlogfile)) {
   system(paste("rm ", abs_routlogfile, sep=""))
@@ -346,7 +368,8 @@ sfExport( "params",
           "fun.variant.dbsnp.pre.snpeff",
           "fun.variant.eff.report",
           "fun.grep.post.snpeff.variants",
-          "fun.build.html.report") # functions can be passed also to workers from master
+          "fun.build.html.report"
+          ) # functions can be passed also to workers from master
 
 ##############################################################
 
@@ -398,7 +421,7 @@ unlist(result)
 #     && params_w2pps$p_convert.file.list.pe) {
   if (params$opt$bwa == 2 && params_w2pps$p_convert.file.list.pe) {
   # Next Step
-  print_mes(paste(" ### 1st call to fun.convert.file.list.pe ###\n", sep=""), routlogfile);
+  print_mes(paste("\n ### 1st call to fun.convert.file.list.pe ###\n\n", sep=""), routlogfile);
   list.collected <- fun.convert.file.list.pe(file2process.my2  = routlogfile,
                                              step.my  = step)
   step.my           <- list.collected[[1]]
@@ -418,9 +441,7 @@ unlist(result)
 # We changed the file_list parameter for the params$file_list parameter, so that in cases of paired-emnd mode, 
 # this file list will have been rewritten to the new one at this step, and therefore, we will be able to process at this time step half the number of initial fastq files
 start3 <- Sys.time(); result2 <- sfLapply(1:length(params$file_list), wrapper2.parallelizable.per.sample) ; duration <- Sys.time()-start3;
-cat("\n(Chunk 8) Relative duration since last step: ")
-print(duration)
-cat("\n")
+cat("\n(Chunk 8) Relative duration since last step: "); print(duration); cat("\n")
 
 # Result is always in list form.
 unlist(result2)
@@ -438,9 +459,12 @@ unlist(result2)
 # Running the function normally just once. 
 start3 <- Sys.time(); result3 <- wrapper2.parallelizable.final( length(params$file_list) ) ; duration <- Sys.time()-start3;
 
-cat("\n(Chunk 9) Relative duration since last step: ")
-print(duration)
-cat("\n")
+cat("\n(Chunk 9) Relative duration since last step: "); print(duration); cat("\n")
+
+print_mes("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~", routlogfile);
+print_mes("\n XXX >>>>>>>>>>>>>>>>>> End of EVA UEB pipeline <<<<<<<<<<<<<<<<<<<<<<<<<<<< XXX", routlogfile);
+print_mes("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n\n", routlogfile);
+
 
 # Result is always in list form.
 unlist(result3)
@@ -453,7 +477,7 @@ sfStop()
 
 # After that, you can append extra information from the run to the same file
 w.output.run("\n##################################################", 
-             paste("PARAMS FROM THIS RUN: ", params$p_label, sep=""),
+             paste("PARAMS FROM THIS RUN: ", opt$label, sep=""),
              abs_routlogfile )
 w.output.run("*** params ***", unlist(params),  abs_routlogfile )
 w.output.run("*** params_wseq ***", unlist(params_wseq),  abs_routlogfile )

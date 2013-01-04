@@ -18,6 +18,7 @@
 ## * Alex Sánchez Pla, for comments and feedback.
 ## * Aleix Ruiz de Villa, for comments and feedback.
 ## * Josep Lluis Mosquera, for comments and feedback.
+## * Ferran Briansó Castilla, for comments and feedback.
 
 ##############################################################
 
@@ -32,7 +33,7 @@ if (p_test==1) {
   path_input_absolute <- "0" # Define whether the p_input is absolute or relative
   p_input    <- "test_in2" # "../test_in2"  # "test_in"
   p_output   <- "test_out2" # "../test_out2" # "test_out"
-  p_label    <-  ".testrunGATK1" # "test-121002" # "test-foo"        # Run Label for output filenames
+  p_label    <-  "testrunGATK1" # "test-121002" # "test-foo"        # Run Label for output filenames
   p_keep     <- TRUE # Enable if run through editor and you want to keep temp files
   p_filter   <- ""            
   p_mail.send <- 0 # 0=FALSE, 1=TRUE ; Indicate whether we want an email sent when the run is finished
@@ -40,10 +41,10 @@ if (p_test==1) {
   path_input_absolute <- "1" # Define whether the p_input is absolute or relative
 #  p_input    <- "/mnt/magatzem02/tmp/run_sara_293a/dir_in_293a2" # "../dir_in" # "test_in"   # "dir_in"     
 #  p_output   <- "/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a2" #../dir_out_293" # "../dir_out_293" # "test_out"	 # "dir_out_293"
-#  p_label    <-  ".sg293a2b2.snpeff.greped" # "test-121002" # ".sg293_qa_sg3sg4"   # "test-121002" ".sara207_4s4cpu"        # Run Label for output filenames
+#  p_label    <-  "sg293a2b2.snpeff.greped" # "test-121002" # ".sg293_qa_sg3sg4"   # "test-121002" ".sara207_4s4cpu"        # Run Label for output filenames
   p_input    <- "/mnt/magatzem02/tmp/run_sara_293a/dir_in_293a3" # "../dir_in" # "test_in"   # "dir_in"     
   p_output   <- "/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a3_seq" #../dir_out_293" # "../dir_out_293" # "test_out"   # "dir_out_293"
-  p_label    <-   ".sg293a3_test_count_reads" # ".sg293a3_ind7_mc15g3seq" # mc=minimum cover; g3: 3rd filter version for the grep; "test-121002" # ".sg293_qa_sg3sg4"   # "test-121002" ".sara207_4s4cpu"        # Run Label for output filenames
+  p_label    <-   "sg293a3_test_count_reads" # ".sg293a3_ind7_mc15g3seq" # mc=minimum cover; g3: 3rd filter version for the grep; "test-121002" # ".sg293_qa_sg3sg4"   # "test-121002" ".sara207_4s4cpu"        # Run Label for output filenames
   p_keep     <- TRUE # Enable if run through editor and you want to keep temp files
 #  p_filter   <- "BRCA"
 #  p_filter   <- "BRCA1\\|BRCA2\\|CHEK2\\|PALB2\\|BRIP1\\|TP53\\|PTEN\\|STK11\\|CDH1\\|ATM\\|BARD1\\|APC\\|MLH1\\|MRE11\\|MSH2\\|MSH6\\|MUTYH\\|NBN\\|PMS1\\|PMS2\\|RAD50\\|RAD51D\\|RAD51C\\|XRCC2\\|UIMC1\\|FAM175A\\|ERCC4\\|RAD51\\|RAD51B\\|XRCC3\\|FANCA\\|FANCB\\|FANCC\\|FANCD2\\|FANCE\\|FANCF\\|FANCG\\|FANCI\\|FANCL\\|FANCM\\|SLX4\\|CASP8\\|FGFR2\\|TOX3\\|MAP3K1\\|MRPS30\\|SLC4A7\\|NEK10\\|COX11\\|ESR1\\|CDKN2A\\|CDKN2B\\|ANKRD16\\|FBXO18\\|ZNF365\\|ZMIZ1\\|BABAM1\\|LSP1\\|ANKLE1\\|TOPBP1\\|BCCIP\\|53BP1"            
@@ -58,8 +59,10 @@ if (p_test==1) {
   p_filter   <- "BRCA1|\\|BRCA2|\\|CHEK2|\\|PALB2|\\|BRIP1|\\|TP53|\\|PTEN|\\|STK11|\\|CDH1|\\|ATM|\\|BARD1|\\|APC|\\|MLH1|\\|MRE11|\\|MSH2|\\|MSH6|\\|MUTYH|\\|NBN|\\|PMS1|\\|PMS2|\\|RAD50|\\|RAD51D|\\|RAD51C|\\|XRCC2|\\|UIMC1|\\|FAM175A|\\|ERCC4|\\|RAD51|\\|RAD51B|\\|XRCC3|\\|FANCA|\\|FANCB|\\|FANCC|\\|FANCD2|\\|FANCE|\\|FANCF|\\|FANCG|\\|FANCI|\\|FANCL|\\|FANCM|\\|SLX4|\\|CASP8|\\|FGFR2|\\|TOX3|\\|MAP3K1|\\|MRPS30|\\|SLC4A7|\\|NEK10|\\|COX11|\\|ESR1|\\|CDKN2A|\\|CDKN2B|\\|ANKRD16|\\|FBXO18|\\|ZNF365|\\|ZMIZ1|\\|BABAM1|\\|LSP1|\\|ANKLE1|\\|TOPBP1|\\|BCCIP|\\|53BP1|\\|BRCA1:\\|BRCA2:\\|CHEK2:\\|PALB2:\\|BRIP1:\\|TP53:\\|PTEN:\\|STK11:\\|CDH1:\\|ATM:\\|BARD1:\\|APC:\\|MLH1:\\|MRE11:\\|MSH2:\\|MSH6:\\|MUTYH:\\|NBN:\\|PMS1:\\|PMS2:\\|RAD50:\\|RAD51D:\\|RAD51C:\\|XRCC2:\\|UIMC1:\\|FAM175A:\\|ERCC4:\\|RAD51:\\|RAD51B:\\|XRCC3:\\|FANCA:\\|FANCB:\\|FANCC:\\|FANCD2:\\|FANCE:\\|FANCF:\\|FANCG:\\|FANCI:\\|FANCL:\\|FANCM:\\|SLX4:\\|CASP8:\\|FGFR2:\\|TOX3:\\|MAP3K1:\\|MRPS30:\\|SLC4A7:\\|NEK10:\\|COX11:\\|ESR1:\\|CDKN2A:\\|CDKN2B:\\|ANKRD16:\\|FBXO18:\\|ZNF365:\\|ZMIZ1:\\|BABAM1:\\|LSP1:\\|ANKLE1:\\|TOPBP1:\\|BCCIP:\\|53BP1:\\|^BRCA1\t\\|^BRCA2\t\\|^CHEK2\t\\|^PALB2\t\\|^BRIP1\t\\|^TP53\t\\|^PTEN\t\\|^STK11\t\\|^CDH1\t\\|^ATM\t\\|^BARD1\t\\|^APC\t\\|^MLH1\t\\|^MRE11\t\\|^MSH2\t\\|^MSH6\t\\|^MUTYH\t\\|^NBN\t\\|^PMS1\t\\|^PMS2\t\\|^RAD50\t\\|^RAD51D\t\\|^RAD51C\t\\|^XRCC2\t\\|^UIMC1\t\\|^FAM175A\t\\|^ERCC4\t\\|^RAD51\t\\|^RAD51B\t\\|^XRCC3\t\\|^FANCA\t\\|^FANCB\t\\|^FANCC\t\\|^FANCD2\t\\|^FANCE\t\\|^FANCF\t\\|^FANCG\t\\|^FANCI\t\\|^FANCL\t\\|^FANCM\t\\|^SLX4\t\\|^CASP8\t\\|^FGFR2\t\\|^TOX3\t\\|^MAP3K1\t\\|^MRPS30\t\\|^SLC4A7\t\\|^NEK10\t\\|^COX11\t\\|^ESR1\t\\|^CDKN2A\t\\|^CDKN2B\t\\|^ANKRD16\t\\|^FBXO18\t\\|^ZNF365\t\\|^ZMIZ1\t\\|^BABAM1\t\\|^LSP1\t\\|^ANKLE1\t\\|^TOPBP1\t\\|^BCCIP\t\\|^53BP1\t\\|\"BRCA1\"\\|\"BRCA2\"\\|\"CHEK2\"\\|\"PALB2\"\\|\"BRIP1\"\\|\"TP53\"\\|\"PTEN\"\\|\"STK11\"\\|\"CDH1\"\\|\"ATM\"\\|\"BARD1\"\\|\"APC\"\\|\"MLH1\"\\|\"MRE11\"\\|\"MSH2\"\\|\"MSH6\"\\|\"MUTYH\"\\|\"NBN\"\\|\"PMS1\"\\|\"PMS2\"\\|\"RAD50\"\\|\"RAD51D\"\\|\"RAD51C\"\\|\"XRCC2\"\\|\"UIMC1\"\\|\"FAM175A\"\\|\"ERCC4\"\\|\"RAD51\"\\|\"RAD51B\"\\|\"XRCC3\"\\|\"FANCA\"\\|\"FANCB\"\\|\"FANCC\"\\|\"FANCD2\"\\|\"FANCE\"\\|\"FANCF\"\\|\"FANCG\"\\|\"FANCI\"\\|\"FANCL\"\\|\"FANCM\"\\|\"SLX4\"\\|\"CASP8\"\\|\"FGFR2\"\\|\"TOX3\"\\|\"MAP3K1\"\\|\"MRPS30\"\\|\"SLC4A7\"\\|\"NEK10\"\\|\"COX11\"\\|\"ESR1\"\\|\"CDKN2A\"\\|\"CDKN2B\"\\|\"ANKRD16\"\\|\"FBXO18\"\\|\"ZNF365\"\\|\"ZMIZ1\"\\|\"BABAM1\"\\|\"LSP1\"\\|\"ANKLE1\"\\|\"TOPBP1\"\\|\"BCCIP\"\\|\"53BP1\"\\|BRCA1\t|BRCA2\t|CHEK2\t|PALB2\t|BRIP1\t|TP53\t|PTEN\t|STK11\t|CDH1\t|ATM\t|BARD1\t|APC\t|MLH1\t|MRE11\t|MSH2\t|MSH6\t|MUTYH\t|NBN\t|PMS1\t|PMS2\t|RAD50\t|RAD51D\t|RAD51C\t|XRCC2\t|UIMC1\t|FAM175A\t|ERCC4\t|RAD51\t|RAD51B\t|XRCC3\t|FANCA\t|FANCB\t|FANCC\t|FANCD2\t|FANCE\t|FANCF\t|FANCG\t|FANCI\t|FANCL\t|FANCM\t|SLX4\t|CASP8\t|FGFR2\t|TOX3\t|MAP3K1\t|MRPS30\t|SLC4A7\t|NEK10\t|COX11\t|ESR1\t|CDKN2A\t|CDKN2B\t|ANKRD16\t|FBXO18\t|ZNF365\t|ZMIZ1\t|BABAM1\t|LSP1\t|ANKLE1\t|TOPBP1\t|BCCIP\t|53BP1  "
   p_mail.send <- 1 # 0=FALSE, 1=TRUE ; Indicate whether we want an email sent when the run is finished
 }
+p_genver    <- "hg19" # hg19 is the only one supported throughout the whole pipeline still, as of January 2013.
 p_index     <- FALSE # TRUE         
 p_log       <- TRUE        
+p_dbsnp     <- "132" # 132 for dbsnp132 is the one supported throughout the whole pipeline still, regarding current annovar version, as of January 2013.
 p_summarize <- TRUE  
 p_snpeff.of <- "txt" # Output format for snpEff. Possible values: txt, vcf, gatk, bed, bedAnn (txt will be deprecated, but it can be ocasionally useful still in the meantime)
 p_cpus      <- 4             
@@ -111,27 +114,21 @@ runParam <- TRUE #######################
 p_sam2bam.and.sort		        <- runParam
 p_remove.pcr.dup		          <- runParam
 p_gatk.local.realign.step1    <- runParam
+p_gatk.local.realign.step2    <- FALSE # runParam # Unfinished work
+p_gatk.local.realign.step3    <- FALSE # runParam # Unfinished work
 #####
 runParam <- FALSE #######################
-####
-p_gatk.local.realign.step2    <- runParam
-p_gatk.local.realign.step3    <- runParam
-#####
-runParam <- TRUE #######################
 ####
 p_index.bam.file		          <- runParam
 p_stats			                  <- runParam
-p_snpeff.count.reads          <- FALSE # runParam
-#####
-runParam <- FALSE #######################
-####
-p_exon.coverage   	          <- FALSE # runParam
+p_snpeff.count.reads          <- FALSE # runParam # Not working properly yet
+p_exon.coverage   	          <- FALSE # runParam # Unfinished work
 p_variant.calling		          <- runParam
 p_variant.filtering		        <- runParam
-p_gatk.combine.vcfs           <- FALSE # runParam
+p_gatk.combine.vcfs           <- FALSE # runParam # Non-started work (place holder only)
 p_convert2vcf4		            <- runParam
 p_variant.annotation.geneb	  <- runParam
-p_variant.annotation.regionb	<- runParam # skipped so far
+p_variant.annotation.regionb	<- FALSE # runParam # Non-started work (place holder only)
 p_variant.annotation.filterb	<- runParam
 p_variant.annotation.summarize<- runParam
 p_grep.variants		            <- runParam
@@ -187,16 +184,14 @@ params_w2pps <- list(
 #####
 runParam <- FALSE #######################
 ####
-p_build.html.report  <- runParam
-p_foo_w2pf <- runParam # dummy param to attempt to prevent error message "Error in cut.default(i, breaks) : 'breaks' are not unique" https://bugs.r-project.org/bugzilla3/show_bug.cgi?id=14898
-
+p_build.html.report  <- FALSE # runParam # Non-started work (place holder only)
 
 
 # 9b. Distribute final Parallelizable calculation 
 # w2pf : for function wrapper2.parallelizable.final
 params_w2pf <- list()
 params_w2pf <- list(
-  p_foo_w2pf = p_foo_w2pf, # dummy param to attempt to prevent error message "Error in cut.default(i, breaks) : 'breaks' are not unique" https://bugs.r-project.org/bugzilla3/show_bug.cgi?id=14898
+  # p_foo_w2pf = p_foo_w2pf, # dummy param to attempt to prevent error message "Error in cut.default(i, breaks) : 'breaks' are not unique" https://bugs.r-project.org/bugzilla3/show_bug.cgi?id=14898
   p_build.html.report             = p_build.html.report
 )
 
@@ -209,11 +204,27 @@ params_w2pf <- list(
 p_server <- 1 # Set the server number (see codes above)
 
 if (p_server==1) { # MainHead server
+  # A. Reference Data file paths
+    # A.i) Human Genome
+      path_genome1 = "/home/ueb/Data/Data_Genomes/hg19/hg19.fa" 
+      path_genome2 = "/home/ueb/Data/Data_Genomes/hg19_Broad_Reference_Genome/Homo_sapiens_assembly19.fasta" 
+      path_genome3 = "/home/ueb/Data/gatk-data-2.3/hg19/ucsc.hg19.fasta"
+      path_genome4 = "/home/ueb/Data/Data_Genomes/forGATK/hg19_rCRSchrm.fa" # from http://epigenome.usc.edu/publicationdata/bissnp2011/utilies.html
+    path_genome = path_genome1 
+    # A.ii) dbSNP
+      path_dbSNP1 = "/home/ueb/Data/dbSNP/dbsnp132_20101103.vcf"
+      path_dbSNP2 = "/home/ueb/Data/Data_Genomes/hg19_Broad_Reference_Genome/dbsnp_135_human_9606_v4.0_00-All.vcf"
+      path_dbSNP3 = "/home/ueb/Data/gatk-data-2.3/hg19/dbsnp_137.hg19.vcf"
+      path_dbSNP4 = "/home/ueb/Data/Data_Genomes/forGATK/dbsnp_135.hg19.sort.vcf"
+    path_dbSNP = path_dbSNP1
+    # A.iii) Exon Capture File (Intervals list)
+      path_exon_capture_file1 = "/home/ueb/Data/BED/TruSeq_exome_targeted_regions.hg19.bed.chr"
+      path_exon_capture_file2 = "/home/ueb/Data/BED/all_captured_exomes_from_ucsc_hg19.bed"
+      path_exon_capture_file3 = "/home/ueb/Data/Data_Genomes/forGATK/whole_genome_interval_list.hg19.bed"
+      path_exon_capture_file4 = "/home/ueb/Data/Data_Genomes/forGATK/whole_genome_interval_list.hg19.bed"
+    path_exon_capture_file = path_exon_capture_file4  
+  # B. Program file paths
   path_fastq = "/home/ueb/fastqc/fastqc" 
-  path_genome1 = "/home/ueb/Data/Data_Genomes/hg19/hg19.fa" 
-  path_genome2 = "/home/ueb/Data/Data_Genomes/hg19_Broad_Reference_Genome/Homo_sapiens_assembly19.fasta" 
-  path_genome3 = "/home/ueb/Data/gatk-data-2.3/hg19/ucsc.hg19.fasta"
-  path_genome = path_genome1 
   path_vcfutils = "/usr/share/samtools/vcfutils.pl"
   path_convert2annovar = "/home/ueb/annovar/convert2annovar.pl"
   path_annotate_variation = "/home/ueb/annovar/annotate_variation.pl"
@@ -222,12 +233,7 @@ if (p_server==1) { # MainHead server
   path_snpEff = "/home/ueb/snpEff/" # end with trailing slash but no script, since the same folder is used for several files          
   path_gatk = "/home/ueb/GenomeAnalysisTKLite-2.3-4-gb8f1308/GenomeAnalysisTKLite.jar" # end with the jar file since it can be lite or not
   path_gatk_key = "/home/ueb/GenomeAnalysisTKLite-2.3-4-gb8f1308/ueb_vhir.org.key" # key to avoid gatk 'calling home' (to gatk authors) on each run. See http://gatkforums.broadinstitute.org/discussion/1250/what-is-phone-home-and-how-does-it-affect-me
-  path_dbSNP1 = "/home/ueb/Data/dbSNP/dbsnp132_20101103.vcf"
-  path_dbSNP2 = "/home/ueb/Data/Data_Genomes/hg19_Broad_Reference_Genome/dbsnp_135_human_9606_v4.0_00-All.vcf"
-  path_dbSNP3 = "/home/ueb/Data/gatk-data-2.3/hg19/dbsnp_137.hg19.vcf"
-  path_dbSNP = path_dbSNP1
-  path_exon_capture_file1 = "/home/ueb/Data/BED/TruSeq_exome_targeted_regions.hg19.bed.chr"
-  path_exon_capture_file2 = "/home/ueb/Data/BED/all_captured_exomes_from_ucsc_hg19.bed"
+
 } else if (p_server==2) { # B52 server
   path_fastq = "/home/ueb/software/FastQC/fastqc"
   path_genome = "/home/ueb/Data/Data_Genomes/hg19.fa" 

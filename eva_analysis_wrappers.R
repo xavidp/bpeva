@@ -18,6 +18,7 @@
 ## * Alex Sánchez Pla, for comments and feedback.
 ## * Aleix Ruiz de Villa, for comments and feedback.
 ## * Josep Lluis Mosquera, for comments and feedback.
+## * Ferran Briansó Castilla, for comments and feedback.
 
 ##########################
 ### WRAPPERS OF FUNCTIONS
@@ -49,12 +50,12 @@ wrapper.sequential <- function(datastep.my) {
   
   # Re-set the log file, if it exists already and log is requested. Create it.
   if (params$log) { 
-    write(paste("\n", sep=""), file=paste(params$log.folder,"/log.", params$startdate, params$opt$label, ".", file2process.my1, ".txt", sep=""), append = FALSE, sep = "");
+    write(paste("\n", sep=""), file=paste(params$log.folder,"/log.", params$startdate, ".", params$opt$label, ".", file2process.my1, ".txt", sep=""), append = FALSE, sep = "");
   }
   
   # Re-set the log file, if it exists already and log is requested
   if (params$log && map.on.reference.genome.sequential) { 
-    write(paste("\n", sep=""), file=paste(params$log.folder,"/log.", params$startdate, params$opt$label, ".", file2process.my1, ".txt", sep=""), append = TRUE, sep = "");
+    write(paste("\n", sep=""), file=paste(params$log.folder,"/log.", params$startdate, ".", params$opt$label, ".", file2process.my1, ".txt", sep=""), append = TRUE, sep = "");
     print_mes("\n################################################################################\n", file2process.my1);
     print_mes(paste("  		Part A. SEQUENTIAL. ", params$n_files, " files; Current: *** ", file2process.my1, " ***\n", sep=""), file2process.my1);
     print_mes("################################################################################\n\n", file2process.my1);
@@ -126,7 +127,7 @@ wrapper2.parallelizable.per.sample <- function(datastep.my2) {
   
   # Continue with the log file when/where needed
   if (params$log && map.on.reference.genome.parallel) { 
-    write(paste("\n", sep=""), file=paste(params$log.folder,"/log.", params$startdate, params$opt$label, ".", file2process.my1, ".txt", sep=""), append = TRUE, sep = "");
+    write(paste("\n", sep=""), file=paste(params$log.folder,"/log.", params$startdate, ".", params$opt$label, ".", file2process.my1, ".txt", sep=""), append = TRUE, sep = "");
     print_mes("\n################################################################################\n", file2process.my1);
     print_mes(paste("	Part A. PARALLELIZED. ", params$n_files, " files; Current: *** ", file2process.my1, " ***\n", sep=""), file2process.my1);
     print_mes("################################################################################\n\n", file2process.my1);
@@ -147,7 +148,9 @@ wrapper2.parallelizable.per.sample <- function(datastep.my2) {
   
   # Re-set the log file, if it exists already and log is requested
   if (params$log) { 
-    #      write(paste("			### NEW RUN (", Sys.Date()," - ", params$n_files, " files) ###\n", sep=""), file=paste(params$log.folder,"/log.", params$startdate, ".", file2process.my1, ".txt", sep=""), append = FALSE, sep = "");
+    write(paste("\n>>> NEW SAMPLE TO PROCESS (", Sys.Date(),") <<<\n\n", sep=""), 
+                          file=paste(params$log.folder,"/log.", params$startdate, ".", params$p_label, ".",
+                          file2process.my1, ".txt", sep=""), append = FALSE, sep = "");
     print_mes("\n################################################################################\n", file2process.my1);
     print_mes(paste(" Part B. PARALLELIZABLE. ", params$n_files, " files; Current: *** ", file2process.my1, " ***\n", sep=""), file2process.my1);
     print_mes("################################################################################\n\n", file2process.my1);
@@ -194,8 +197,8 @@ wrapper2.parallelizable.per.sample <- function(datastep.my2) {
       } else {
         # No lock file from samples exist any more; clean the general lock file
         # clean the lock file
-        #	        system(paste("rm ", params$opt$output, "/", "log.",params$startdate, params$opt$label, ".fastq_pe_tmp.txt.lock", sep=""), TRUE)
-        print_mes(paste(" ### Removing the general lock file ###\n", sep=""), file2process.my1);
+        #	        system(paste("rm ", params$opt$output, "/", "log.",params$startdate, ".", params$opt$label, ".fastq_pe_tmp.txt.lock", sep=""), TRUE)
+        print_mes(paste("\n ### Sam files from this set of paired samples created: Removing the general lock file ###\n\n", sep=""), file2process.my1);
         system(paste("rm ", params$filename_list, ".lock", sep=""), TRUE)
       } # end of process to clean the general lock file 
       
@@ -207,7 +210,7 @@ wrapper2.parallelizable.per.sample <- function(datastep.my2) {
       # Next Step
       list.collected <- fun.convert.file.list.pe(file2process.my2  = routlogfile,
                                                  step.my  = step)
-      print_mes(paste(" ### 2nd call to fun.convert.file.list.pe ###\n", sep=""), routlogfile);
+      print_mes(paste("\n ### 2nd call to fun.convert.file.list.pe ###\n\n", sep=""), routlogfile);
       step.my           <- list.collected[[1]]
       params$file_list  <- list.collected[[2]]
       params$n_files    <- list.collected[[3]]
@@ -353,7 +356,7 @@ wrapper2.parallelizable.per.sample <- function(datastep.my2) {
   
   
   step$tmp <- step$tmp+1;
-  print_doc(paste("	End of processing this file: ", file2process.my1, "\n", sep=""), file2process.my1);
+  print_doc(paste("	Part B. End of processing this file: ", file2process.my1, "\n", sep=""), file2process.my1);
   print_mes("\n--------------------------------------------------------------------------------\n\n", file2process.my1);
   
   # XXX...
@@ -415,8 +418,7 @@ wrapper2.parallelizable.final <- function(datastep.my2) {
   
   
   step$tmp <- step$tmp+1;
-  print_doc(paste("	End of EVA UEB pipeline", "\n", sep=""), file2process.my1);
-  print_mes("\n--------------------------------------------------------------------------------\n\n", file2process.my1);
+  print_doc(paste("	End", "\n", sep=""), file2process.my1);
   
   # XXX...
   

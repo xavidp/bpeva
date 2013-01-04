@@ -18,6 +18,7 @@
 ## * Alex Sánchez Pla, for comments and feedback.
 ## * Aleix Ruiz de Villa, for comments and feedback.
 ## * Josep Lluis Mosquera, for comments and feedback.
+## * Ferran Briansó Castilla, for comments and feedback.
 
 ##########################
 ### FUNCTIONS
@@ -136,7 +137,7 @@ check2clean <- function(my.option, filename.my1)
 
 w.output.samples <- function(mess, filename.my2)
 {
-  write(mess, file=paste(params$log.folder,"/log.",params$startdate, params$opt$label,".", filename.my2, ".txt", sep=""), append = TRUE, sep = "");
+  write(mess, file=paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", filename.my2, ".txt", sep=""), append = TRUE, sep = "");
 }
 
 ##########################
@@ -188,7 +189,7 @@ w.output.run <- function(label, mess, filename.my2)
 
 w.lock.sample.pe <- function(filename.my2)
 {
-	system(paste("touch ", params$opt$output, "/", "log.",params$startdate, params$opt$label, ".", filename.my2, ".lock", sep=""), TRUE)
+	system(paste("touch ", params$opt$output, "/", "log.",params$startdate, ".", params$opt$label, ".", filename.my2, ".lock", sep=""), TRUE)
 }
 
 ##########################
@@ -200,7 +201,7 @@ w.lock.sample.pe <- function(filename.my2)
 
 w.checklock.allsamples.pe <- function(file_list.my2)
 {
-  any(file.exists(paste(params$opt$output, "/", "log.",params$startdate, params$opt$label, ".",
+  any(file.exists(paste(params$opt$output, "/", "log.",params$startdate, ".", params$opt$label, ".",
                     as.matrix(file_list.my2)[1:length(file_list.my2)], ".lock", sep="")))  
 }
 
@@ -213,8 +214,8 @@ w.checklock.allsamples.pe <- function(file_list.my2)
 
 w.unlock.sample.pe <- function(filename.my2)
 {
-	print_mes(paste(now(), "Removing lock: ", params$opt$output, "/", "log.",params$startdate, params$opt$label, ".", filename.my2, ".lock \n", sep=""), filename.my2)
-  system(paste("rm ", params$opt$output, "/", "log.",params$startdate, params$opt$label, ".", filename.my2, ".lock", sep=""), TRUE)
+	print_mes(paste(now(), "Removing lock: ", params$opt$output, "/", "log.",params$startdate, ".", params$opt$label, ".", filename.my2, ".lock \n", sep=""), filename.my2)
+  system(paste("rm ", params$opt$output, "/", "log.",params$startdate, ".", params$opt$label, ".", filename.my2, ".lock", sep=""), TRUE)
 }
 
 
@@ -399,6 +400,7 @@ fun.map.on.reference.genome <- function(file2process.my2, step.my) {
   ##    LB: defines the name of the library sequenced
   ##    SM: defines the individual sample, 
   ##    PL: defines the platform you used.
+  ##      GATK currently supports 454, LS454, Illumina, Solid, ABI_Solid, and CG (all case-insensitive).
   ##  You can leave all of them as sample (or anything else) in case you really got a single sample you wish to analyze. 
   ##  You might wonder what that could be good for: These tags are used when merging BAM files from different samples to distinguish between the different samples.
   ##
@@ -414,13 +416,13 @@ fun.map.on.reference.genome <- function(file2process.my2, step.my) {
     file_out = paste(params$directory_out, "/", file2process.my2, ".sai", sep="");
     command00 = "bwa aln"; # next command.
     # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
-    file_stderr = paste(params$log.folder,"/log.",params$startdate, params$opt$label,".", file2process.my2, ".txt", sep="");
+    file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
     options00 = paste(params$path_genome, " ", file_in, " > ", file_out, " 2>> ", file_stderr, sep="");
     command = paste(command00, " ", options00, sep="");
     # Annotate the subprocess start time; launch the subprocess; and annotate the end time & duration
     start.my <- Sys.time(); system(command); duration <- Sys.time()-start.my;
     # Show the duration of this subprocess
-    cat("\nRelative duration since last step: "); print(duration);
+    cat("\n 1st part (samse) - Relative duration since last step: "); print(duration);
     
     # Example - 2nd part
     #bwa samse database.fasta aln_sa.sai short_read.fastq > aln.sam
@@ -428,7 +430,7 @@ fun.map.on.reference.genome <- function(file2process.my2, step.my) {
     file_out = paste(params$directory_out, "/", file2process.my2, ".sam", sep="");
     command00 = "bwa samse"; # next command.
     # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
-    file_stderr = paste(params$log.folder,"/log.",params$startdate, params$opt$label,".", file2process.my2, ".txt", sep="");
+    file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
     options00 = paste(params$path_genome, " ", file_in_sai, " ", file_in, 
                       " -r \"@RG\tID:", file2process.my2, "\tLB:", file2process.my2, "\tPL:ILLUMINA\tSM:", 
                       file2process.my2, "\"", " > ", file_out, " 2>> ", file_stderr, sep="");
@@ -436,7 +438,7 @@ fun.map.on.reference.genome <- function(file2process.my2, step.my) {
     # Annotate the subprocess start time; launch the subprocess; and annotate the end time & duration
     start.my <- Sys.time(); system(command); duration <- Sys.time()-start.my;
     # Show the duration of this subprocess
-    cat("\nRelative duration since last step: "); print(duration);
+    cat("\n 2nd part (samse) - Relative duration since last step: "); print(duration); cat("\n")
   }
 
   if (params$opt$bwa == 2) # case to use algorythm 2 from bwa: aln (x2) + sampe  (short reads, paired ends, low errors);
@@ -450,13 +452,13 @@ fun.map.on.reference.genome <- function(file2process.my2, step.my) {
     file_out = paste(params$directory_out, "/", file2process.my2, ".sai", sep="");
     command00 = "bwa aln"; # next command.
     # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
-    file_stderr = paste(params$log.folder,"/log.",params$startdate, params$opt$label,".", file2process.my2, ".txt", sep="");
+    file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
     options00 = paste(params$path_genome, " ", file_in, " > ", file_out,  " 2>> ", file_stderr, sep="");
     command = paste(command00, " ", options00, sep="");
     # Annotate the subprocess start time; launch the subprocess; and annotate the end time & duration
     start.my <- Sys.time(); system(command); duration <- Sys.time()-start.my;
     # Show the duration of this subprocess
-    cat("\nRelative duration since last step: "); print(duration);
+    cat("\n 1st part (sampe) - Relative duration since last step: "); print(duration); cat("\n")
     
 #    file2process.my2 <- "s_4_m11_146b_1_sequence" #     file2process.my2
 #    file2process.my2 <- "s_4_m11_146b_2_sequence" #     file2process.my2
@@ -473,7 +475,7 @@ fun.map.on.reference.genome <- function(file2process.my2, step.my) {
     file2process.mate1 <- params$file_list[match(file2process.my2, params$file_list) -1]
     # get the file name of the lock file for the mate 1 of the pair 
     # (it should have completed its sam file before attempting to merge it with the 2mate of the pair)
-    mate1.unfinished <- file.exists(paste(params$opt$output, "/", "log.",params$startdate, params$opt$label, ".",
+    mate1.unfinished <- file.exists(paste(params$opt$output, "/", "log.",params$startdate, ".", params$opt$label, ".",
                       file2process.mate1, ".lock", sep=""))  
     
     
@@ -484,7 +486,7 @@ fun.map.on.reference.genome <- function(file2process.my2, step.my) {
         # Report the user that sam is not finished for mate1 of the sample pair
         print_doc(paste(" ### Waiting for sam file for the mate1 of the pair to finish ###\n", sep=""), file2process.my2);
         # If A lock file exists; wait a while and check again until no lock file from samples exist
-        while (file.exists(paste(params$opt$output, "/", "log.", params$startdate, params$opt$label, ".",
+        while (file.exists(paste(params$opt$output, "/", "log.", params$startdate, ".", params$opt$label, ".",
                                  file2process.mate1, ".lock", sep=""))) {
             cat(".")
             Sys.sleep(60) # Wait 60 seconds while for the creation of the sam file for the mat1 sample file to finish, and check again
@@ -503,7 +505,7 @@ fun.map.on.reference.genome <- function(file2process.my2, step.my) {
       file_out = paste(params$directory_out, "/", f2pbase, "_merged12.sam", sep="");
       command00 = "bwa sampe"; # next command.
       # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
-      file_stderr = paste(params$log.folder,"/log.",params$startdate, params$opt$label,".", file2process.my2, ".txt", sep="");
+      file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
       #      options00 = paste(params$path_genome, " ", file_in_sai1, " ", file_in_sai2, " ", file_in_fq1, " ", file_in_fq2, " > ", file_out, sep="");
       options00 = paste(params$path_genome, " ", file_in_sai1, " ", file_in_sai2, " ", file_in_fq1, " ", file_in_fq2,
                         " -r \"@RG\tID:", file2process.my2, "\tLB:", file2process.my2, "\tPL:ILLUMINA\tSM:", 
@@ -512,7 +514,7 @@ fun.map.on.reference.genome <- function(file2process.my2, step.my) {
       # Annotate the subprocess start time; launch the subprocess; and annotate the end time & duration
       start.my <- Sys.time(); system(command); duration <- Sys.time()-start.my;
       # Show the duration of this subprocess
-      cat("\nRelative duration since last step: "); print(duration);
+      cat("\n 2nd part (sampe) - Relative duration since last step: "); print(duration); cat("\n")
 
 ##      cat("\nWe will now stop the pipeline. You need to tweak the eva_params.R file to stop any attemp to rerun the previous steps and continue from here");
 ##      stop()
@@ -528,7 +530,7 @@ fun.map.on.reference.genome <- function(file2process.my2, step.my) {
     file_out = paste(params$directory_out, "/", file2process.my2, ".sam", sep="");
     command00 = "bwa bwasw"; # next command.
     # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
-    file_stderr = paste(params$log.folder,"/log.",params$startdate, params$opt$label,".", file2process.my2, ".txt", sep="");
+    file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
     #    options00 = paste(params$path_genome, " ", file_in, " > ", file_out, sep="");
     options00 = paste(params$path_genome, " ", file_in,
                       " -r \"@RG\tID:", file2process.my2, "\tLB:", file2process.my2, "\tPL:Roche454\tSM:", 
@@ -537,7 +539,7 @@ fun.map.on.reference.genome <- function(file2process.my2, step.my) {
     # Annotate the subprocess start time; launch the subprocess; and annotate the end time & duration
     start.my <- Sys.time(); system(command); duration <- Sys.time()-start.my;
     # Show the duration of this subprocess
-    cat("\nRelative duration since last step: "); print(duration);  
+    cat("\n (Case bwasw) - Relative duration since last step: "); print(duration);  cat("\n")
   }
   print_done(file2process.my2);
   
@@ -568,7 +570,7 @@ fun.convert.file.list.pe <- function(file2process.my2, step.my) {
   print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Convert the file list regarding paired-end merged .sam files: ###\n", sep=""), file2process.my2);
   
   # When input files contain paired end reads (_pe), a temporal (_tmp) file name will be used first until we combine the data from both strands
-  params$filename_list <- paste(params$opt$output, "/", "log.",params$startdate, params$opt$label, ".merged12_input_list.txt", sep="")
+  params$filename_list <- paste(params$opt$output, "/", "log.",params$startdate, ".", params$opt$label, ".merged12_input_list.txt", sep="")
   # Get the list of files in "input" directory through a system call to "ls *" and save the result to a file on disk
   system(paste("ls ", params$opt$output,"/", "*merged12.sam > ", params$filename_list, sep=""), TRUE)
   
@@ -612,7 +614,7 @@ fun.sam2bam.and.sort <- function(file2process.my2, step.my) {
   file_out = paste(file_in, ".sorted", sep="");
   command00 = "samtools"; # next command.
   # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
-  file_stderr = paste(params$log.folder,"/log.",params$startdate, params$opt$label,".", file2process.my2, ".txt", sep="");
+  file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
   options00 = paste(" view -bS ", file_in, " | ", command00, " sort - ", file_out,   " 2>> ", file_stderr, sep="");
   command = paste(command00, " ", options00, sep="");
   system(command);
@@ -639,7 +641,7 @@ fun.remove.pcr.dup <- function(file2process.my2, step.my) {
   file_out = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam", sep="");
   command00 = "samtools"; # next command.
   # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
-  file_stderr = paste(params$log.folder,"/log.",params$startdate, params$opt$label,".", file2process.my2, ".txt", sep="");
+  file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
   options00 = paste("rmdup -s ", file_in, " ", file_out,  " 2>> ", file_stderr, sep="");
   command = paste(command00, " ", options00, sep="");
   system(command);
@@ -666,10 +668,10 @@ fun.gatk.local.realign.step1 <- function(file2process.my2, step.my) {
   file_out = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.intervals", sep="");
   command00 = "java -jar "; # next command.
   # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
-  file_stderr = paste(params$log.folder,"/log.",params$startdate, params$opt$label,".", file2process.my2, ".txt", sep="");
+  file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
   options00 = paste(params$path_gatk, " -T RealignerTargetCreator -R ", params$path_genome, " -I ", 
                     file_in, " -known:dbsnp,vcf ", params$path_dbSNP,
-                    " -L ", params$path_exon_capture_file1 , " -o ", file_out, 
+                    " -L ", params$path_exon_capture_file , " -o ", file_out, 
                     " -et NO_ET -K ", params$path_gatk_key,
                     " >> ", file_stderr, " 2>> ", file_stderr, sep="");
     # Former option -B:dbsnp,vcf has been converted into -known:dbsnp,vcf. See http://seqanswers.com/forums/showthread.php?t=14013  
@@ -699,7 +701,7 @@ fun.gatk.local.realign.step2 <- function(file2process.my2, step.my) {
   command00 = "java -jar "; # next command.
   options00 = paste(params$path_gatk, " -T RealignerTargetCreator -R ", params$path_genome, " -I ", 
                     file_in, " -B:dbsnp,vcf ", params$path_dbSNP, " -log intervals.log -L",
-                    params$path_exon_capture_file1 , " -o ", file_out, sep="");
+                    params$path_exon_capture_file , " -o ", file_out, sep="");
   
   command = paste(command00, " ", options00, sep="");
   system(command);
@@ -726,7 +728,7 @@ fun.gatk.local.realign.step3 <- function(file2process.my2, step.my) {
   command00 = "java -jar "; # next command.
   options00 = paste(params$path_gatk, " -T RealignerTargetCreator -R ", params$path_genome, " -I ", 
                     file_in, " -B:dbsnp,vcf ", params$path_dbSNP, " -log intervals.log -L",
-                    params$path_exon_capture_file1 , " -o ", file_out, sep="");
+                    params$path_exon_capture_file , " -o ", file_out, sep="");
   
   command = paste(command00, " ", options00, sep="");
   system(command);
@@ -776,7 +778,7 @@ fun.stats <- function(file2process.my2, step.my) {
   #  file_out = paste(file_in, ".foo", sep="");
   command00 = "samtools"; # next command.
   # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
-  file_stderr = paste(params$log.folder,"/log.",params$startdate, params$opt$label,".", file2process.my2, ".txt", sep="");
+  file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
   options00 = paste(" flagstat ", file_in,  " >> ", file_stderr,  " 2>> ", file_stderr, sep="");
   command = paste(command00, " ", options00, sep="");
   system(command);
@@ -802,7 +804,7 @@ fun.snpeff.count.reads <- function(file2process.my2, step.my) {
   file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam", sep="");
   file_out = paste(file_in, ".cr.txt", sep="");
   command00 = "java -Xmx4g -jar "; # next command.
-  options00 = paste(params$path_snpEff, "/snpEff.jar  -c ", params$path_snpEff, "/snpEff.config countReads hg19 ", file_in, " > ", file_out, sep="");
+  options00 = paste(params$path_snpEff, "/snpEff.jar  -c ", params$path_snpEff, "/snpEff.config countReads ", params$opt$genver," ", file_in, " > ", file_out, sep="");
   command = paste(command00, " ", options00, sep="");
   system(command);
   # Don't check for check2clean("$file_in") since we still need it for the variant calling
@@ -841,8 +843,8 @@ fun.exon.coverage <- function(file2process.my2, step.my) {
                     cols="ENTREZID")
   geneid
   
-  library(TxDb.Hsapiens.UCSC.hg19.knownGene)
-  txdb <- TxDb.Hsapiens.UCSC.hg19.knownGene #shorthand (for convenience)
+  library(paste("TxDb.Hsapiens.UCSC.", params$opt$genver, ".knownGene", sep="") )
+  txdb <- paste("TxDb.Hsapiens.UCSC.", params$opt$genver, ".knownGene", sep="") #shorthand (for convenience)
   txdb
   exons(txdb)[1:10]
   head(exons(txdb))
@@ -955,7 +957,7 @@ fun.convert2vcf4 <- function(file2process.my2, step.my) {
   file_out = paste(params$directory_out, "/", file2process.my2, ".f.vcf4", sep=""); # shorten the name a bit
   command00 = params$path_convert2annovar; # next command.
   # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
-  file_stderr = paste(params$log.folder,"/log.",params$startdate, params$opt$label,".", file2process.my2, ".txt", sep="");
+  file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
   options00 = paste(" ", file_in, " -format vcf4 -includeinfo --allallele --withzyg > ", file_out, " 2>> ", file_stderr, sep="");
   # OPTIONS from convert2annovar command
   #   --format <string>           input format (default: pileup)
@@ -1014,8 +1016,8 @@ fun.variant.annotation.geneb <- function(file2process.my2, step.my) {
   file_out = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.exonic_variant_function_gene", sep=""); 
   command00 = "perl"; # next command.
   # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
-  file_stderr = paste(params$log.folder,"/log.",params$startdate, params$opt$label,".", file2process.my2, ".txt", sep="");
-  options00 = paste(" ", params$path_annotate_variation, " -geneanno --buildver hg19 ", file_in, " ", params$path_annotate_humandb, " 2>> ", file_stderr, sep="");
+  file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
+  options00 = paste(" ", params$path_annotate_variation, " -geneanno --buildver ", params$opt$genver, " ", file_in, " ", params$path_annotate_humandb, " 2>> ", file_stderr, sep="");
   command = paste(command00, " ", options00, sep="");
   system(command);
   # We don't do check2clean here  either since we will still use the .vcf.annovar file in the next steps
@@ -1065,8 +1067,9 @@ fun.variant.annotation.filterb <- function(file2process.my2, step.my) {
   #  file_out_passed = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.hg19_snp132_filtered", sep=""); 
   command00 = "perl"; # next command.
   # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
-  file_stderr = paste(params$log.folder,"/log.",params$startdate, params$opt$label,".", file2process.my2, ".txt", sep="");
-  options00 = paste(" ", params$path_annotate_variation, " -filter --buildver hg19 -dbtype snp132 ", file_in, " ", params$path_annotate_humandb, " 2>> ", file_stderr, sep="");
+  file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
+  options00 = paste(" ", params$path_annotate_variation, " -filter --buildver ", params$opt$genver,
+                    " -dbtype snp", params$opt$dbsnp," ", file_in, " ", params$path_annotate_humandb, " 2>> ", file_stderr, sep="");
   command = paste(command00, " ", options00, sep="");
   system(command);
   # We don't do check2clean here  either since we will still use the .vcf.annovar file in the next steps (summarizing annotations and filtering)
@@ -1098,8 +1101,9 @@ fun.variant.annotation.summarize <- function(file2process.my2, step.my) {
   file_out = paste(file_in, ".sum", sep=""); # summarize_annovar.pl adds the extension .exome_summary.csv, and many other partial .csv files (hardcoded in annovar). 
   command00 = "perl"; # next command.
   # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
-  file_stderr = paste(params$log.folder,"/log.",params$startdate, params$opt$label,".", file2process.my2, ".txt", sep="");
-  options00 = paste(" ", params$path_summarize_annovar, " --buildver hg19 --verdbsnp 132 ", file_in, " ", params$path_annotate_humandb, " --outfile ", file_out, " 2>> ", file_stderr, sep="");
+  file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
+  options00 = paste(" ", params$path_summarize_annovar, " --buildver ", params$opt$genver,
+                    " --verdbsnp ", params$opt$dbsnp," ", file_in, " ", params$path_annotate_humandb, " --outfile ", file_out, " 2>> ", file_stderr, sep="");
   command = paste(command00, " ", options00, sep="");
   system(command);
   # # We don't do check2clean here  either since we will still use the .vcf.annovar file in the next steps (filtering)
@@ -1127,8 +1131,8 @@ fun.grep.variants <- function(file2process.my2, step.my) {
   print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Select variants for the target genes based on grep calls: ", file2process.my2, " ###\n", sep=""), file2process.my2);
   
   if (!is.null(params$opt$filter) && (params$opt$filter != "")) {
-    file_in  = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.hg19_snp132_filtered", sep=""); 
-    file_out = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.hsf.results.", params$startdate, params$opt$label, ".txt", sep="");
+    file_in  = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.", params$opt$genver ,"_snp", params$opts$dbsnp, "_filtered", sep=""); 
+    file_out = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.hsf.results.", params$startdate, ".", params$opt$label, ".txt", sep="");
     command00 = "grep"; # next command.
     options00 = paste(" '", params$opt$filter,"' ", file_in, " > ", file_out, sep="");
     # Remember that the values in the previous opt$filter variable needs to be like: 'BRCA1\|BRCA2' 
@@ -1309,8 +1313,8 @@ fun.variant.eff.report <- function(file2process.my2, step.my) {
   file_out_base = paste(params$directory_out, "/", file2process.my2, ".f.snpEff", sep="");     
   command00 = "java -jar"; # next command.
   # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
-  file_stderr = paste(params$log.folder,"/log.",params$startdate, params$opt$label,".", file2process.my2, ".txt", sep="");
-  options00 = paste(" ", params$path_snpEff, "/snpEff.jar -c ", params$path_snpEff, "/snpEff.config hg19 ", file_in, 
+  file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
+  options00 = paste(" ", params$path_snpEff, "/snpEff.jar -c ", params$path_snpEff, "/snpEff.config ", params$opt$genver," ", file_in, 
                     " -a 0 -i vcf -o ", params$opt$snpeff.of," -chr chr -stats ", file_out_base,"_summary.html > ", file_out,
                     " 2>> ", file_stderr, sep="");
 
