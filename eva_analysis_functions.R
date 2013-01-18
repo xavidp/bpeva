@@ -616,6 +616,9 @@ fun.sam2bam.and.sort <- function(file2process.my2, step.my) {
   # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
   file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
   options00 = paste(" view -bS ", file_in, " | ", command00, " sort - ", file_out,   " 2>> ", file_stderr, sep="");
+  
+# XXX ToDo : In theory, the -u option is better (faster) for piped processes, since it does not compress/uncrompress data.... but untested yet.
+#  options00 = paste(" view -buS ", file_in, " | ", command00, " sort - ", file_out,   " 2>> ", file_stderr, sep="");
   command = paste(command00, " ", options00, sep="");
   system(command);
   check2clean(file_in, file2process.my2);
@@ -652,6 +655,46 @@ fun.remove.pcr.dup <- function(file2process.my2, step.my) {
   return(step.my) # return nothing, since results are saved on disk from the system command
 }
 
+##########################
+### FUNCTION fun.gatk.sortbyref
+###
+### SortByRef.pl from Broad Institute 
+### Sorts lines of the input file INFILE according to the reference contig order specified by the
+### reference dictionary REF_DICT (.fai file). The sort is stable. 
+### If -k option is not specified,  it is assumed that the contig name is the first field in each line.
+### See: 
+### http://gatkforums.broadinstitute.org/discussion/1328/script-for-sorting-an-input-file-based-on-a-reference-sortbyref-pl
+###   Usage:
+###     sortByRef.pl [--k POS] INPUT REF_DICT
+###   
+###   INPUT      input file to sort. If '-' is specified, then reads from STDIN.
+###   REF_DICT   .fai file, or ANY file that has contigs, in the desired soting order, as its first column.
+###   --k POS :  contig name is in the field POS (1-based) of input lines.
+##########################
+
+fun.gatk.sortbyref <- function(file2process.my2, step.my) {
+  # update step number
+  step.my$tmp <- step.my$tmp + 1
+  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Sorts lines of the input file according to the reference (GATK): ", file2process.my2, " ###\n", sep=""), file2process.my2);
+  
+  file_in = params$path_dbSNP
+  file_out = paste(params$path_dbSNP, ".sortbyref", sep="");
+  command00 = "perl "; # next command.
+  # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
+  file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
+  options00 = paste(params$path_gatk_sortbyref, " ", file_in, " ", params$path_genome,
+                    " > ", file_out,
+                    " >> ", file_stderr, " 2>> ", file_stderr, sep="");
+  
+  command = paste(command00, " ", options00, sep="");
+  system(command);
+  check2clean(file_in, file2process.my2);
+  print_done(file2process.my2);
+  
+  gc() # Let's clean ouR garbage if possible
+  return(step.my) # return nothing, since results are saved on disk from the system command
+}
+
 
 ##########################
 ### FUNCTION fun.gatk.local.realign.step1
@@ -663,7 +706,7 @@ fun.gatk.local.realign.step1 <- function(file2process.my2, step.my) {
   # update step number
   step.my$tmp <- step.my$tmp + 1
   print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Local Realignment with GATK - Step 1: Generating interval file: ", file2process.my2, " ###\n", sep=""), file2process.my2);
-  
+
   file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam", sep="");
   file_out = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.intervals", sep="");
   command00 = "java -jar "; # next command.
@@ -676,6 +719,24 @@ fun.gatk.local.realign.step1 <- function(file2process.my2, step.my) {
                     " >> ", file_stderr, " 2>> ", file_stderr, sep="");
     # Former option -B:dbsnp,vcf has been converted into -known:dbsnp,vcf. See http://seqanswers.com/forums/showthread.php?t=14013  
 
+  # As a refence, see also this pipeline from Alberta Children's Hospital Research Institue
+  # http://achri-bioinformatics.appspot.com/Alignment_Post-processing
+  # --------------------------------
+  # java -Xmx4G -jar /home/gordonp/ngs_utils/gatk/GenomeAnalysisTK.jar 
+  #   -I merged-SampleName.rmdup.bam 
+  #   -R /export/geno_tmp/achri/dbs/hg19.fa 
+  #   -T RealignerTargetCreator 
+  #   -o merged-SampleName.rmdup.gatk_realigner.intervals 
+  # [decides where to realign]
+  #
+  # java -Xmx4G -jar ~/ngs_utils/gatk/GenomeAnalysisTK.jar 
+  #   -I merged-SampleName.rmdup.bam 
+  #   -R /export/geno_tmp/achri/dbs/hg19.fa 
+  #   -T IndelRealigner 
+  #   -targetIntervals merged-SampleName.rmdup.gatk_realigner.intervals 
+  #   -o merged-SampleName.rmdup.gatk_realigner.bam 
+  # [does the actual realignment with output to a new BAM file]
+     
   command = paste(command00, " ", options00, sep="");
   system(command);
   check2clean(file_in, file2process.my2);
@@ -699,9 +760,7 @@ fun.gatk.local.realign.step2 <- function(file2process.my2, step.my) {
   file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam", sep="");
   file_out = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.intervals", sep="");
   command00 = "java -jar "; # next command.
-  options00 = paste(params$path_gatk, " -T RealignerTargetCreator -R ", params$path_genome, " -I ", 
-                    file_in, " -B:dbsnp,vcf ", params$path_dbSNP, " -log intervals.log -L",
-                    params$path_exon_capture_file , " -o ", file_out, sep="");
+  # options00 = ...
   
   command = paste(command00, " ", options00, sep="");
   system(command);
@@ -726,9 +785,7 @@ fun.gatk.local.realign.step3 <- function(file2process.my2, step.my) {
   file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam", sep="");
   file_out = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.intervals", sep="");
   command00 = "java -jar "; # next command.
-  options00 = paste(params$path_gatk, " -T RealignerTargetCreator -R ", params$path_genome, " -I ", 
-                    file_in, " -B:dbsnp,vcf ", params$path_dbSNP, " -log intervals.log -L",
-                    params$path_exon_capture_file , " -o ", file_out, sep="");
+  # options00 = ...
   
   command = paste(command00, " ", options00, sep="");
   system(command);
@@ -877,7 +934,180 @@ fun.variant.calling <- function(file2process.my2, step.my) {
   file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam", sep="");
   file_out = paste(file_in, ".samtools.var.raw.vcf", sep="");
   command00 = "samtools"; # next command.
-  options00 = paste(" mpileup -uf ", params$path_genome, " ", file_in, " | bcftools view -vcg - >  ", file_out, sep="");
+  
+  # From samtools documentation for mpileup
+  # http://samtools.sourceforge.net/mpileup.shtml
+  # ---------------------------
+  # Apply -C50 to reduce the effect of reads with excessive mismatches. This aims to fix overestimated mapping quality and appears to be preferred for BWA-short.
+  #
+  
+  # From samtools man pages in version 0.1.18 (r982:313) from ubuntu precise packages
+  # ----------------------------------------------
+  #
+  #   mpileup   samtools  mpileup  [-EBug]  [-C  capQcoef] [-r reg] [-f in.fa] [-l list] [-M capMapQ] [-Q minBaseQ] [-q minMapQ] in.bam [in2.bam
+  #                                                                                                                                      [...]]
+  #   
+  #   Generate BCF or pileup for one or multiple BAM files. Alignment records are grouped by sample identifiers in @RG  header  lines.
+  #   If sample identifiers are absent, each input file is regarded as one sample.
+  #   
+  #   In  the pileup format (without -uor-g), each line represents a genomic position, consisting of chromosome name, coordinate, ref‐
+  #   erence base, read bases, read qualities and alignment mapping qualities. Information on match, mismatch, indel, strand,  mapping
+  #   quality  and  start  and  end of a read are all encoded at the read base column. At this column, a dot stands for a match to the
+  #   reference base on the forward strand, a comma for a match on the reverse strand, a '>' or '<' for a reference skip, `ACGTN'  for
+  #   a  mismatch  on the forward strand and `acgtn' for a mismatch on the reverse strand. A pattern `\+[0-9]+[ACGTNacgtn]+' indicates
+  #   there is an insertion between this reference position and the next reference position. The length of the insertion is  given  by
+  #   the integer in the pattern, followed by the inserted sequence. Similarly, a pattern `-[0-9]+[ACGTNacgtn]+' represents a deletion
+  #   from the reference. The deleted bases will be presented as `*' in the following lines. Also at the read base  column,  a  symbol
+  #   `^'  marks  the start of a read. The ASCII of the character following `^' minus 33 gives the mapping quality. A symbol `$' marks
+  #   the end of a read segment.
+  #   
+  #   Input Options:
+  #   
+  #   -6        Assume the quality is in the Illumina 1.3+ encoding.  -A Do not skip anomalous read pairs in variant calling.
+  #   
+  #   -B        Disable probabilistic realignment for the computation of base alignment quality (BAQ). BAQ is the Phred-scaled  proba‐
+  #   bility  of  a  read base being misaligned. Applying this option greatly helps to reduce false SNPs caused by misalign‐
+  #   ments.
+  #   
+  #   -b FILE   List of input BAM files, one file per line [null]
+  #   
+  #   -C INT    Coefficient for downgrading mapping quality for reads containing excessive mismatches. Given  a  read  with  a  phred-
+  #   scaled  probability  q  of  being  generated  from  the  mapped  position, the new mapping quality is about sqrt((INT-
+  #   q)/INT)*INT. A zero value disables this functionality; if enabled, the recommended value for BWA is 50. [0]
+  #   
+  #   -d INT    At a position, read maximally INT reads per input BAM. [250]
+  #   
+  #   -E        Extended BAQ computation. This option helps sensitivity especially for MNPs, but may hurt specificity a little bit.
+  #   
+  #   -f FILE   The faidx-indexed reference file in the FASTA format. The file can be optionally compressed by razip.  [null]
+  #   
+  #   -l FILE   BED or position list file containing a list of regions or sites where pileup or BCF should be generated [null]
+  #   
+  #   -q INT    Minimum mapping quality for an alignment to be used [0]
+  #   
+  #   -Q INT    Minimum base quality for a base to be considered [13]
+  #   
+  #   -r STR    Only generate pileup in region STR [all sites]
+  #   
+  #   Output Options:
+  #   
+  #   
+  #   -D        Output per-sample read depth
+  #   
+  #   -g        Compute genotype likelihoods and output them in the binary call format (BCF).
+  #   
+  #   -S        Output per-sample Phred-scaled strand bias P-value
+  #   
+  #   -u        Similar to -g except that the output is uncompressed BCF, which is preferred for piping.
+  #   
+  #   
+  #   Options for Genotype Likelihood Computation (for -g or -u):
+  #   
+  #   
+  #   -e INT    Phred-scaled gap extension sequencing error probability. Reducing INT leads to longer indels. [20]
+  #   
+  #   -h INT    Coefficient for modeling homopolymer errors. Given an l-long homopolymer run, the sequencing error of an indel of size
+  #   s is modeled as INT*s/l.  [100]
+  #   
+  #   -I        Do not perform INDEL calling
+  #   
+  #   -L INT    Skip INDEL calling if the average per-sample depth is above INT.  [250]
+  #   
+  #   -o INT    Phred-scaled gap open sequencing error probability. Reducing INT leads to more indel calls. [40]
+  #   
+  #   -P STR    Comma  dilimited  list of platforms (determined by @RG-PL) from which indel candidates are obtained. It is recommended
+  #   to collect indel candidates from sequencing technologies that have low indel error rate such as ILLUMINA. [all]
+  #   
+  #   
+
+  #   See also calmd option in samtools:
+  # --------------------------------------
+  #     calmd     samtools calmd [-EeubSr] [-C capQcoef] <aln.bam> <ref.fasta>
+  #     
+  #     Generate  the  MD  tag.  If the MD tag is already present, this command will give a warning if the MD tag generated is different
+  #   from the existing tag. Output SAM by default.
+  #   
+  #   OPTIONS:
+  #     
+  #     -A      When used jointly with -r this option overwrites the original base quality.
+  #   
+  #   -e      Convert a the read base to = if it is identical to the aligned reference base. Indel caller does not support the = bases
+  #   at the moment.
+  #   
+  #   -u      Output uncompressed BAM
+  #   
+  #   -b      Output compressed BAM
+  #   
+  #   -S      The input is SAM with header lines
+  #   
+  #   -C INT  Coefficient to cap mapping quality of poorly mapped reads. See the pileup command for details. [0]
+  #   
+  #   -r      Compute the BQ tag (without -A) or cap base quality by BAQ (with -A).
+  #   
+  #   -E      Extended BAQ calculation. This option trades specificity for sensitivity, though the effect is minor.
+  
+  # See also calmd option in BCFTOOLS:
+  # --------------------------------------
+  #   BCFTOOLS COMMANDS AND OPTIONS
+  #   
+  #   view  bcftools view [-AbFGNQSucgv] [-D seqDict] [-l listLoci] [-s listSample] [-i gapSNPratio] [-t mutRate] [-p varThres] [-P prior] [-1 nGroup1] [-d minFrac] [-U nPerm] [-X permThres] [-T trioType] in.bcf [region]
+  #   Convert between BCF and VCF, call variant candidates and estimate allele frequencies.
+  #   
+  #   Input/Output Options: 
+  #     -A
+  #   Retain all possible alternate alleles at variant sites. By default, the view command discards unlikely alleles.
+  #   -b	 Output in the BCF format. The default is VCF.
+  #   -D FILE	 Sequence dictionary (list of chromosome names) for VCF->BCF conversion [null]
+  #   -F	 Indicate PL is generated by r921 or before (ordering is different).
+  #   -G	 Suppress all individual genotype information.
+  #   -l FILE	 List of sites at which information are outputted [all sites]
+  #   -N	 Skip sites where the REF field is not A/C/G/T
+  #   -Q	 Output the QCALL likelihood format
+  #   -s FILE	 List of samples to use. The first column in the input gives the sample names and the second gives the ploidy, which can only be 1 or 2. When the 2nd column is absent, the sample ploidy is assumed to be 2. In the output, the ordering of samples will be identical to the one in FILE. [null]
+  #   -S	 The input is VCF instead of BCF.
+  #   -u	 Uncompressed BCF output (force -b).
+  #   Consensus/Variant Calling Options: 
+  #     -c
+  #   Call variants using Bayesian inference. This option automatically invokes option -e.
+  #   -d FLOAT	 When -v is in use, skip loci where the fraction of samples covered by reads is below FLOAT. [0]
+  #   -e	 Perform max-likelihood inference only, including estimating the site allele frequency, testing Hardy-Weinberg equlibrium and testing associations with LRT.
+  #   -g	 Call per-sample genotypes at variant sites (force -c)
+  #   -i FLOAT	 Ratio of INDEL-to-SNP mutation rate [0.15]
+  #   -p FLOAT	 A site is considered to be a variant if P(ref|D)<FLOAT [0.5]
+  #   -P STR	 Prior or initial allele frequency spectrum. If STR can be full, cond2, flat or the file consisting of error output from a previous variant calling run.
+  #   -t FLOAT	 Scaled muttion rate for variant calling [0.001]
+  #   -T STR	 Enable pair/trio calling. For trio calling, option -s is usually needed to be applied to configure the trio members and their ordering. In the file supplied to the option -s, the first sample must be the child, the second the father and the third the mother. The valid values of STR are ‘pair’, ‘trioauto’, ‘trioxd’ and ‘trioxs’, where ‘pair’ calls differences between two input samples, and ‘trioxd’ (‘trioxs’) specifies that the input is from the X chromosome non-PAR regions and the child is a female (male). [null]
+  #   -v	 Output variant sites only (force -c)
+  #   Contrast Calling and Association Test Options: 
+  #     -1 INT
+  #   Number of group-1 samples. This option is used for dividing the samples into two groups for contrast SNP calling or association test. When this option is in use, the following VCF INFO will be outputted: PC2, PCHI2 and QCHI2. [0]
+  #   -U INT	 Number of permutations for association test (effective only with -1) [0]
+  #   -X FLOAT	 Only perform permutations for P(chi^2)<FLOAT (effective only with -U) [0.01]
+  
+  # changed on Jan 8th, 2013, to test the potential reduction of false positives (adding -C50 and -B , see documentation above)
+  #options00 = paste(" mpileup -uf ", params$path_genome, " ", file_in, " | bcftools view -vcg - >  ", file_out, sep="");
+
+  #  options00 = paste(" mpileup -uf -C50 -EDS -q50 -d10000  ", params$path_genome, " ", file_in, " | bcftools view -Avcg - >  ", file_out, sep="");
+  # Since all this together doesn't work, let's try one by one.
+#  options00 = paste(" mpileup -uf      -EDS", params$path_genome, " ", file_in, " | bcftools view -Avcg - >  ", file_out, sep="");
+#  options00 = paste(" mpileup -uf           -q50 ", params$path_genome, " ", file_in, " | bcftools view -Avcg - >  ", file_out, sep="");
+#  options00 = paste(" mpileup -uf                -d10000  ", params$path_genome, " ", file_in, " | bcftools view -Avcg - >  ", file_out, sep="");
+#  options00 = paste(" mpileup -uf                         ", params$path_genome, " ", file_in, " | bcftools view -vcg - >  ", file_out, sep="");
+
+  # Those params needed to be called after the file_in!!!
+  options00 = paste(" mpileup -uf ", params$path_genome, " ", file_in, " -C50 -EDS -q50 -d10000 | bcftools view -Avcg - >  ", file_out, sep="");
+  
+  # Jan 9th, 2013: 
+  ## added params in samtools mpileup: 
+  ##  -C50: for short reads (recommended)
+  ##  -E: extended BAQ calculation
+  ##  -D: Output per-sample read depth
+  ##  -S: write down strand-bias p-value: "Output per-sample Phred-scaled strand bias P-value"
+  ##  -q: minimum mapping quality of the reads to be considered in the variant calling process. "Minimum mapping quality for an alignment to be used [0]"
+  ##  -d: At a position, read maximally this amount of reads per input BAM
+  ## added params in bcftools view: 
+  ##  -A: Retain all possible alternate alleles at variant sites. By default, the view command discards unlikely alleles.
+  
   command = paste(command00, " ", options00, sep="");
   system(command);
   check2clean(file_in, file2process.my2);
@@ -1132,7 +1362,7 @@ fun.grep.variants <- function(file2process.my2, step.my) {
   
   if (!is.null(params$opt$filter) && (params$opt$filter != "")) {
     file_in  = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.", params$opt$genver ,"_snp", params$opts$dbsnp, "_filtered", sep=""); 
-    file_out = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.hsf.results.", params$startdate, ".", params$opt$label, ".txt", sep="");
+    file_out = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.results.", params$startdate, ".", params$opt$label, ".txt", sep="");
     command00 = "grep"; # next command.
     options00 = paste(" '", params$opt$filter,"' ", file_in, " > ", file_out, sep="");
     # Remember that the values in the previous opt$filter variable needs to be like: 'BRCA1\|BRCA2' 
@@ -1143,22 +1373,22 @@ fun.grep.variants <- function(file2process.my2, step.my) {
       #######################
       # 1st part- sample.*.exome_summary.csv
       #-------------------------------
-      file_in  = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.sum.genome_summary.csv", sep=""); # summarize_annovar.pl adds the extension .genome_summary.csv (hardcoded in annovar).
-      file_out = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.sum.genome_summary.fg.csv", sep=""); 
+      file_in_g_csv  = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.sum.genome_summary.csv", sep=""); # summarize_annovar.pl adds the extension .genome_summary.csv (hardcoded in annovar).
+      file_out_g_csv = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.sum.genome_summary.fg.csv", sep=""); 
       command01 = "head -1";
       command02 = command00;
-      options01 = paste(" ", file_in, " > ", file_out, sep="");
-      options02 = paste(" '", params$opt$filter,"' ", file_in, " >> ", file_out, sep="");
+      options01 = paste(" ", file_in_g_csv, " > ", file_out_g_csv, sep="");
+      options02 = paste(" '", params$opt$filter,"' ", file_in_g_csv, " >> ", file_out_g_csv, sep="");
 
       #######################
       # 2nd - sample.*.exome_summary.csv
       #-------------------------------
-      file_in  = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.sum.exome_summary.csv", sep=""); # summarize_annovar.pl adds the extension .exome_summary.csv (hardcoded in annovar).
-      file_out = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.sum.exome_summary.fg.csv", sep=""); 
+      file_in_e_csv  = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.sum.exome_summary.csv", sep=""); # summarize_annovar.pl adds the extension .exome_summary.csv (hardcoded in annovar).
+      file_out_e_csv = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.sum.exome_summary.fg.csv", sep=""); 
       command03 = "head -1";
       command04 = command00;
-      options03 = paste(" ", file_in, " > ", file_out, sep="");
-      options04 = paste(" '", params$opt$filter,"' ", file_in, " >> ", file_out, sep="");
+      options03 = paste(" ", file_in_e_csv2, " > ", file_out_e_csv, sep="");
+      options04 = paste(" '", params$opt$filter,"' ", file_in_e_csv, " >> ", file_out_e_csv, sep="");
     }
   } else { # skip the searching for specific target genes 
     command00 = "echo '  ...skipped...'"; # next command.
@@ -1278,6 +1508,7 @@ fun.variant.dbsnp.pre.snpeff <- function(file2process.my2, step.my) {
 # 
 # Note: The expression using to filter the file is "! exists ID". This means that the ID field does not exists (i.e. the value is empty) which is represented as a dot (".") in a VCF file. 
 
+  
 }
 
 ##########################

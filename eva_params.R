@@ -26,14 +26,15 @@
 # ---------------------------------------------------------------------
 startdate <- paste(format(Sys.Date(), "%y%m%d"), sep="")
 
-p_test     = 1 # 1/0; ### Is this a test run? ###
+p_test     = 0 # 1/0; ### Is this a test run? ###
                 # 1 = test run, so that use the predefined values for a test run; 
                 # 0 = normal run
 if (p_test==1) {
   path_input_absolute <- "0" # Define whether the p_input is absolute or relative
   p_input    <- "test_in2" # "../test_in2"  # "test_in"
   p_output   <- "test_out2" # "../test_out2" # "test_out"
-  p_label    <-  "testrunGATK1" # "test-121002" # "test-foo"        # Run Label for output filenames
+  p_label    <-  "testbugsam2bam" #testrunGATK1" # "test-121002" # "test-foo"        # Run Label for output filenames
+  p_desc     <- "Testing The bug from sam to bam introduced at some point in Christmass 2012..."
   p_keep     <- TRUE # Enable if run through editor and you want to keep temp files
   p_filter   <- ""            
   p_mail.send <- 0 # 0=FALSE, 1=TRUE ; Indicate whether we want an email sent when the run is finished
@@ -43,8 +44,10 @@ if (p_test==1) {
 #  p_output   <- "/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a2" #../dir_out_293" # "../dir_out_293" # "test_out"	 # "dir_out_293"
 #  p_label    <-  "sg293a2b2.snpeff.greped" # "test-121002" # ".sg293_qa_sg3sg4"   # "test-121002" ".sara207_4s4cpu"        # Run Label for output filenames
   p_input    <- "/mnt/magatzem02/tmp/run_sara_293a/dir_in_293a3" # "../dir_in" # "test_in"   # "dir_in"     
-  p_output   <- "/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a3_seq" #../dir_out_293" # "../dir_out_293" # "test_out"   # "dir_out_293"
-  p_label    <-   "sg293a3_test_count_reads" # ".sg293a3_ind7_mc15g3seq" # mc=minimum cover; g3: 3rd filter version for the grep; "test-121002" # ".sg293_qa_sg3sg4"   # "test-121002" ".sara207_4s4cpu"        # Run Label for output filenames
+  p_output   <- "/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a3b" #../dir_out_293" # "../dir_out_293" # "test_out"   # "dir_out_293"
+  p_label    <-   "sg293a3b_vcf_fixed" #sg293a3_test_count_reads" # ".sg293a3_ind7_mc15g3seq" # mc=minimum cover; g3: 3rd filter version for the grep; "test-121002" # ".sg293_qa_sg3sg4"   # "test-121002" ".sara207_4s4cpu"        # Run Label for output filenames
+                  # p_desc = Description in longer format of the run. DEscribe that for you to understand in the future what were the conditions and params of this run. 
+  p_desc     <-   "Les mostres de l'estudi 293. Individu 7, repetit tot. Amb el valors nous de samtools ( samtools mpileup -uf -C50 -EDS -q50 -d10000. I bcftools bcftools view -Avcg - . || Idem però tornant smatools view a no desar stderr amb 2>> etc."
   p_keep     <- TRUE # Enable if run through editor and you want to keep temp files
 #  p_filter   <- "BRCA"
 #  p_filter   <- "BRCA1\\|BRCA2\\|CHEK2\\|PALB2\\|BRIP1\\|TP53\\|PTEN\\|STK11\\|CDH1\\|ATM\\|BARD1\\|APC\\|MLH1\\|MRE11\\|MSH2\\|MSH6\\|MUTYH\\|NBN\\|PMS1\\|PMS2\\|RAD50\\|RAD51D\\|RAD51C\\|XRCC2\\|UIMC1\\|FAM175A\\|ERCC4\\|RAD51\\|RAD51B\\|XRCC3\\|FANCA\\|FANCB\\|FANCC\\|FANCD2\\|FANCE\\|FANCF\\|FANCG\\|FANCI\\|FANCL\\|FANCM\\|SLX4\\|CASP8\\|FGFR2\\|TOX3\\|MAP3K1\\|MRPS30\\|SLC4A7\\|NEK10\\|COX11\\|ESR1\\|CDKN2A\\|CDKN2B\\|ANKRD16\\|FBXO18\\|ZNF365\\|ZMIZ1\\|BABAM1\\|LSP1\\|ANKLE1\\|TOPBP1\\|BCCIP\\|53BP1"            
@@ -66,14 +69,17 @@ p_dbsnp     <- "132" # 132 for dbsnp132 is the one supported throughout the whol
 p_summarize <- TRUE  
 p_snpeff.of <- "txt" # Output format for snpEff. Possible values: txt, vcf, gatk, bed, bedAnn (txt will be deprecated, but it can be ocasionally useful still in the meantime)
 p_cpus      <- 4             
-p_parallel  <- FALSE #TRUE # Do you want to allow running some parallelized processes at all? (which ones will be specified elsewhere in the code)
+p_parallel  <- FALSE #FALSE #TRUE # Do you want to allow running some parallelized processes at all? (which ones will be specified elsewhere in the code)
 p_bwa       <- 2          # Algorythm for mapping with bwa - http://bio-bwa.sourceforge.net/bwa.shtml
                         # 1: bwa aln      + samse  (short reads, single ends, low errors);
                         # 2: bwa aln (x2) + sampe  (short reads, paired ends, low errors);
                         # 3: bwa bwasw             (longer reads, single end only) 
-p_convert.file.list.pe        <- TRUE # Keep as TRUE if you have paired end samples (sampe; p_bwa=2)
-                                      # and you are re-processing just some steps, since you will need
+p_convert.file.list.pe        <- TRUE #FALSE #TRUE # Keep as TRUE if you have paired end samples (sampe; p_bwa=2)
+                                      # --and you are re-processing just some steps--, since you will need
                                       # the input file list 1_sequence.fastq etc converted into the _merged12.sam 
+                                      # IMPORTANT: 
+                                      # Since revision bzr 70'ish (mid Jan'2013), this might need to be enabled as TRUE in both cases 
+                                      # of running the whole pipeline or just some steps, when using short reads paired end (sampe; p_bwa=2)
 
 # Reporting by email at the end of the run
 p_from <- "xavier.depdedro@vhir.org"
@@ -88,7 +94,7 @@ p_smtp="smtp.ir.vhebron.net"
 #  wrapper.sequential (wseq)
 #----------------------------------
 #####
-runParam <- TRUE #######################
+runParam <- FALSE #######################
 p_map.on.reference.genome.sequential     <- runParam # In case we run the mapping sequentially for all samples
 
 runParam <- FALSE # !runParam ####################### The opposite to map in sequential mode
@@ -107,22 +113,23 @@ params_wseq <- list(
 #  wrapper2.parallelizable.per.sample (w2pps)
 #----------------------------------
 # p_map.on.reference.genome.parallel  is not defined here but in the previous chunk
-p_quality.control             <- runParam
-#####
-runParam <- TRUE #######################
-####
-p_sam2bam.and.sort		        <- runParam
-p_remove.pcr.dup		          <- runParam
-p_gatk.local.realign.step1    <- runParam
-p_gatk.local.realign.step2    <- FALSE # runParam # Unfinished work
-p_gatk.local.realign.step3    <- FALSE # runParam # Unfinished work
 #####
 runParam <- FALSE #######################
 ####
+p_quality.control             <- runParam
+p_sam2bam.and.sort		        <- runParam
+p_remove.pcr.dup		          <- runParam
+p_gatk.sortbyref              <- FALSE #TRUE #FALSE # runParam # Not working properly yet
+p_gatk.local.realign.step1    <- FALSE # runParam
+p_gatk.local.realign.step2    <- FALSE # runParam # Unfinished work
+p_gatk.local.realign.step3    <- FALSE # runParam # Unfinished work
 p_index.bam.file		          <- runParam
 p_stats			                  <- runParam
 p_snpeff.count.reads          <- FALSE # runParam # Not working properly yet
 p_exon.coverage   	          <- FALSE # runParam # Unfinished work
+#####
+runParam <- TRUE #######################
+####
 p_variant.calling		          <- runParam
 p_variant.filtering		        <- runParam
 p_gatk.combine.vcfs           <- FALSE # runParam # Non-started work (place holder only)
@@ -132,14 +139,8 @@ p_variant.annotation.regionb	<- FALSE # runParam # Non-started work (place holde
 p_variant.annotation.filterb	<- runParam
 p_variant.annotation.summarize<- runParam
 p_grep.variants		            <- runParam
-#####
-runParam <- FALSE #######################
-####
-p_visualize.variants		      <- runParam
-p_variant.dbsnp.pre.snpeff    <- runParam
-#####
-runParam <- FALSE #######################
-####
+p_visualize.variants		      <- FALSE # runParam # Non-started work (place holder only)
+p_variant.dbsnp.pre.snpeff    <- FALSE # runParam # Non-started work (place holder only)
 p_variant.eff.report          <- runParam
 p_grep.post.snpeff.variants    <- runParam
 #####
@@ -156,6 +157,7 @@ params_w2pps <- list(
   p_convert.file.list.pe              = p_convert.file.list.pe,
   p_sam2bam.and.sort                  = p_sam2bam.and.sort,
   p_remove.pcr.dup                    = p_remove.pcr.dup,
+  p_gatk.sortbyref                    = p_gatk.sortbyref,
   p_gatk.local.realign.step1          = p_gatk.local.realign.step1,
   p_gatk.local.realign.step2          = p_gatk.local.realign.step2,
   p_gatk.local.realign.step3          = p_gatk.local.realign.step3,
@@ -222,7 +224,7 @@ if (p_server==1) { # MainHead server
       path_exon_capture_file2 = "/home/ueb/Data/BED/all_captured_exomes_from_ucsc_hg19.bed"
       path_exon_capture_file3 = "/home/ueb/Data/Data_Genomes/forGATK/whole_genome_interval_list.hg19.bed"
       path_exon_capture_file4 = "/home/ueb/Data/Data_Genomes/forGATK/whole_genome_interval_list.hg19.bed"
-    path_exon_capture_file = path_exon_capture_file4  
+    path_exon_capture_file = path_exon_capture_file4 
   # B. Program file paths
   path_fastq = "/home/ueb/fastqc/fastqc" 
   path_vcfutils = "/usr/share/samtools/vcfutils.pl"
@@ -233,8 +235,10 @@ if (p_server==1) { # MainHead server
   path_snpEff = "/home/ueb/snpEff/" # end with trailing slash but no script, since the same folder is used for several files          
   path_gatk = "/home/ueb/GenomeAnalysisTKLite-2.3-4-gb8f1308/GenomeAnalysisTKLite.jar" # end with the jar file since it can be lite or not
   path_gatk_key = "/home/ueb/GenomeAnalysisTKLite-2.3-4-gb8f1308/ueb_vhir.org.key" # key to avoid gatk 'calling home' (to gatk authors) on each run. See http://gatkforums.broadinstitute.org/discussion/1250/what-is-phone-home-and-how-does-it-affect-me
+  path_gatk_sortbyref = "/home/ueb/Data/gatk-data-2.3/SortByRef.pl" # see http://gatkforums.broadinstitute.org/discussion/1328/script-for-sorting-an-input-file-based-on-a-reference-sortbyref-pl
 
 } else if (p_server==2) { # B52 server
+    
   path_fastq = "/home/ueb/software/FastQC/fastqc"
   path_genome = "/home/ueb/Data/Data_Genomes/hg19.fa" 
   path_vcfutils = "/usr/share/samtools/vcfutils.pl"

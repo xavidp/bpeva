@@ -279,6 +279,7 @@ params <- list(startdate = startdate,
                p_body = p_body,
                p_smtp = p_smtp,
                p_label = p_label,
+               p_desc = p_desc,
                path_fastq = path_fastq,
                path_genome = path_genome,
                path_vcfutils = path_vcfutils,
@@ -290,8 +291,7 @@ params <- list(startdate = startdate,
                path_gatk = path_gatk,
                path_gatk_key = path_gatk_key,
                path_dbSNP = path_dbSNP,
-               path_exon_capture_file1 = path_exon_capture_file1,
-               path_exon_capture_file2 = path_exon_capture_file2
+               path_exon_capture_file = path_exon_capture_file
 )
 
 ##############################################################
@@ -348,6 +348,7 @@ sfExport( "params",
           "fun.convert.file.list.pe",
           "fun.sam2bam.and.sort",
 	        "fun.remove.pcr.dup",
+          "fun.gatk.sortbyref",
           "fun.gatk.local.realign.step1",
           "fun.gatk.local.realign.step2",
           "fun.gatk.local.realign.step3",

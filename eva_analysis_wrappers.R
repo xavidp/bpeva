@@ -94,6 +94,7 @@ wrapper2.parallelizable.per.sample <- function(datastep.my2) {
   convert.file.list.pe              <- params_w2pps$p_convert.file.list.pe
   sam2bam.and.sort	 	              <- params_w2pps$p_sam2bam.and.sort
   remove.pcr.dup		                <- params_w2pps$p_remove.pcr.dup
+  gatk.sortbyref                    <- params_w2pps$p_gatk.sortbyref
   gatk.local.realign.step1          <- params_w2pps$p_gatk.local.realign.step1
   gatk.local.realign.step2          <- params_w2pps$p_gatk.local.realign.step2
   gatk.local.realign.step3          <- params_w2pps$p_gatk.local.realign.step3
@@ -198,7 +199,7 @@ wrapper2.parallelizable.per.sample <- function(datastep.my2) {
         # No lock file from samples exist any more; clean the general lock file
         # clean the lock file
         #	        system(paste("rm ", params$opt$output, "/", "log.",params$startdate, ".", params$opt$label, ".fastq_pe_tmp.txt.lock", sep=""), TRUE)
-        print_mes(paste("\n ### Sam files from this set of paired samples created: Removing the general lock file ###\n\n", sep=""), file2process.my1);
+        print_mes(paste("\n ### Both single sam files found from this set of paired samples: Removing the general lock file in order to continue processing this paired sample###\n\n", sep=""), file2process.my1);
         system(paste("rm ", params$filename_list, ".lock", sep=""), TRUE)
       } # end of process to clean the general lock file 
       
@@ -231,6 +232,12 @@ wrapper2.parallelizable.per.sample <- function(datastep.my2) {
     # Next Step
     step <- fun.remove.pcr.dup(file2process.my2  = file2process.my1,
                                step.my  = step)
+  }
+  
+  if (gatk.sortbyref) {
+    # Next Step
+    step <- fun.gatk.sortbyref(file2process.my2  = file2process.my1,
+                                         step.my  = step)
   }
   
   if (gatk.local.realign.step1) {
