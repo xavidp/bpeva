@@ -22,6 +22,19 @@
 
 ##############################################################
 
+# Roadmap (Accepted ToDo things):
+# ----------------------
+# (See also http://ueb.vhir.org/PendentsEVA )
+##
+## * get snpEff countReads fixed
+## * implement first steps with GATK successfully
+## * SnpSift Filter: replace the basic filtering based on grep on the annotated results and filter after the vcf is created using SnpSift
+##   * add dbNSFP annotation
+##   * add GWAS Catalog annotation
+## * assess adding a new step for local realignment with InGap
+##
+
+
 # 0. Basic startup params
 # ---------------------------------------------------------------------
 startdate <- paste(format(Sys.Date(), "%y%m%d"), sep="")
@@ -31,13 +44,14 @@ p_test     = 0 # 1/0; ### Is this a test run? ###
                 # 0 = normal run
 if (p_test==1) {
   path_input_absolute <- "0" # Define whether the p_input is absolute or relative
-  p_input    <- "test_in2" # "../test_in2"  # "test_in"
-  p_output   <- "test_out2" # "../test_out2" # "test_out"
-  p_label    <-  "testbugsam2bam" #testrunGATK1" # "test-121002" # "test-foo"        # Run Label for output filenames
-  p_desc     <- "Testing The bug from sam to bam introduced at some point in Christmass 2012..."
+  p_input    <- "/mnt/magatzem02/tmp/run_sara_293a/dir_in_293a3" #"test_in2" # "../test_in2"  # "test_in"
+  p_output   <- "/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a3b" #"test_out2" # "../test_out2" # "test_out"
+  p_label    <-  "testsnpEffCountReads_a" #testrunGATK1" # "test-121002" # "test-foo"        # Run Label for output filenames
+  p_desc     <- "Testing The issue in snpEff Count Reads with first set: s_7_m11_149b_merged12_00-01M.sam"
   p_keep     <- TRUE # Enable if run through editor and you want to keep temp files
-  p_filter   <- ""            
-  p_mail.send <- 0 # 0=FALSE, 1=TRUE ; Indicate whether we want an email sent when the run is finished
+  #p_filter   <- ""   
+  p_filter   <- "BRCA1|\\|BRCA2|\\|CHEK2|\\|PALB2|\\|BRIP1|\\|TP53|\\|PTEN|\\|STK11|\\|CDH1|\\|ATM|\\|BARD1|\\|APC|\\|MLH1|\\|MRE11|\\|MSH2|\\|MSH6|\\|MUTYH|\\|NBN|\\|PMS1|\\|PMS2|\\|RAD50|\\|RAD51D|\\|RAD51C|\\|XRCC2|\\|UIMC1|\\|FAM175A|\\|ERCC4|\\|RAD51|\\|RAD51B|\\|XRCC3|\\|FANCA|\\|FANCB|\\|FANCC|\\|FANCD2|\\|FANCE|\\|FANCF|\\|FANCG|\\|FANCI|\\|FANCL|\\|FANCM|\\|SLX4|\\|CASP8|\\|FGFR2|\\|TOX3|\\|MAP3K1|\\|MRPS30|\\|SLC4A7|\\|NEK10|\\|COX11|\\|ESR1|\\|CDKN2A|\\|CDKN2B|\\|ANKRD16|\\|FBXO18|\\|ZNF365|\\|ZMIZ1|\\|BABAM1|\\|LSP1|\\|ANKLE1|\\|TOPBP1|\\|BCCIP|\\|53BP1|\\|BRCA1:\\|BRCA2:\\|CHEK2:\\|PALB2:\\|BRIP1:\\|TP53:\\|PTEN:\\|STK11:\\|CDH1:\\|ATM:\\|BARD1:\\|APC:\\|MLH1:\\|MRE11:\\|MSH2:\\|MSH6:\\|MUTYH:\\|NBN:\\|PMS1:\\|PMS2:\\|RAD50:\\|RAD51D:\\|RAD51C:\\|XRCC2:\\|UIMC1:\\|FAM175A:\\|ERCC4:\\|RAD51:\\|RAD51B:\\|XRCC3:\\|FANCA:\\|FANCB:\\|FANCC:\\|FANCD2:\\|FANCE:\\|FANCF:\\|FANCG:\\|FANCI:\\|FANCL:\\|FANCM:\\|SLX4:\\|CASP8:\\|FGFR2:\\|TOX3:\\|MAP3K1:\\|MRPS30:\\|SLC4A7:\\|NEK10:\\|COX11:\\|ESR1:\\|CDKN2A:\\|CDKN2B:\\|ANKRD16:\\|FBXO18:\\|ZNF365:\\|ZMIZ1:\\|BABAM1:\\|LSP1:\\|ANKLE1:\\|TOPBP1:\\|BCCIP:\\|53BP1:\\|^BRCA1\t\\|^BRCA2\t\\|^CHEK2\t\\|^PALB2\t\\|^BRIP1\t\\|^TP53\t\\|^PTEN\t\\|^STK11\t\\|^CDH1\t\\|^ATM\t\\|^BARD1\t\\|^APC\t\\|^MLH1\t\\|^MRE11\t\\|^MSH2\t\\|^MSH6\t\\|^MUTYH\t\\|^NBN\t\\|^PMS1\t\\|^PMS2\t\\|^RAD50\t\\|^RAD51D\t\\|^RAD51C\t\\|^XRCC2\t\\|^UIMC1\t\\|^FAM175A\t\\|^ERCC4\t\\|^RAD51\t\\|^RAD51B\t\\|^XRCC3\t\\|^FANCA\t\\|^FANCB\t\\|^FANCC\t\\|^FANCD2\t\\|^FANCE\t\\|^FANCF\t\\|^FANCG\t\\|^FANCI\t\\|^FANCL\t\\|^FANCM\t\\|^SLX4\t\\|^CASP8\t\\|^FGFR2\t\\|^TOX3\t\\|^MAP3K1\t\\|^MRPS30\t\\|^SLC4A7\t\\|^NEK10\t\\|^COX11\t\\|^ESR1\t\\|^CDKN2A\t\\|^CDKN2B\t\\|^ANKRD16\t\\|^FBXO18\t\\|^ZNF365\t\\|^ZMIZ1\t\\|^BABAM1\t\\|^LSP1\t\\|^ANKLE1\t\\|^TOPBP1\t\\|^BCCIP\t\\|^53BP1\t\\|\"BRCA1\"\\|\"BRCA2\"\\|\"CHEK2\"\\|\"PALB2\"\\|\"BRIP1\"\\|\"TP53\"\\|\"PTEN\"\\|\"STK11\"\\|\"CDH1\"\\|\"ATM\"\\|\"BARD1\"\\|\"APC\"\\|\"MLH1\"\\|\"MRE11\"\\|\"MSH2\"\\|\"MSH6\"\\|\"MUTYH\"\\|\"NBN\"\\|\"PMS1\"\\|\"PMS2\"\\|\"RAD50\"\\|\"RAD51D\"\\|\"RAD51C\"\\|\"XRCC2\"\\|\"UIMC1\"\\|\"FAM175A\"\\|\"ERCC4\"\\|\"RAD51\"\\|\"RAD51B\"\\|\"XRCC3\"\\|\"FANCA\"\\|\"FANCB\"\\|\"FANCC\"\\|\"FANCD2\"\\|\"FANCE\"\\|\"FANCF\"\\|\"FANCG\"\\|\"FANCI\"\\|\"FANCL\"\\|\"FANCM\"\\|\"SLX4\"\\|\"CASP8\"\\|\"FGFR2\"\\|\"TOX3\"\\|\"MAP3K1\"\\|\"MRPS30\"\\|\"SLC4A7\"\\|\"NEK10\"\\|\"COX11\"\\|\"ESR1\"\\|\"CDKN2A\"\\|\"CDKN2B\"\\|\"ANKRD16\"\\|\"FBXO18\"\\|\"ZNF365\"\\|\"ZMIZ1\"\\|\"BABAM1\"\\|\"LSP1\"\\|\"ANKLE1\"\\|\"TOPBP1\"\\|\"BCCIP\"\\|\"53BP1\"\\|BRCA1\t|BRCA2\t|CHEK2\t|PALB2\t|BRIP1\t|TP53\t|PTEN\t|STK11\t|CDH1\t|ATM\t|BARD1\t|APC\t|MLH1\t|MRE11\t|MSH2\t|MSH6\t|MUTYH\t|NBN\t|PMS1\t|PMS2\t|RAD50\t|RAD51D\t|RAD51C\t|XRCC2\t|UIMC1\t|FAM175A\t|ERCC4\t|RAD51\t|RAD51B\t|XRCC3\t|FANCA\t|FANCB\t|FANCC\t|FANCD2\t|FANCE\t|FANCF\t|FANCG\t|FANCI\t|FANCL\t|FANCM\t|SLX4\t|CASP8\t|FGFR2\t|TOX3\t|MAP3K1\t|MRPS30\t|SLC4A7\t|NEK10\t|COX11\t|ESR1\t|CDKN2A\t|CDKN2B\t|ANKRD16\t|FBXO18\t|ZNF365\t|ZMIZ1\t|BABAM1\t|LSP1\t|ANKLE1\t|TOPBP1\t|BCCIP\t|53BP1  "
+  p_mail.send <- 1 # 0=FALSE, 1=TRUE ; Indicate whether we want an email sent when the run is finished
 } else {
   path_input_absolute <- "1" # Define whether the p_input is absolute or relative
 #  p_input    <- "/mnt/magatzem02/tmp/run_sara_293a/dir_in_293a2" # "../dir_in" # "test_in"   # "dir_in"     
@@ -125,10 +139,10 @@ p_gatk.local.realign.step2    <- FALSE # runParam # Unfinished work
 p_gatk.local.realign.step3    <- FALSE # runParam # Unfinished work
 p_index.bam.file		          <- runParam
 p_stats			                  <- runParam
-p_snpeff.count.reads          <- FALSE # runParam # Not working properly yet
+p_snpeff.count.reads          <- TRUE # runParam # Not working properly yet
 p_exon.coverage   	          <- FALSE # runParam # Unfinished work
 #####
-runParam <- TRUE #######################
+runParam <- FALSE #######################
 ####
 p_variant.calling		          <- runParam
 p_variant.filtering		        <- runParam

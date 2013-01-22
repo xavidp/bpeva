@@ -616,6 +616,9 @@ fun.sam2bam.and.sort <- function(file2process.my2, step.my) {
   # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
   file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
   options00 = paste(" view -bS ", file_in, " | ", command00, " sort - ", file_out,   " 2>> ", file_stderr, sep="");
+
+  # direct command line call for testing other things:
+  # samtools  view -bS file_in | samtools sort - file_in.sorted
   
 # XXX ToDo : In theory, the -u option is better (faster) for piped processes, since it does not compress/uncrompress data.... but untested yet.
 #  options00 = paste(" view -buS ", file_in, " | ", command00, " sort - ", file_out,   " 2>> ", file_stderr, sep="");
@@ -650,6 +653,10 @@ fun.remove.pcr.dup <- function(file2process.my2, step.my) {
   system(command);
   check2clean(file_in, file2process.my2);
   print_done(file2process.my2);
+
+  # direct command line call for testing other things:
+  # samtools  rmdup -s file_in.sam.sorted.bam file_in.sam.sorted.noDup.bam
+  
   
   gc() # Let's clean ouR garbage if possible
   return(step.my) # return nothing, since results are saved on disk from the system command
@@ -816,6 +823,10 @@ fun.index.bam.file <- function(file2process.my2, step.my) {
   # Don't check for check2clean("$file_in") since we still need it to do some stats upon it
   print_done(file2process.my2);
   
+  # direct command line call for testing other things:
+  # samtools  index file_in.sam.sorted.noDup.bam
+  
+  
   gc() # Let's clean ouR garbage if possible
   return(step.my) # return nothing, since results are saved on disk from the system command
 }
@@ -861,12 +872,16 @@ fun.snpeff.count.reads <- function(file2process.my2, step.my) {
   file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam", sep="");
   file_out = paste(file_in, ".cr.txt", sep="");
   command00 = "java -Xmx4g -jar "; # next command.
-  options00 = paste(params$path_snpEff, "/snpEff.jar  -c ", params$path_snpEff, "/snpEff.config countReads ", params$opt$genver," ", file_in, " > ", file_out, sep="");
+#  options00 = paste(params$path_snpEff, "/snpEff.jar  -c ", params$path_snpEff, "/snpEff.config countReads ", params$opt$genver," ", file_in, " > ", file_out, sep="");
+  options00 = paste(params$path_snpEff, "/snpEff.jar  countReads ", params$opt$genver," ", file_in, " > ", file_out, sep="");
   command = paste(command00, " ", options00, sep="");
   system(command);
   # Don't check for check2clean("$file_in") since we still need it for the variant calling
   print_done(file2process.my2);
   
+  # direct command line call for testing other things:
+  # java -Xmx4g -jar /home/ueb/snpEff/snpEff.jar countReads hg19 file_in.sam.sorted.noDup.bam > file_in.sam.sorted.noDup.bam.cr.txt
+
   gc() # Let's clean ouR garbage if possible
   return(step.my) # return nothing, since results are saved on disk from the system command
 }
