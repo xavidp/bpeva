@@ -92,6 +92,7 @@ wrapper2.parallelizable.per.sample <- function(datastep.my2) {
   map.on.reference.genome.parallel  <- params_w2pps$p_map.on.reference.genome.parallel
   quality.control   	              <- params_w2pps$p_quality.control
   convert.file.list.pe              <- params_w2pps$p_convert.file.list.pe
+  bowtie2sam                        <- params_w2pps$p_bowtie2sam
   sam2bam.and.sort	 	              <- params_w2pps$p_sam2bam.and.sort
   remove.pcr.dup		                <- params_w2pps$p_remove.pcr.dup
   gatk.sortbyref                    <- params_w2pps$p_gatk.sortbyref
@@ -177,7 +178,7 @@ wrapper2.parallelizable.per.sample <- function(datastep.my2) {
   # and one other lock file per sample when each sample is being processed.
 #  if (params$opt$bwa == 2 && (!params_wseq$p_map.on.reference.genome.sequential && !params_wseq$p_map.on.reference.genome.parallel)
 #     && p_convert.file.list.pe) {
-  if (params$opt$bwa == 2 && p_convert.file.list.pe) {
+  if (params$opt$bwa == 2 && convert.file.list.pe) {
     
     # Check if general lock file exist.   
     #	  if ( file.exists(paste(params$abs_path_to_script, "/", params$filename_list, ".lock", sep="")) ) {
@@ -221,7 +222,13 @@ wrapper2.parallelizable.per.sample <- function(datastep.my2) {
     
   } # end of the case bwa=2 (paired end) ####################################
   
-  
+    
+  if (bowtie2sam) {
+    # Next Step
+    step <- fun.bowtie2sam(file2process.my2  = file2process.my1,
+                                 step.my  = step)
+  }
+
   if (sam2bam.and.sort) {
     # Next Step
     step <- fun.sam2bam.and.sort(file2process.my2  = file2process.my1,

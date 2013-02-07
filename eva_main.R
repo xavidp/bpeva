@@ -27,13 +27,14 @@ program_ueb <- "eva_main.R";
 
 # Set the working directory from either one of the two options (a and b) listed below
 ## a) the hardcoded way
-#wd <- "/home/ueb/repo/peeva/"
-#
+wd <- "/home/xavi/Estudis/eva_bowtie_perl/"
+setwd(wd)
+
 ## b) dynamically from the folder where the main script program_ueb is
-wd <- getwd()
-wdres <- system(paste("locate", program_ueb, "| grep", wd, sep=" "), intern=TRUE)
-wdres <- gsub(program_ueb, "", wdres, ignore.case = FALSE, perl = FALSE, fixed = TRUE)
-setwd(wdres)
+#wd <- getwd()
+#wdres <- system(paste("locate", program_ueb, "| grep", wd, sep=" "), intern=TRUE)
+#wdres <- gsub(program_ueb, "", wdres, ignore.case = FALSE, perl = FALSE, fixed = TRUE)
+#setwd(wdres)
 
 # Import Params for this EVA analysis run and the working directory for the whole project 
 source("eva_params.R")
@@ -135,6 +136,8 @@ library(org.Hs.eg.db, quietly = TRUE)
 my.options <- c(
   'help'     , 'h', 0, "logical"  , # "show help on usage # Optional",
   'input'    , 'i', 1, "character", # "Directory with __I__nput data files # Compulsory",
+  'in.suffix', 'x', 2, "character", # "Suffi__x__ (ending) of the input file names without extension # Optional",
+  'in.ext'   , 'e', 2, "character", # ".__E__xtension of the input filenames (.fastq, .fa, .sam, ...)# Optional",
   'output'   , 'o', 1, "character", # "Directory with __O_utput data files # Compulsory",
   'genver'   , 'g', 1, "character", #, "__G__enome version used. E.g.: hg18, hg19, even if only hg19 is supported as of Jan 2013",
   'index'    , 'n', 0, "logical"  , # "i__N__dex the reference genome # Optional",
@@ -165,8 +168,10 @@ if ( !is.null(opt$help) || ((length(commandArgs()) >3 )
 
 # 0c. set some reasonable defaults for the options that are needed, but were not specified.
 # ---------------------------------------------------------------------
-if ( is.null(opt$input    ) ) { opt$input    = p_input  } # "dir_in_sara_207"     }
-if ( is.null(opt$output   ) ) { opt$output   = p_output	} # "dir_out_sara_207"    }
+if ( is.null(opt$input    ) ) { opt$input    = p_input   } # "dir_in_sara_207"     }
+if ( is.null(opt$in.suffix) ) { opt$in.suffix= p_in.suffix} # "_sequence"    
+if ( is.null(opt$in.ext   ) ) { opt$in.ext   = p_in.ext  } # ".fastq" ".fa"...   
+if ( is.null(opt$output   ) ) { opt$output   = p_output	 } # "dir_out_sara_207"    }
 if ( is.null(opt$genver   ) ) { opt$genver   = p_genver        }
 if ( is.null(opt$index    ) ) { opt$index    = p_index         }
 if ( is.null(opt$filter   ) ) { opt$filter   = p_filter           }
@@ -186,12 +191,23 @@ if ( is.null(opt$bwa      ) ) { opt$bwa      = p_bwa          } # 1: bwa aln (sh
 # Check for the TxDb.Hsapiens.UCSC.hg19.knownGene or TxDb.Hsapiens.UCSC.hg18.knownGene dynamically 
 # based on the contents of param opt$genver, where hg19 or hg18 is set. 
 # As of January 2013, only hg19 is supported in all functions of this pipeline (use hg18 at your own risk for local partial tests, if needed)
-if(!require(paste("TxDb.Hsapiens.UCSC.", opt$genver,".knownGene", sep=""), character.only = TRUE)) {
+if( (opt$genver =="hg18" || opt$genver =="hg19") && !require(paste("TxDb.Hsapiens.UCSC.", opt$genver,".knownGene", sep=""), character.only = TRUE)) {
   biocLite(paste("TxDb.Hsapiens.UCSC.", opt$genver,".knownGene", sep="")) }
-library(paste("TxDb.Hsapiens.UCSC.", opt$genver,".knownGene", sep=""),
+if( (opt$genver =="hg18" || opt$genver =="hg19") ) {
+  library(paste("TxDb.Hsapiens.UCSC.", opt$genver,".knownGene", sep=""),
         quietly = TRUE,  character.only = TRUE)
+}
 
+if( (opt$genver =="rn4" || opt$genver =="rn5") && 
+      !require(paste("TxDb.Rnorvegicus.UCSC.", opt$genver,".ensGene", sep=""), character.only = TRUE)) {
+  biocLite(paste("TxDb.Rnorvegicus.UCSC.", opt$genver,".ensGene", sep="")) }
+if( (opt$genver =="rn4" || opt$genver =="rn5") ) {
+  library(paste("TxDb.Rnorvegicus.UCSC.", opt$genver,".ensGene", sep=""),
+          quietly = TRUE,  character.only = TRUE)
+}
 
+#biocLite("BSgenome.Rnorvegicus.UCSC.rn4")
+#biocLite("TxDb.Rnorvegicus.UCSC.rn4.ensGene")
 
 ##############################################################
 
@@ -234,14 +250,14 @@ if (path_input_absolute == 0) {
 if (p_bwa == 2) {
 	filename_list = paste(opt$output, "/", "log.",startdate, ".", opt$label, ".fastq_pe_tmp.txt", sep="")
 	# Get the list of files in "input" directory through a system call to "ls *" and save the result to a file on disk
-	system(paste("ls ",abs_path_to_input_files,"*_sequence.fastq > ", filename_list, sep=""), TRUE)
+	system(paste("ls ",abs_path_to_input_files,"*", p_in.suffix, p_in.ext, " > ", filename_list, sep=""), TRUE)
 	# Add a lock file to indicate that paired end sample data is to be processed. This lock file will be removed only after all couples of files from samples have been merged into one file per sample
 	system(paste("touch ", filename_list, ".lock", sep=""), TRUE)
 } else {
 	# When input files contained single end short reads, or long reads, the definitive file list will be created here in this step already 
 	filename_list = paste(opt$output, "/", "log.",startdate, ".", opt$label, ".fastq_input_list.txt", sep="")
 	# Get the list of files in "input" directory through a system call to "ls *" and save the result to a file on disk
-	system(paste("ls ",abs_path_to_input_files,"*.fastq > ", filename_list, sep=""), TRUE)
+	system(paste("ls ",abs_path_to_input_files,"*", params$opt$in.ext," > ", filename_list, sep=""), TRUE)
 }
 
 # Read the file with the list of files to be processed
@@ -253,7 +269,7 @@ n_files = length(file_list[[1]])
 # remove the directory prefix from the names as well as the ending .fastq
 # through gsub, alternatively
 file_list <- gsub(abs_path_to_input_files,"", file_list[[1]])
-file_list <- gsub(".fastq","", file_list)
+file_list <- gsub(opt$in.ext,"", file_list)
 
 ##############################################################
 
@@ -270,6 +286,8 @@ params <- list(startdate = startdate,
                n_files = n_files,
                wd = wd, # the working directory
                directory_in = opt$input,
+               p_in.suffix = opt$in.suffix,
+               p_in.ext    = opt$in.ext,
                directory_out = opt$output,
                log = opt$log,
                log.folder = opt$output, # "logs",
@@ -280,6 +298,7 @@ params <- list(startdate = startdate,
                p_smtp = p_smtp,
                p_label = p_label,
                p_desc = p_desc,
+               p_convert.file.list.pe = p_convert.file.list.pe,
                path_fastq = path_fastq,
                path_genome = path_genome,
                path_vcfutils = path_vcfutils,
@@ -346,6 +365,7 @@ sfExport( "params",
           "fun.map.on.reference.genome",
           "fun.map.on.reference.genome",
           "fun.convert.file.list.pe",
+          "fun.bowtie2sam",
           "fun.sam2bam.and.sort",
 	        "fun.remove.pcr.dup",
           "fun.gatk.sortbyref",
@@ -391,7 +411,7 @@ sfExport( "params",
     step <- data.frame(0, 0)
     colnames(step) <- c("n","tmp")
     
-    step <- fun.index.reference.genome(step.my  = step, , abs_routlogfile)
+    step <- fun.index.reference.genome(step.my  = step, abs_routlogfile)
     duration <- Sys.time()-start;
     cat("\n(Chunk 6) Relative duration since last step: ")
     print(duration)

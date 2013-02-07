@@ -45,6 +45,8 @@ p_test     = 0 # 1/0; ### Is this a test run? ###
 if (p_test==1) {
   path_input_absolute <- "0" # Define whether the p_input is absolute or relative
   p_input    <- "/mnt/magatzem02/tmp/run_sara_293a/dir_in_293a3" #"test_in2" # "../test_in2"  # "test_in"
+  p_in.suffix <- "_sequence" # "" # This is the suffix of all input filenames (without extension) used for the pipeline to process
+  p_in.ext    <- ".fastq" # ".fa" ".sam" ".bam" # This is the .extension of all files used as input for the pipeline to process
   p_output   <- "/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a3b" #"test_out2" # "../test_out2" # "test_out"
   p_label    <-  "testsnpEffCountReads_a" #testrunGATK1" # "test-121002" # "test-foo"        # Run Label for output filenames
   p_desc     <- "Testing The issue in snpEff Count Reads with first set: s_7_m11_149b_merged12_00-01M.sam"
@@ -57,11 +59,13 @@ if (p_test==1) {
 #  p_input    <- "/mnt/magatzem02/tmp/run_sara_293a/dir_in_293a2" # "../dir_in" # "test_in"   # "dir_in"     
 #  p_output   <- "/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a2" #../dir_out_293" # "../dir_out_293" # "test_out"	 # "dir_out_293"
 #  p_label    <-  "sg293a2b2.snpeff.greped" # "test-121002" # ".sg293_qa_sg3sg4"   # "test-121002" ".sara207_4s4cpu"        # Run Label for output filenames
-  p_input    <- "/mnt/magatzem02/tmp/run_sara_293a/dir_in_293a3" # "../dir_in" # "test_in"   # "dir_in"     
-  p_output   <- "/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a3b" #../dir_out_293" # "../dir_out_293" # "test_out"   # "dir_out_293"
-  p_label    <-   "sg293a3b_vcf_fixed" #sg293a3_test_count_reads" # ".sg293a3_ind7_mc15g3seq" # mc=minimum cover; g3: 3rd filter version for the grep; "test-121002" # ".sg293_qa_sg3sg4"   # "test-121002" ".sara207_4s4cpu"        # Run Label for output filenames
+  p_input    <- "/backups_disk_03/Usuaris/Marta.Vila/sam" # /home/xavi/Estudis/eva_bowtie/dir_in" # "../dir_in" # "test_in"   # "dir_in"     
+  p_in.suffix <- "" #  "_sequence" # "" # This is the suffix of all input filenames (without extension) used for the pipeline to process
+  p_in.ext    <-  ".sam" #".fastq" # ".fa" ".sam" ".bam" # This is the .extension of all files used as input for the pipeline to process
+  p_output   <- "/backups_disk_03/tmp/bam2" #"/home/xavi/Estudis/eva_bowtie/dir_out" #../dir_out_293" # "../dir_out_293" # "test_out"   # "dir_out_293"
+  p_label    <-   "mv311d" #sg293a3_test_count_reads" # ".sg293a3_ind7_mc15g3seq" # mc=minimum cover; g3: 3rd filter version for the grep; "test-121002" # ".sg293_qa_sg3sg4"   # "test-121002" ".sara207_4s4cpu"        # Run Label for output filenames
                   # p_desc = Description in longer format of the run. DEscribe that for you to understand in the future what were the conditions and params of this run. 
-  p_desc     <-   "Les mostres de l'estudi 293. Individu 7, repetit tot. Amb el valors nous de samtools ( samtools mpileup -uf -C50 -EDS -q50 -d10000. I bcftools bcftools view -Avcg - . || Idem però tornant smatools view a no desar stderr amb 2>> etc."
+  p_desc     <-   "d: processat tots els sam a bam amb el pipeline eva per a ratoli rn4."
   p_keep     <- TRUE # Enable if run through editor and you want to keep temp files
 #  p_filter   <- "BRCA"
 #  p_filter   <- "BRCA1\\|BRCA2\\|CHEK2\\|PALB2\\|BRIP1\\|TP53\\|PTEN\\|STK11\\|CDH1\\|ATM\\|BARD1\\|APC\\|MLH1\\|MRE11\\|MSH2\\|MSH6\\|MUTYH\\|NBN\\|PMS1\\|PMS2\\|RAD50\\|RAD51D\\|RAD51C\\|XRCC2\\|UIMC1\\|FAM175A\\|ERCC4\\|RAD51\\|RAD51B\\|XRCC3\\|FANCA\\|FANCB\\|FANCC\\|FANCD2\\|FANCE\\|FANCF\\|FANCG\\|FANCI\\|FANCL\\|FANCM\\|SLX4\\|CASP8\\|FGFR2\\|TOX3\\|MAP3K1\\|MRPS30\\|SLC4A7\\|NEK10\\|COX11\\|ESR1\\|CDKN2A\\|CDKN2B\\|ANKRD16\\|FBXO18\\|ZNF365\\|ZMIZ1\\|BABAM1\\|LSP1\\|ANKLE1\\|TOPBP1\\|BCCIP\\|53BP1"            
@@ -76,19 +80,19 @@ if (p_test==1) {
   p_filter   <- "BRCA1|\\|BRCA2|\\|CHEK2|\\|PALB2|\\|BRIP1|\\|TP53|\\|PTEN|\\|STK11|\\|CDH1|\\|ATM|\\|BARD1|\\|APC|\\|MLH1|\\|MRE11|\\|MSH2|\\|MSH6|\\|MUTYH|\\|NBN|\\|PMS1|\\|PMS2|\\|RAD50|\\|RAD51D|\\|RAD51C|\\|XRCC2|\\|UIMC1|\\|FAM175A|\\|ERCC4|\\|RAD51|\\|RAD51B|\\|XRCC3|\\|FANCA|\\|FANCB|\\|FANCC|\\|FANCD2|\\|FANCE|\\|FANCF|\\|FANCG|\\|FANCI|\\|FANCL|\\|FANCM|\\|SLX4|\\|CASP8|\\|FGFR2|\\|TOX3|\\|MAP3K1|\\|MRPS30|\\|SLC4A7|\\|NEK10|\\|COX11|\\|ESR1|\\|CDKN2A|\\|CDKN2B|\\|ANKRD16|\\|FBXO18|\\|ZNF365|\\|ZMIZ1|\\|BABAM1|\\|LSP1|\\|ANKLE1|\\|TOPBP1|\\|BCCIP|\\|53BP1|\\|BRCA1:\\|BRCA2:\\|CHEK2:\\|PALB2:\\|BRIP1:\\|TP53:\\|PTEN:\\|STK11:\\|CDH1:\\|ATM:\\|BARD1:\\|APC:\\|MLH1:\\|MRE11:\\|MSH2:\\|MSH6:\\|MUTYH:\\|NBN:\\|PMS1:\\|PMS2:\\|RAD50:\\|RAD51D:\\|RAD51C:\\|XRCC2:\\|UIMC1:\\|FAM175A:\\|ERCC4:\\|RAD51:\\|RAD51B:\\|XRCC3:\\|FANCA:\\|FANCB:\\|FANCC:\\|FANCD2:\\|FANCE:\\|FANCF:\\|FANCG:\\|FANCI:\\|FANCL:\\|FANCM:\\|SLX4:\\|CASP8:\\|FGFR2:\\|TOX3:\\|MAP3K1:\\|MRPS30:\\|SLC4A7:\\|NEK10:\\|COX11:\\|ESR1:\\|CDKN2A:\\|CDKN2B:\\|ANKRD16:\\|FBXO18:\\|ZNF365:\\|ZMIZ1:\\|BABAM1:\\|LSP1:\\|ANKLE1:\\|TOPBP1:\\|BCCIP:\\|53BP1:\\|^BRCA1\t\\|^BRCA2\t\\|^CHEK2\t\\|^PALB2\t\\|^BRIP1\t\\|^TP53\t\\|^PTEN\t\\|^STK11\t\\|^CDH1\t\\|^ATM\t\\|^BARD1\t\\|^APC\t\\|^MLH1\t\\|^MRE11\t\\|^MSH2\t\\|^MSH6\t\\|^MUTYH\t\\|^NBN\t\\|^PMS1\t\\|^PMS2\t\\|^RAD50\t\\|^RAD51D\t\\|^RAD51C\t\\|^XRCC2\t\\|^UIMC1\t\\|^FAM175A\t\\|^ERCC4\t\\|^RAD51\t\\|^RAD51B\t\\|^XRCC3\t\\|^FANCA\t\\|^FANCB\t\\|^FANCC\t\\|^FANCD2\t\\|^FANCE\t\\|^FANCF\t\\|^FANCG\t\\|^FANCI\t\\|^FANCL\t\\|^FANCM\t\\|^SLX4\t\\|^CASP8\t\\|^FGFR2\t\\|^TOX3\t\\|^MAP3K1\t\\|^MRPS30\t\\|^SLC4A7\t\\|^NEK10\t\\|^COX11\t\\|^ESR1\t\\|^CDKN2A\t\\|^CDKN2B\t\\|^ANKRD16\t\\|^FBXO18\t\\|^ZNF365\t\\|^ZMIZ1\t\\|^BABAM1\t\\|^LSP1\t\\|^ANKLE1\t\\|^TOPBP1\t\\|^BCCIP\t\\|^53BP1\t\\|\"BRCA1\"\\|\"BRCA2\"\\|\"CHEK2\"\\|\"PALB2\"\\|\"BRIP1\"\\|\"TP53\"\\|\"PTEN\"\\|\"STK11\"\\|\"CDH1\"\\|\"ATM\"\\|\"BARD1\"\\|\"APC\"\\|\"MLH1\"\\|\"MRE11\"\\|\"MSH2\"\\|\"MSH6\"\\|\"MUTYH\"\\|\"NBN\"\\|\"PMS1\"\\|\"PMS2\"\\|\"RAD50\"\\|\"RAD51D\"\\|\"RAD51C\"\\|\"XRCC2\"\\|\"UIMC1\"\\|\"FAM175A\"\\|\"ERCC4\"\\|\"RAD51\"\\|\"RAD51B\"\\|\"XRCC3\"\\|\"FANCA\"\\|\"FANCB\"\\|\"FANCC\"\\|\"FANCD2\"\\|\"FANCE\"\\|\"FANCF\"\\|\"FANCG\"\\|\"FANCI\"\\|\"FANCL\"\\|\"FANCM\"\\|\"SLX4\"\\|\"CASP8\"\\|\"FGFR2\"\\|\"TOX3\"\\|\"MAP3K1\"\\|\"MRPS30\"\\|\"SLC4A7\"\\|\"NEK10\"\\|\"COX11\"\\|\"ESR1\"\\|\"CDKN2A\"\\|\"CDKN2B\"\\|\"ANKRD16\"\\|\"FBXO18\"\\|\"ZNF365\"\\|\"ZMIZ1\"\\|\"BABAM1\"\\|\"LSP1\"\\|\"ANKLE1\"\\|\"TOPBP1\"\\|\"BCCIP\"\\|\"53BP1\"\\|BRCA1\t|BRCA2\t|CHEK2\t|PALB2\t|BRIP1\t|TP53\t|PTEN\t|STK11\t|CDH1\t|ATM\t|BARD1\t|APC\t|MLH1\t|MRE11\t|MSH2\t|MSH6\t|MUTYH\t|NBN\t|PMS1\t|PMS2\t|RAD50\t|RAD51D\t|RAD51C\t|XRCC2\t|UIMC1\t|FAM175A\t|ERCC4\t|RAD51\t|RAD51B\t|XRCC3\t|FANCA\t|FANCB\t|FANCC\t|FANCD2\t|FANCE\t|FANCF\t|FANCG\t|FANCI\t|FANCL\t|FANCM\t|SLX4\t|CASP8\t|FGFR2\t|TOX3\t|MAP3K1\t|MRPS30\t|SLC4A7\t|NEK10\t|COX11\t|ESR1\t|CDKN2A\t|CDKN2B\t|ANKRD16\t|FBXO18\t|ZNF365\t|ZMIZ1\t|BABAM1\t|LSP1\t|ANKLE1\t|TOPBP1\t|BCCIP\t|53BP1  "
   p_mail.send <- 1 # 0=FALSE, 1=TRUE ; Indicate whether we want an email sent when the run is finished
 }
-p_genver    <- "hg19" # hg19 is the only one supported throughout the whole pipeline still, as of January 2013.
+p_genver    <- "rn4" #"hg19" # hg19 is the only one supported throughout the whole pipeline still, as of January 2013.
 p_index     <- FALSE # TRUE         
 p_log       <- TRUE        
 p_dbsnp     <- "132" # 132 for dbsnp132 is the one supported throughout the whole pipeline still, regarding current annovar version, as of January 2013.
 p_summarize <- TRUE  
 p_snpeff.of <- "txt" # Output format for snpEff. Possible values: txt, vcf, gatk, bed, bedAnn (txt will be deprecated, but it can be ocasionally useful still in the meantime)
 p_cpus      <- 4             
-p_parallel  <- FALSE #FALSE #TRUE # Do you want to allow running some parallelized processes at all? (which ones will be specified elsewhere in the code)
+p_parallel  <- TRUE #FALSE #TRUE # Do you want to allow running some parallelized processes at all? (which ones will be specified elsewhere in the code)
 p_bwa       <- 2          # Algorythm for mapping with bwa - http://bio-bwa.sourceforge.net/bwa.shtml
                         # 1: bwa aln      + samse  (short reads, single ends, low errors);
                         # 2: bwa aln (x2) + sampe  (short reads, paired ends, low errors);
                         # 3: bwa bwasw             (longer reads, single end only) 
-p_convert.file.list.pe        <- TRUE #FALSE #TRUE # Keep as TRUE if you have paired end samples (sampe; p_bwa=2)
+p_convert.file.list.pe        <- FALSE #FALSE #TRUE # Keep as TRUE if you have paired end samples (sampe; p_bwa=2)
                                       # --and you are re-processing just some steps--, since you will need
                                       # the input file list 1_sequence.fastq etc converted into the _merged12.sam 
                                       # IMPORTANT: 
@@ -127,10 +131,11 @@ params_wseq <- list(
 #  wrapper2.parallelizable.per.sample (w2pps)
 #----------------------------------
 # p_map.on.reference.genome.parallel  is not defined here but in the previous chunk
-#####
-runParam <- FALSE #######################
-####
 p_quality.control             <- runParam
+p_bowtie2sam                  <- runParam
+#####
+runParam <- TRUE #######################
+####
 p_sam2bam.and.sort		        <- runParam
 p_remove.pcr.dup		          <- runParam
 p_gatk.sortbyref              <- FALSE #TRUE #FALSE # runParam # Not working properly yet
@@ -139,7 +144,7 @@ p_gatk.local.realign.step2    <- FALSE # runParam # Unfinished work
 p_gatk.local.realign.step3    <- FALSE # runParam # Unfinished work
 p_index.bam.file		          <- runParam
 p_stats			                  <- runParam
-p_snpeff.count.reads          <- TRUE # runParam # Not working properly yet
+p_snpeff.count.reads          <- FALSE # runParam # Not working properly yet
 p_exon.coverage   	          <- FALSE # runParam # Unfinished work
 #####
 runParam <- FALSE #######################
@@ -169,6 +174,7 @@ params_w2pps <- list(
   p_map.on.reference.genome.parallel  = p_map.on.reference.genome.parallel,
   p_quality.control                   = p_quality.control,
   p_convert.file.list.pe              = p_convert.file.list.pe,
+  p_bowtie2sam                        = p_bowtie2sam,
   p_sam2bam.and.sort                  = p_sam2bam.and.sort,
   p_remove.pcr.dup                    = p_remove.pcr.dup,
   p_gatk.sortbyref                    = p_gatk.sortbyref,
@@ -217,7 +223,7 @@ params_w2pf <- list(
 # p_server = Choose machine where to get the paths for
 # 1 for MainHead,
 # 2 for B52,
-p_server <- 1 # Set the server number (see codes above)
+p_server <- 2 # Set the server number (see codes above)
 
 if (p_server==1) { # MainHead server
   # A. Reference Data file paths
@@ -254,17 +260,19 @@ if (p_server==1) { # MainHead server
 } else if (p_server==2) { # B52 server
     
   path_fastq = "/home/ueb/software/FastQC/fastqc"
-  path_genome = "/home/ueb/Data/Data_Genomes/hg19.fa" 
+  #path_genome = "/home/ueb/Data/Data_Genomes/hg19.fa" 
+  path_genome = "/home/ueb/Data/Data_Genomes/rn4/rn4.fa"
   path_vcfutils = "/usr/share/samtools/vcfutils.pl"
   path_convert2annovar = "/home/ueb/software/annovar/convert2annovar.pl"
   path_annotate_variation = "/home/ueb/software/annovar/annotate_variation.pl"
   path_annotate_humandb = "/home/ueb/software/annovar/humandb/"
   path_summarize_annovar = "/home/ueb/software/annovar/summarize_annovar.pl"           
   path_snpEff = "/home/ueb/snpEff/" # end with trailing slash but no script, since the same folder is used for several files           
-#  path_gatk = "/home/ueb/GenomeAnalysisTKLite-2.3-4-gb8f1308/GenomeAnalysisTKLite.jar" # end with the jar file since it can be lite or not
-#  path_gatk_key = "/home/ueb/GenomeAnalysisTKLite-2.3-4-gb8f1308/ueb_vhir.org.key" # key to avoid gatk 'calling home' (to gatk authors) on each run. See http://gatkforums.broadinstitute.org/discussion/1250/what-is-phone-home-and-how-does-it-affect-me
-#  path_dbSNP1 = "/home/ueb/Data/dbSNP/dbsnp132_20101103.vcf"
-#  path_dbSNP = path_dbSNP1
-#  path_exon_capture_file1 = "/home/ueb/Data/BED/TruSeq_exome_targeted_regions.hg19.bed.chr"
-#  path_exon_capture_file2 = "/home/ueb/Data/BED/all_captured_exomes_from_ucsc_hg19.bed"  
+  path_gatk = "/home/ueb/GenomeAnalysisTKLite-2.3-4-gb8f1308/GenomeAnalysisTKLite.jar" # end with the jar file since it can be lite or not
+  path_gatk_key = "/home/ueb/GenomeAnalysisTKLite-2.3-4-gb8f1308/ueb_vhir.org.key" # key to avoid gatk 'calling home' (to gatk authors) on each run. See http://gatkforums.broadinstitute.org/discussion/1250/what-is-phone-home-and-how-does-it-affect-me
+  path_dbSNP1 = "/home/ueb/Data/dbSNP/dbsnp132_20101103.vcf"
+  path_dbSNP = path_dbSNP1
+  path_exon_capture_file1 = "/home/ueb/Data/BED/TruSeq_exome_targeted_regions.hg19.bed.chr"
+  path_exon_capture_file2 = "/home/ueb/Data/BED/all_captured_exomes_from_ucsc_hg19.bed"  
+  path_exon_capture_file = path_exon_capture_file2
 }

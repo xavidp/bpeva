@@ -84,3 +84,13 @@ prova4_fastqc
 ./test_out2/sample_a_1_sequence.sam.sorted.noDup.bam.samtools.var.raw.vcf
 ./test_out2/sample_a_2_sequence.sam.sorted.noDup.bam.samtools.var.filtered.vcf
 ./test_out2/sample_a_2_sequence.sam.sorted.noDup.bam.samtools.var.raw.vcf
+*.lock
+Sample_1820.bowtie
+Sample_1820.bowtie.bowtie.sam
+Sample_1820.bowtie.sam
+Sample_1820.bowtie.sam.sorted.bam
+log.130204.mv311b.Sample_1820.bowtie.txt
+log.130204.mv311b.fastq_pe_tmp.txt
+log.130204.mv311b.log.130204.mv311b.run.txt.txt
+log.130204.mv311b.run.txt
+sam2bam_by_hand.txt
