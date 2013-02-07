@@ -45,6 +45,8 @@ p_test     = 0 # 1/0; ### Is this a test run? ###
 if (p_test==1) {
   path_input_absolute <- "0" # Define whether the p_input is absolute or relative
   p_input    <- "/mnt/magatzem02/tmp/run_sara_293a/dir_in_293a3" #"test_in2" # "../test_in2"  # "test_in"
+  p_in.suffix <- "_sequence" # "" # This is the suffix of all input filenames (without extension) used for the pipeline to process
+  p_in.ext    <- ".fastq" # ".fa" ".sam" ".bam" # This is the .extension of all files used as input for the pipeline to process
   p_output   <- "/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a3b" #"test_out2" # "../test_out2" # "test_out"
   p_label    <-  "testsnpEffCountReads_a" #testrunGATK1" # "test-121002" # "test-foo"        # Run Label for output filenames
   p_desc     <- "Testing The issue in snpEff Count Reads with first set: s_7_m11_149b_merged12_00-01M.sam"
@@ -58,6 +60,8 @@ if (p_test==1) {
 #  p_output   <- "/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a2" #../dir_out_293" # "../dir_out_293" # "test_out"	 # "dir_out_293"
 #  p_label    <-  "sg293a2b2.snpeff.greped" # "test-121002" # ".sg293_qa_sg3sg4"   # "test-121002" ".sara207_4s4cpu"        # Run Label for output filenames
   p_input    <- "/mnt/magatzem02/tmp/run_sara_293a/dir_in_293a3" # "../dir_in" # "test_in"   # "dir_in"     
+  p_in.suffix <- "" #  "_sequence" # "" # This is the suffix of all input filenames (without extension) used for the pipeline to process
+  p_in.ext    <-  ".sam" #".fastq" # ".fa" ".sam" ".bam" # This is the .extension of all files used as input for the pipeline to process
   p_output   <- "/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a3b" #../dir_out_293" # "../dir_out_293" # "test_out"   # "dir_out_293"
   p_label    <-   "sg293a3b_vcf_fixed" #sg293a3_test_count_reads" # ".sg293a3_ind7_mc15g3seq" # mc=minimum cover; g3: 3rd filter version for the grep; "test-121002" # ".sg293_qa_sg3sg4"   # "test-121002" ".sara207_4s4cpu"        # Run Label for output filenames
                   # p_desc = Description in longer format of the run. DEscribe that for you to understand in the future what were the conditions and params of this run. 
@@ -131,6 +135,10 @@ params_wseq <- list(
 runParam <- FALSE #######################
 ####
 p_quality.control             <- runParam
+p_bowtie2sam                  <- runParam
+#####
+runParam <- TRUE #######################
+####
 p_sam2bam.and.sort		        <- runParam
 p_remove.pcr.dup		          <- runParam
 p_gatk.sortbyref              <- FALSE #TRUE #FALSE # runParam # Not working properly yet
@@ -169,6 +177,7 @@ params_w2pps <- list(
   p_map.on.reference.genome.parallel  = p_map.on.reference.genome.parallel,
   p_quality.control                   = p_quality.control,
   p_convert.file.list.pe              = p_convert.file.list.pe,
+  p_bowtie2sam                        = p_bowtie2sam,
   p_sam2bam.and.sort                  = p_sam2bam.and.sort,
   p_remove.pcr.dup                    = p_remove.pcr.dup,
   p_gatk.sortbyref                    = p_gatk.sortbyref,
@@ -255,16 +264,18 @@ if (p_server==1) { # MainHead server
     
   path_fastq = "/home/ueb/software/FastQC/fastqc"
   path_genome = "/home/ueb/Data/Data_Genomes/hg19.fa" 
+  #path_genome = "/home/ueb/Data/Data_Genomes/rn4/rn4.fa"
   path_vcfutils = "/usr/share/samtools/vcfutils.pl"
   path_convert2annovar = "/home/ueb/software/annovar/convert2annovar.pl"
   path_annotate_variation = "/home/ueb/software/annovar/annotate_variation.pl"
   path_annotate_humandb = "/home/ueb/software/annovar/humandb/"
   path_summarize_annovar = "/home/ueb/software/annovar/summarize_annovar.pl"           
   path_snpEff = "/home/ueb/snpEff/" # end with trailing slash but no script, since the same folder is used for several files           
-#  path_gatk = "/home/ueb/GenomeAnalysisTKLite-2.3-4-gb8f1308/GenomeAnalysisTKLite.jar" # end with the jar file since it can be lite or not
-#  path_gatk_key = "/home/ueb/GenomeAnalysisTKLite-2.3-4-gb8f1308/ueb_vhir.org.key" # key to avoid gatk 'calling home' (to gatk authors) on each run. See http://gatkforums.broadinstitute.org/discussion/1250/what-is-phone-home-and-how-does-it-affect-me
-#  path_dbSNP1 = "/home/ueb/Data/dbSNP/dbsnp132_20101103.vcf"
-#  path_dbSNP = path_dbSNP1
-#  path_exon_capture_file1 = "/home/ueb/Data/BED/TruSeq_exome_targeted_regions.hg19.bed.chr"
-#  path_exon_capture_file2 = "/home/ueb/Data/BED/all_captured_exomes_from_ucsc_hg19.bed"  
+  path_gatk = "/home/ueb/GenomeAnalysisTKLite-2.3-4-gb8f1308/GenomeAnalysisTKLite.jar" # end with the jar file since it can be lite or not
+  path_gatk_key = "/home/ueb/GenomeAnalysisTKLite-2.3-4-gb8f1308/ueb_vhir.org.key" # key to avoid gatk 'calling home' (to gatk authors) on each run. See http://gatkforums.broadinstitute.org/discussion/1250/what-is-phone-home-and-how-does-it-affect-me
+  path_dbSNP1 = "/home/ueb/Data/dbSNP/dbsnp132_20101103.vcf"
+  path_dbSNP = path_dbSNP1
+  path_exon_capture_file1 = "/home/ueb/Data/BED/TruSeq_exome_targeted_regions.hg19.bed.chr"
+  path_exon_capture_file2 = "/home/ueb/Data/BED/all_captured_exomes_from_ucsc_hg19.bed"  
+  path_exon_capture_file = path_exon_capture_file2
 }

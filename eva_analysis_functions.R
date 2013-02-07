@@ -291,7 +291,9 @@ show_help <- function(program_ueb.my)
   cat("\n   -o: directory to save output files \t\t\t\t *** required ***\n")
   cat("\n   -n: -index (indexing of the reference genome)\t\t    [optional]\n")
   cat("\n   -w: -bwa (bwa algorythm: 1 aln+samse, 2 aln+sampe, 3 bwasw(se) ) [optional]\n")
-  cat("\n         for bwa: 2, use sufixes: *_1_sequence.fastq, *_2_sequence.fastq       \n")
+  cat("\n         for bwa: 2, use suffixes: *_1_sequence.fastq, *_2_sequence.fastq     \n")
+  cat("\n   -x: suffix (ending) in input filenames: _sequence, ...                     \n")
+  cat("\n   -e: .extension (with dot) of input filenames: .fastq, .sam, .bam, ...      \n")
   cat("\n   -s: summarize results with annotations in a single .csv file     [optional]\n")
   cat("\n   -f: filter results for these target genes \t\t\t    [optional]")
   cat("\n     with this syntax for one gene:")
@@ -323,7 +325,7 @@ fun.quality.control <- function(file2process.my2, step.my) {
 #^unneded since this is done in eva_main.R for the whole file_list at once at the beginning
   
   #  print_doc("$now -   Step $step_n.$step_tmp Quality Control and Preprocessing: $name ...");
-  file_in = paste(params$directory_in, "/", file2process.my2, ".fastq", sep="");
+  file_in = paste(params$directory_in, "/", file2process.my2, params$opt$in.ext, sep="");
   #  $file_out = "$directory_out/$name.txt";
   command00 = params$path_fastq; # path to fastqc binary; adapt to your case.
   #	$command00 = "ls"; # next command.
@@ -407,7 +409,7 @@ fun.map.on.reference.genome <- function(file2process.my2, step.my) {
   ## Alternatively, you could add the read group by means of 'picard' software programs:
   ## http://seqanswers.com/forums/showthread.php?t=23332
   
-  file_in = paste(params$directory_in, "/", file2process.my2, ".fastq", sep="");
+  file_in = paste(params$directory_in, "/", file2process.my2, params$opt$in.ext, sep="");
   
   if (params$opt$bwa == 1) # case to use algorythm 1 from bwa: aln + samse  (short reads, single ends, low errors);
   {
@@ -480,7 +482,7 @@ fun.map.on.reference.genome <- function(file2process.my2, step.my) {
     
     
     # Condition returns TRUE when matched the string and there is no lock file for the first sample of the paired-end set
-    if ( length(grep("_2_sequence", file2process.my2)) == 1 ) # returns TRUE when matched the string (2nd sample of the pair)
+    if ( length(grep(paste("_2", params$opt$in.suffix, sep=""), file2process.my2)) == 1 ) # returns TRUE when matched the string (2nd sample of the pair)
     {
       if (mate1.unfinished) {
         # Report the user that sam is not finished for mate1 of the sample pair
@@ -494,27 +496,34 @@ fun.map.on.reference.genome <- function(file2process.my2, step.my) {
       } 
 
       # Provide temporal shorter base names for the 2 files of the paired-end set (remove "_1_sequence" and "_2_sequence")
-      f2pbase <- gsub("_2_sequence", "", file2process.my2)
+      f2pbase <- gsub(paste("_2", params$opt$in.suffix, sep=""), "", file2process.my2)
 
       # Example - 2nd part
       #bwa sampe database.fasta aln_sa.sai short_read.fastq > aln.sam
-      file_in_sai1 = paste(params$directory_out, "/", f2pbase, "_1_sequence", ".sai", sep="");
-      file_in_sai2 = paste(params$directory_out, "/", f2pbase, "_2_sequence", ".sai", sep="");
-      file_in_fq1 = paste(params$directory_in, "/", f2pbase, "_1_sequence", ".fastq", sep="");
-      file_in_fq2 = paste(params$directory_in, "/", f2pbase, "_2_sequence", ".fastq", sep="");
-      file_out = paste(params$directory_out, "/", f2pbase, "_merged12.sam", sep="");
+      file_in_sai1 = paste(params$directory_out, "/", f2pbase, paste("_1", params$opt$in.suffix, sep=""), ".sai", sep="");
+      file_in_sai2 = paste(params$directory_out, "/", f2pbase, paste("_2", params$opt$in.suffix, sep=""), ".sai", sep="");
+      file_in_fq1 = paste(params$directory_in,   "/", f2pbase, paste("_1", params$opt$in.suffix, sep=""), params$opt$in.ext, sep="");
+      file_in_fq2 = paste(params$directory_in,   "/", f2pbase, paste("_2", params$opt$in.suffix, sep=""), params$opt$in.ext, sep="");
+      file_out = paste(params$directory_out,     "/", f2pbase, "_merged12.sam", sep="");
       command00 = "bwa sampe"; # next command.
       # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
       file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
       #      options00 = paste(params$path_genome, " ", file_in_sai1, " ", file_in_sai2, " ", file_in_fq1, " ", file_in_fq2, " > ", file_out, sep="");
       options00 = paste(params$path_genome, " ", file_in_sai1, " ", file_in_sai2, " ", file_in_fq1, " ", file_in_fq2,
-                        " -r \"@RG\tID:", file2process.my2, "\tLB:", file2process.my2, "\tPL:ILLUMINA\tSM:", 
+                        # The following -r param in bwa is only in recent versions of bwa, not in 0.5.5.x which is the latest one supported in ubuntu lucid 10.04 repositories as of 2013 January at least.
+                        # So when running in servers with Ubuntu Lucid or similar, keep this following line related to the "-r" param commented out. 
+                        # This param is needed mainly for later usage with GATK. Otherwise, it seems safely removable.
+                        #                        " -r \"@RG\tID:", file2process.my2, "\tLB:", file2process.my2, "\tPL:ILLUMINA\tSM:", 
                         file2process.my2, "\"", " > ", file_out,       " 2>> ", file_stderr, sep="");
       command = paste(command00, " ", options00, sep="");
       # Annotate the subprocess start time; launch the subprocess; and annotate the end time & duration
       start.my <- Sys.time(); system(command); duration <- Sys.time()-start.my;
       # Show the duration of this subprocess
       cat("\n 2nd part (sampe) - Relative duration since last step: "); print(duration); cat("\n")
+
+      # direct calls to this step in a terminal (indicated here for debugging purposes):
+      # ueb@ueb:/path1$ bwa sampe /home/ueb/Data/Data_Genomes/hg19.fa Sample_1820_1_sequence.sai  Sample_1820_2_sequence.sai  ../dir_in/Sample_1820_1_sequence.fastq ../dir_in/Sample_1820_2_sequence.fastq  -r "@RG\tID:Sample_1820\tLB:Sample_1820\tPL:ILLUMINA\tSM:Sample_1820" > Sample_18020_merged12.sam
+      # ueb@ueb:/path2# bwa sampe /home/ueb/Data/Data_Genomes/rn4/rn4.fa Sample_1797_1_sequence.sai  Sample_1797_2_sequence.sai  /path2/Sample_1797_1.fastq /path2/Sample_1797_2.fastq  > Sample_1797_merged12.byhand.sam
 
 ##      cat("\nWe will now stop the pipeline. You need to tweak the eva_params.R file to stop any attemp to rerun the previous steps and continue from here");
 ##      stop()
@@ -601,6 +610,41 @@ fun.convert.file.list.pe <- function(file2process.my2, step.my) {
 }
 
 
+
+##########################
+### FUNCTION fun.bowtie2sam
+###
+### So far hardcoded to use the modified version of bowtie2sam.pl 
+###   (from its samtools counterpart) in order to include all reads and not just the best read).
+### See http://seqanswers.com/forums/showthread.php?p=46232#post46232
+###   & http://seqanswers.com/forums/attachment.php?attachmentid=865&d=1310484858
+##########################
+
+fun.bowtie2sam <- function(file2process.my2, step.my) {
+  # update step number
+  step.my$tmp <- step.my$tmp + 1
+  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Convert bowtie to sam: ", file2process.my2, " ###\n", sep=""), file2process.my2);
+  
+  file_in = paste(params$directory_out, "/", file2process.my2, ".bowtie", sep="");
+  file_out = paste(file_in, ".sam", sep="");
+  command00 = "perl allbowtie2sam.pl "; # next command.
+  # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
+  file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
+  options00 = paste(" ", file_in, " > ", file_out,   " 2>> ", file_stderr, sep="");
+  
+  # direct command line call for testing other things:
+  # perl allbowtie2sam.pl Sample_1820.bowtie > Sample_1820.bowtie.sam
+  
+  command = paste(command00, " ", options00, sep="");
+  system(command);
+  check2clean(file_in, file2process.my2);
+  print_done(file2process.my2);
+  
+  gc() # Let's clean ouR garbage if possible
+  return(step.my) # return nothing, since results are saved on disk from the system command
+}
+
+
 ##########################
 ### FUNCTION fun.sam2bam.and.sort
 ##########################
@@ -611,11 +655,18 @@ fun.sam2bam.and.sort <- function(file2process.my2, step.my) {
   print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Convert sam to bam and sort it: ", file2process.my2, " ###\n", sep=""), file2process.my2);
   
   file_in = paste(params$directory_out, "/", file2process.my2, ".sam", sep="");
-  file_out = paste(file_in, ".sorted", sep="");
+  # Sometimes we might be running the whole pipeline with sam files as starting point.
+  # Therefore, source files could be in directory_in instead of directory_out. The next if clause should take care of these.
+  if (!file.exists(file_in)){
+    file_in = paste(params$directory_in, "/", file2process.my2, ".sam", sep="");
+  }
+  # We need to explicitly indicate that the file out is placed inside the directory out, 
+  # so that the pipeline works also when sam files are in directory in, etc. 
+  file_out = paste(params$directory_out, "/", file2process.my2, ".sam.sorted", sep="");
   command00 = "samtools"; # next command.
   # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
   file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
-  options00 = paste(" view -bS ", file_in, " | ", command00, " sort - ", file_out,   " 2>> ", file_stderr, sep="");
+  options00 = paste(" view -bS -t ", params$path_genome, ".fai ", file_in, " | ", command00, " sort - ", file_out,   " 2>> ", file_stderr, sep="");
 
   # direct command line call for testing other things:
   # samtools  view -bS file_in | samtools sort - file_in.sorted
