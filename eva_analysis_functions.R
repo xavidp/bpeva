@@ -650,6 +650,13 @@ fun.bowtie2sam <- function(file2process.my2, step.my) {
 ##########################
 
 fun.sam2bam.and.sort <- function(file2process.my2, step.my) {
+  #   #Manual debugging - ini
+  #   file2process.my2 <-"s_1_m11_143b_merged12.sam"
+  #   step.my <- data.frame(10, 0)
+  #   colnames(step.my) <- c("n","tmp")
+  #   step.my$tmp <- 0
+  #   #Manual debugging - end
+  
   # update step number
   step.my$tmp <- step.my$tmp + 1
   print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Convert sam to bam and sort it: ", file2process.my2, " ###\n", sep=""), file2process.my2);
