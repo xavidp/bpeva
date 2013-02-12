@@ -748,13 +748,22 @@ fun.gatk.sortbyref <- function(file2process.my2, step.my) {
   # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
   file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
   options00 = paste(params$path_gatk_sortbyref, " ", file_in, " ", params$path_genome,
-                    " > ", file_out,
-                    " >> ", file_stderr, " 2>> ", file_stderr, sep="");
+#                    " > ", file_out,
+#                    " >> ", file_stderr,
+                     " 2>> ", file_stderr
+                    , sep="");
   
   command = paste(command00, " ", options00, sep="");
   system(command);
   check2clean(file_in, file2process.my2);
   print_done(file2process.my2);
+
+  # direct command line call for testing other things:
+  # perl SortByRef.pl file_in Homo_sapiens_assembly19.fasta.fai
+  # perl SortByRef.pl /home/ueb/Data/Data_Genomes/hg19_Broad_Reference_Genome/dbsnp_135_human_9606_v4.0_00-All.vcf /home/ueb/Data/Data_Genomes/hg19_Broad_Reference_Genome/Homo_sapiens_assembly19.fasta.fai
+  #   xavi@mainhead:/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a3b$ perl /home/ueb/Data/gatk-data-2.3/SortByRef.pl /home/ueb/Data/Data_Genomes/hg19_Broad_Reference_Genome/dbsnp_135_human_9606_v4.0_00-All.vcf /home/ueb/Data/Data_Genomes/hg19_Broad_Reference_Genome/Homo_sapiens_assembly19.fasta.fai
+  #   Can not open temporary file 1080: Too many open files at /home/ueb/Data/gatk-data-2.3/SortByRef.pl line 95, <$INPUT> line 50737751.
+  #   xavi@mainhead:/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a3b$ 
   
   gc() # Let's clean ouR garbage if possible
   return(step.my) # return nothing, since results are saved on disk from the system command
@@ -773,15 +782,17 @@ fun.gatk.local.realign.step1 <- function(file2process.my2, step.my) {
   print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Local Realignment with GATK - Step 1: Generating interval file: ", file2process.my2, " ###\n", sep=""), file2process.my2);
 
   file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam", sep="");
-  file_out = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.intervals", sep="");
+  file_out = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam.intervals", sep="");
   command00 = "java -jar "; # next command.
   # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
   file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
-  options00 = paste(params$path_gatk, " -T RealignerTargetCreator -R ", params$path_genome, " -I ", 
-                    file_in, " -known:dbsnp,vcf ", params$path_dbSNP,
-                    " -L ", params$path_exon_capture_file , " -o ", file_out, 
+  options00 = paste(params$path_gatk, " -T RealignerTargetCreator -R ", params$path_genome, 
+                    " -I ", file_in, " --known:dbsnp,vcf ", params$path_dbSNP,
+#                    " -L ", params$path_exon_capture_file ,
+                    " -o ", file_out, 
                     " -et NO_ET -K ", params$path_gatk_key,
-                    " >> ", file_stderr, " 2>> ", file_stderr, sep="");
+#                    " >> ", file_stderr, " 2>> ", file_stderr,
+                    sep="");
     # Former option -B:dbsnp,vcf has been converted into -known:dbsnp,vcf. See http://seqanswers.com/forums/showthread.php?t=14013  
 
   # As a refence, see also this pipeline from Alberta Children's Hospital Research Institue
