@@ -59,13 +59,13 @@ if (p_test==1) {
 #  p_input    <- "/mnt/magatzem02/tmp/run_sara_293a/dir_in_293a2" # "../dir_in" # "test_in"   # "dir_in"     
 #  p_output   <- "/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a2" #../dir_out_293" # "../dir_out_293" # "test_out"	 # "dir_out_293"
 #  p_label    <-  "sg293a2b2.snpeff.greped" # "test-121002" # ".sg293_qa_sg3sg4"   # "test-121002" ".sara207_4s4cpu"        # Run Label for output filenames
-  p_input    <- "/backups_disk_03/Usuaris/Marta.Vila/sam" # /home/xavi/Estudis/eva_bowtie/dir_in" # "../dir_in" # "test_in"   # "dir_in"     
-  p_in.suffix <- "" #  "_sequence" # "" # This is the suffix of all input filenames (without extension) used for the pipeline to process
-  p_in.ext    <-  ".sam" #".fastq" # ".fa" ".sam" ".bam" # This is the .extension of all files used as input for the pipeline to process
-  p_output   <- "/backups_disk_03/tmp/bam2" #"/home/xavi/Estudis/eva_bowtie/dir_out" #../dir_out_293" # "../dir_out_293" # "test_out"   # "dir_out_293"
-  p_label    <-   "mv311d" #sg293a3_test_count_reads" # ".sg293a3_ind7_mc15g3seq" # mc=minimum cover; g3: 3rd filter version for the grep; "test-121002" # ".sg293_qa_sg3sg4"   # "test-121002" ".sara207_4s4cpu"        # Run Label for output filenames
+  p_input     <- "/backups_disk_03/tmp/bam_mv311" # "../dir_in" # "test_in"   # "dir_in"     
+  p_in.suffix <- "_sequence" #  "_sequence" # "" # This is the suffix of all input filenames (without extension) used for the pipeline to process
+  p_in.ext    <-  ".fastq" #".fastq" # ".fa" ".sam" ".bam" # This is the .extension of all files used as input for the pipeline to process
+  p_output   <- "/backups_disk_03/tmp/bam_mv311" #"/home/xavi/Estudis/eva_bowtie/dir_out" #../dir_out_293" # "../dir_out_293" # "test_out"   # "dir_out_293"
+  p_label    <-   "mv311c3" #sg293a3_test_count_reads" # ".sg293a3_ind7_mc15g3seq" # mc=minimum cover; g3: 3rd filter version for the grep; "test-121002" # ".sg293_qa_sg3sg4"   # "test-121002" ".sara207_4s4cpu"        # Run Label for output filenames
                   # p_desc = Description in longer format of the run. DEscribe that for you to understand in the future what were the conditions and params of this run. 
-  p_desc     <-   "d: processat tots els sam a bam amb el pipeline eva per a ratoli rn4."
+  p_desc     <-   "c3: processat d'un fastq de prova fins a sam i bam amb el pipeline eva per a ratoli rn4."
   p_keep     <- TRUE # Enable if run through editor and you want to keep temp files
 #  p_filter   <- "BRCA"
 #  p_filter   <- "BRCA1\\|BRCA2\\|CHEK2\\|PALB2\\|BRIP1\\|TP53\\|PTEN\\|STK11\\|CDH1\\|ATM\\|BARD1\\|APC\\|MLH1\\|MRE11\\|MSH2\\|MSH6\\|MUTYH\\|NBN\\|PMS1\\|PMS2\\|RAD50\\|RAD51D\\|RAD51C\\|XRCC2\\|UIMC1\\|FAM175A\\|ERCC4\\|RAD51\\|RAD51B\\|XRCC3\\|FANCA\\|FANCB\\|FANCC\\|FANCD2\\|FANCE\\|FANCF\\|FANCG\\|FANCI\\|FANCL\\|FANCM\\|SLX4\\|CASP8\\|FGFR2\\|TOX3\\|MAP3K1\\|MRPS30\\|SLC4A7\\|NEK10\\|COX11\\|ESR1\\|CDKN2A\\|CDKN2B\\|ANKRD16\\|FBXO18\\|ZNF365\\|ZMIZ1\\|BABAM1\\|LSP1\\|ANKLE1\\|TOPBP1\\|BCCIP\\|53BP1"            
@@ -86,7 +86,7 @@ p_log       <- TRUE
 p_dbsnp     <- "132" # 132 for dbsnp132 is the one supported throughout the whole pipeline still, regarding current annovar version, as of January 2013.
 p_summarize <- TRUE  
 p_snpeff.of <- "txt" # Output format for snpEff. Possible values: txt, vcf, gatk, bed, bedAnn (txt will be deprecated, but it can be ocasionally useful still in the meantime)
-p_cpus      <- 4             
+p_cpus      <- 2             
 p_parallel  <- TRUE #FALSE #TRUE # Do you want to allow running some parallelized processes at all? (which ones will be specified elsewhere in the code)
 p_bwa       <- 2          # Algorythm for mapping with bwa - http://bio-bwa.sourceforge.net/bwa.shtml
                         # 1: bwa aln      + samse  (short reads, single ends, low errors);
@@ -97,7 +97,7 @@ p_convert.file.list.pe        <- FALSE #FALSE #TRUE # Keep as TRUE if you have p
                                       # the input file list 1_sequence.fastq etc converted into the _merged12.sam 
                                       # IMPORTANT: 
                                       # Since revision bzr 70'ish (mid Jan'2013), this might need to be enabled as TRUE in both cases 
-                                      # of running the whole pipeline or just some steps, when using short reads paired end (sampe; p_bwa=2)
+                                      # of running the whole pipeline or just some steps, as far as you have merged12.sam files created already when using short reads paired end (sampe; p_bwa=2)
 
 # Reporting by email at the end of the run
 p_from <- "xavier.depdedro@vhir.org"
@@ -115,7 +115,7 @@ p_smtp="smtp.ir.vhebron.net"
 runParam <- FALSE #######################
 p_map.on.reference.genome.sequential     <- runParam # In case we run the mapping sequentially for all samples
 
-runParam <- FALSE # !runParam ####################### The opposite to map in sequential mode
+runParam <- TRUE # !runParam ####################### The opposite to map in sequential mode
 p_map.on.reference.genome.parallel       <- runParam # In case we run the mapping in parallel for n (p_cpus) samples at a time
 
 # Set all params inside a list, so that it's easier to send from main to functions
@@ -131,6 +131,9 @@ params_wseq <- list(
 #  wrapper2.parallelizable.per.sample (w2pps)
 #----------------------------------
 # p_map.on.reference.genome.parallel  is not defined here but in the previous chunk
+#####
+runParam <- FALSE #######################
+####
 p_quality.control             <- runParam
 p_bowtie2sam                  <- runParam
 #####
@@ -260,8 +263,8 @@ if (p_server==1) { # MainHead server
 } else if (p_server==2) { # B52 server
     
   path_fastq = "/home/ueb/software/FastQC/fastqc"
-  #path_genome = "/home/ueb/Data/Data_Genomes/hg19.fa" 
-  path_genome = "/home/ueb/Data/Data_Genomes/rn4/rn4.fa"
+  path_genome = "/home/ueb/Data/Data_Genomes/hg19.fa" 
+  #path_genome = "/home/ueb/Data/Data_Genomes/rn4/rn4.fa"
   path_vcfutils = "/usr/share/samtools/vcfutils.pl"
   path_convert2annovar = "/home/ueb/software/annovar/convert2annovar.pl"
   path_annotate_variation = "/home/ueb/software/annovar/annotate_variation.pl"

@@ -522,8 +522,8 @@ fun.map.on.reference.genome <- function(file2process.my2, step.my) {
       cat("\n 2nd part (sampe) - Relative duration since last step: "); print(duration); cat("\n")
 
       # direct calls to this step in a terminal (indicated here for debugging purposes):
-      # ueb@ueb:/home/xavi/Estudis/eva_bowtie/dir_out$ bwa sampe /home/ueb/Data/Data_Genomes/hg19.fa Sample_1820_1_sequence.sai  Sample_1820_2_sequence.sai  ../dir_in/Sample_1820_1_sequence.fastq ../dir_in/Sample_1820_2_sequence.fastq  -r "@RG\tID:Sample_1820\tLB:Sample_1820\tPL:ILLUMINA\tSM:Sample_1820" > Sample_18020_merged12.sam
-      # root@ueb:/backups_disk_03/tmp/bam_mv311# bwa sampe /home/ueb/Data/Data_Genomes/rn4/rn4.fa Sample_1797_1_sequence.sai  Sample_1797_2_sequence.sai  /backups_disk_03/tmp/raw_data_mv311/Sample_1797_1.fastq /backups_disk_03/tmp/raw_data_mv311/Sample_1797_2.fastq  > Sample_1797_merged12.byhand.sam
+      # ueb@ueb:/path1$ bwa sampe /home/ueb/Data/Data_Genomes/hg19.fa Sample_1820_1_sequence.sai  Sample_1820_2_sequence.sai  ../dir_in/Sample_1820_1_sequence.fastq ../dir_in/Sample_1820_2_sequence.fastq  -r "@RG\tID:Sample_1820\tLB:Sample_1820\tPL:ILLUMINA\tSM:Sample_1820" > Sample_18020_merged12.sam
+      # ueb@ueb:/path2# bwa sampe /home/ueb/Data/Data_Genomes/rn4/rn4.fa Sample_1797_1_sequence.sai  Sample_1797_2_sequence.sai  /path2/Sample_1797_1.fastq /path2/Sample_1797_2.fastq  > Sample_1797_merged12.byhand.sam
 
 ##      cat("\nWe will now stop the pipeline. You need to tweak the eva_params.R file to stop any attemp to rerun the previous steps and continue from here");
 ##      stop()
