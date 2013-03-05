@@ -60,6 +60,8 @@ if(!require(getopt)){ install.packages("getopt") }
 library('getopt', quietly = TRUE);
 if(!require(snowfall)){ install.packages("snowfall") }
 library(snowfall, quietly = TRUE)
+#if(!require(reshape)){ install.packages("reshape") }
+#library('reshape', quietly = TRUE);
 
 #Bioconductor packages
 if(!exists("biocLite")){
@@ -212,6 +214,9 @@ if( (opt$genver =="rn4" || opt$genver =="rn5") ) {
 #biocLite("TxDb.Rnorvegicus.UCSC.rn4.ensGene")
 
 ##############################################################
+
+# Set overall timer to zero
+start_all <- Sys.time()
 
 # 1. Initialisation of snowfall.
 #----------------------------------
@@ -376,6 +381,8 @@ sfExport( "params",
           "fun.gatk.local.realign.step3",
           "fun.index.bam.file",
 	        "fun.stats",
+          "fun.addleading0.ids",
+          "fun.splitAnnot",
           "fun.snpeff.count.reads",
           "fun.exon.coverage",
           "fun.variant.calling",
@@ -463,7 +470,17 @@ unlist(result)
 
 # We changed the file_list parameter for the params$file_list parameter, so that in cases of paired-emnd mode, 
 # this file list will have been rewritten to the new one at this step, and therefore, we will be able to process at this time step half the number of initial fastq files
-start3 <- Sys.time(); result2 <- sfLapply(1:length(params$file_list), wrapper2.parallelizable.per.sample) ; duration <- Sys.time()-start3;
+if (length(params$file_list) > 1 ) {
+  ## Using sfLapply (Parallel version of function lapply.)
+  #start3 <- Sys.time(); result2 <- sfLapply(1:length(params$file_list), wrapper2.parallelizable.per.sample) ; duration <- Sys.time()-start3;
+  
+  ## using sfClusterApplyLB instead (Load balanced version of function sfLapply)
+  # which should be better, as shown in figure 2, p13 as printed (p15 in pdf) in
+  # http://www.imbi.uni-freiburg.de/parallel/docs/Reisensburg2009_TutParallelComputing_Knaus_Porzelius.pdf
+  start3 <- Sys.time(); result2 <- sfClusterApplyLB(1:length(params$file_list), wrapper2.parallelizable.per.sample) ; duration <- Sys.time()-start3;
+  } else {
+  start3 <- Sys.time(); result2 <- lapply(1:length(params$file_list), wrapper2.parallelizable.per.sample) ; duration <- Sys.time()-start3;
+}
 cat("\n(Chunk 8) Relative duration since last step: "); print(duration); cat("\n")
 
 # Result is always in list form.
@@ -480,7 +497,7 @@ unlist(result2)
 #start3 <- Sys.time(); result3 <- sfLapply(1:2, wrapper2.parallelizable.final) ; duration <- Sys.time()-start3;
 
 # Running the function normally just once. 
-start3 <- Sys.time(); result3 <- wrapper2.parallelizable.final( length(params$file_list) ) ; duration <- Sys.time()-start3;
+  start3 <- Sys.time(); result3 <- wrapper2.parallelizable.final( length(params$file_list) ) ; duration <- Sys.time()-start3;
 
 cat("\n(Chunk 9) Relative duration since last step: "); print(duration); cat("\n")
 
@@ -497,6 +514,12 @@ unlist(result3)
 # 10. Stop snowfall
 #----------------------------------
 sfStop() 
+
+
+# Show overatll duration of the run
+duration_all <- Sys.time()-start_all;
+duration_all_msg <- paste(duration_all, attr(duration_all, "units"), sep=" ");
+print_mes(paste("\nDurantion of the whole run: ", duration_all_msg, paste=""), routlogfile);
 
 # After that, you can append extra information from the run to the same file
 w.output.run("\n##################################################", 

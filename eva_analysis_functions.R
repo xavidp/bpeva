@@ -387,13 +387,18 @@ fun.map.on.reference.genome <- function(file2process.my2, step.my) {
   # 3: bwa bwasw             (longer reads, single end only) 
   ##
   ## From: http://bio-bwa.sourceforge.net/bwa.shtml
+  ##
   ## BWA is a fast light-weighted tool that aligns relatively short sequences (queries) to a sequence database (targe), such as the human reference genome. 
   ## It implements two different algorithms, both based on Burrows-Wheeler Transform (BWT). 
   ## The first algorithm is designed for short queries up to ~200bp with low error rate (<3%). 
   ##   It does gapped global alignment w.r.t. queries, supports paired-end reads, and is one of the fastest short read alignment algorithms to date while also visiting suboptimal hits. 
   ## The second algorithm, BWA-SW, is designed for long reads with more errors. It performs heuristic Smith-Waterman-like alignment to find high-scoring local hits (and thus chimera). 
   ##   On low-error short queries, BWA-SW is slower and less accurate than the first algorithm, but on long queries, it is better
-
+  ##
+  ## Parallelization in BWA
+  ## Both alignment processes (for short reads with bwa aln, and for long reads with bwa bwasw) accept working in multi-thread (parallel) mode.
+  ## As of Feb'2013 we are not yet using the multithread mode for single sample, but we are (usually) running the alignment (in serial, mono-thread each) of several samples in parallel 
+  ##
   ## Jan 2013: GATK requires that you specify a read group tag when aligning your sequences with BWA. 
   ##    Just add the following argument within the bwa sampe step
   ##      -r "@RG\tID:sample\tLB:sample\tPL:ILLUMINA\tSM:sample"
@@ -673,7 +678,8 @@ fun.sam2bam.and.sort <- function(file2process.my2, step.my) {
   command00 = "samtools"; # next command.
   # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
   file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
-  options00 = paste(" view -bS -t ", params$path_genome, ".fai ", file_in, " | ", command00, " sort - ", file_out,   " 2>> ", file_stderr, sep="");
+  options00 = paste(" view -bS -t ", params$path_genome, ".fai ", file_in, " 2>> ", file_stderr, # Captured the type of line "[samopen] SAM header is present: NN sequences" as appended to the sample log file since it was sent through the stderr
+                    " | ", command00, " sort - ", file_out,   " 2>> ", file_stderr, sep="");
 
   # direct command line call for testing other things:
   # samtools  view -bS file_in | samtools sort - file_in.sorted
@@ -791,10 +797,13 @@ fun.gatk.local.realign.step1 <- function(file2process.my2, step.my) {
 #                    " -L ", params$path_exon_capture_file ,
                     " -o ", file_out, 
                     " -et NO_ET -K ", params$path_gatk_key,
-#                    " >> ", file_stderr, " 2>> ", file_stderr,
+                    " 2>&1 | tee -a ", file_stderr, # Send stderr to stdout and save it to file (-a = append) while keeping it in stdout also
                     sep="");
     # Former option -B:dbsnp,vcf has been converted into -known:dbsnp,vcf. See http://seqanswers.com/forums/showthread.php?t=14013  
 
+  # For manual debugging, see this example to be run in the command line:
+  # java -Xmx4G -jar /path_gatk/GenomeAnalysisTKLite.jar -T RealignerTargetCreator -R /path_refgenome/hg19.fa -I /pathtest_out/sample.sam.sorted.noDup.bam --known:dbsnp,vcf /path_dbSNP/dbsnp132_20101103_gatk.vcf -o /pathtest_out/sample.sam.sorted.noDup.bam.intervals -et NO_ET -K /pathkey/ueb_vhir.org.key  2>&1 | tee -a /pathtest_out/foo.txt
+  
   # As a refence, see also this pipeline from Alberta Children's Hospital Research Institue
   # http://achri-bioinformatics.appspot.com/Alignment_Post-processing
   # --------------------------------
@@ -926,6 +935,45 @@ fun.stats <- function(file2process.my2, step.my) {
   return(step.my) # return nothing, since results are saved on disk from the system command
 }
 
+##########################
+### fun.addleading0.ids
+###
+### By Josep LLuis Mosquera, UEB-VHIR. jl.mosquera at vhir.org, & 
+###    Xavier de Pedro, UEB-VHIR. xavier.depedro at vhir.org
+###
+##########################
+##
+## Description:
+##
+##   Add leading zeros to ids so that it can be sorted naturally for humans
+##
+## Parameters:
+##
+##          x   : numeric or character vector with ids nn of differnt number of characters (like string_nn) 
+##          sep : separator character to split by. E.g. "_", " ", "-" ...
+##
+
+fun.addleading0.ids <- function(x, sep)
+{
+  
+  # Manual debugging
+  out.list <- strsplit(x, split = sep)
+  out.df <- do.call("rbind", out.list)
+  out.df2 <-out.df
+  
+  #idx.na   <- which(is.na(out.df[,2]))
+  idx.nona <- which(!is.na(out.df[,2]))
+  
+  out.df2[idx.nona,2] <- unlist(lapply(out.df[idx.nona,2], function(x) sprintf("%02d", as.numeric(x) ) ) )
+  
+  # join the two parts again with the same character splitter
+  out.df2 <- paste(out.df2[,1], out.df2[,2], sep=sep)
+  # Fix NA strings (they also became NA_NA). Add other cases here when needed in the future  
+  out.df2 <- gsub("NA_NA", "NA", out.df2)
+  
+  return(out.df2)
+}
+##########################
 
 ##########################
 ### FUNCTION fun.snpeff.count.reads
@@ -945,6 +993,71 @@ fun.snpeff.count.reads <- function(file2process.my2, step.my) {
   options00 = paste(params$path_snpEff, "/snpEff.jar  countReads ", params$opt$genver," ", file_in, " > ", file_out, sep="");
   command = paste(command00, " ", options00, sep="");
   system(command);
+  
+  # Manual debugging XXX
+  # file_in <- "./test_out/testset1_sgs7.sam.sorted.noDup.bam"
+  # file_out <- "./test_out/testset1_sgs7.sam.sorted.noDup.bam.cr.txt"
+  # load the file created as file2process.countreads (aka: f2p.cr)
+  f2p.cr <- read.table(file_out, header=T, sep="\t")
+  #dim(f2p.cr)
+  x.my <- as.character(f2p.cr$IDs)
+  # Split IDs by ; and create the new columns on the right with separated unitN, NM & GeneSymbol codes.
+  out.my <- fun.splitAnnot(x.my)
+  f2p.cr <- cbind(f2p.cr, out.my)
+  
+  # convert column 8 into character vectors and apply the function to add leading zeros for correct ordering as text
+  x <- as.character(f2p.cr[,8])
+  f2p.cr[,8] <- fun.addleading0.ids(x, "_")
+  
+  # Get the last three columns as Gene symbols and exon and intro numbers
+  f2p.cr.genes <- f2p.cr[,c(8,10)]
+  #summary(f2p.cr.genes)
+
+  ## Convert into true/false
+  #f2p.cr.genes.tf <- suppressWarnings(is.na(as.numeric(as.character(unlist(f2p.cr.genes[2])))) )
+  
+  # We want to apply the table function to the subset of values of the data frames (since it seems to be much more complicated
+  # to create a subset of values once the object of type "table" is created)
+  # We do the subset through getting the indexes of these GeneSymbol values (and not the numbers from chromosomes) 
+  f2p.cr.genes.idx <- which(suppressWarnings(is.na(as.numeric(as.character(unlist(f2p.cr.genes[2]))))) )
+  
+  # this is the list of values with gene symbols only, and not the values the chromosome number as gene symbol
+  f2p.cr.genes2 <- f2p.cr.genes[f2p.cr.genes.idx,]
+  #str(f2p.cr.genes2)
+  #summary(f2p.cr.genes[f2p.cr.genes.idx,])
+
+  # We fix the levels of the variable Genesymbol from the data frame, which still hold bad names from chromosome numbers
+  # we can't assign the unique value of f2p.cr.genes2$GeneSymbol to the levels of f2p.cr.genes2$GeneSymbol because they differ in length
+  # therefore we apply this trick (thanks jl.moquera!)
+  f2p.cr.genes2$GeneSymbol <- as.factor(as.character(f2p.cr.genes2$GeneSymbol))
+  #str(f2p.cr.genes2)
+  
+  # Therefore, this (below) is the table with all values (including the wrong chromosome numbers as gene symbols by mistake)
+  # convert in a flat table sorting first by Gene Symbol, and then, by exon number.
+  f2p.cr.table <- ftable(f2p.cr.genes2, row.vars = 2:1)
+  #str(f2p.cr.table)
+  #?print.ftable
+
+  # [SOLVED] as.data.frame.table or as.data.frame.matrix !!!!!!
+  f2p.cr.dft <- as.data.frame.table(f2p.cr.table)
+  # We need to re-sort in a similar way to what the ftable was
+  f2p.cr.dft <- f2p.cr.dft[order(f2p.cr.dft$GeneSymbol, f2p.cr.dft$unitN),]
+  
+  ## as.data.frame.matrix was useful when f2p.cr.table was another type of object, but not nowadays
+  #f2p.cr.dfm <- as.data.frame.matrix(f2p.cr.table)
+
+  file_out.table = paste(file_in, ".cr.table.csv", sep="");
+  # Write the first line with the column names
+  write("\"N\", \"GeneSymbol\", \"unitN\", \"Count\"", file=file_out.table, append = F, sep = "")
+#  write.table(f2p.cr.table, file=file_out.table, append=T, quote=T, sep=",", row.names=T, col.names=F)
+  
+  #tapply(as.numeric(colnames(f2p.cr.table)), 1:9, FUN=is.numeric)
+  
+  # I remove the warning messages from this call (below) because of the coercion type of message (harmless, afaik, but annoying and polluting output in log files)
+  # Write the rest: all data without column names
+  write.table(f2p.cr.dft, file=file_out.table, append=T, quote=T, sep=",", row.names=T, col.names=F)
+  #write.ftable(f2p.cr.table, file=file_out.table, append=T, quote=T)
+  
   # Don't check for check2clean("$file_in") since we still need it for the variant calling
   print_done(file2process.my2);
   
@@ -954,6 +1067,96 @@ fun.snpeff.count.reads <- function(file2process.my2, step.my) {
   gc() # Let's clean ouR garbage if possible
   return(step.my) # return nothing, since results are saved on disk from the system command
 }
+
+##
+## fun.splitAnnot
+##
+## Description:
+##
+##    Split the elements of a character vector ‘x’ into substrings according to the
+##    matches to substring ";" within them.
+##
+## Parameters:
+##
+##          x : vector of characters to be splitted.
+##    myNames : vector of characters with the names of the output columns in the new data.frame
+##
+## Details:
+##
+##    It is expected that the input character vector containing one or two ";" symbols, thereby
+##    generating a character vector with three or two components respectively. When the generated
+##    vector has two components, it will be modified to have three components by adding a NA as a
+##    first component.
+##
+## Example:
+##
+##            Generating data
+##
+##            annot.1 <- paste(sample(c("Intron", "Exon"), size = 3, replace = TRUE),
+##                             c("NM_007294.3", "NM_007297.3", "NM_007298.3"),
+##                             rep("BRCA1", 3),
+##                             sep = ";")
+##            annot.2 <- paste(c("NM_007299.3", "NM_007300.3"), rep("BRCA1", 2), sep = ";")
+##            annot.3 <- paste(sample(c("Intron", "Exon"), size = 5, replace = TRUE),
+##                             c("NM_007295.2", "NM_007296.2", "NM_007301.2", "NM_007302.2", "NM_007303.2"),
+##                             rep("BRCA1", 5),
+##                             sep = ";")
+##            annot.4 <- paste("NM_007305.2", "BRCA1", sep = ";")
+##            annot.5 <- paste(sample(c("Intron", "Exon"), size = 1), "NM_007306.2", "BRCA1", sep = ";")
+##
+##            annot <- data.frame(myData = c(annot.1, annot.2, annot.3, annot.4, annot.5))
+##            print(annot)
+##
+##            Apply fun.splitAnnot function
+##
+##            nms <- c("Location", "RefSeq", "Symbol")
+##            annot2split <- as.character(annot$myData)
+##
+##            annot.df <- splitAnnot(x = annot2split, myNames = nms)
+##
+##            print(annot.df)
+
+fun.splitAnnot <- function(x, myNames) {
+
+  x.list <- strsplit(x, split = ";")
+  head(x.list)
+  idx2change <- which(unlist(lapply(x.list, length))<3)
+  # x.list[which(unlist(lapply(x.list, length))<3)]
+  # Add NA to col5 (IDs) files when no data in any of the 3 columns
+  idx <- which(unlist(lapply(x.list, length))==0)
+  if (length(idx) > 0) {
+    x.list2change <- lapply(x.list[idx], function(y){ c(NA, NA, NA) })
+    x.list[idx] <- x.list2change
+  }
+  
+  # Add NA to col5 (IDs) files when no data in the first 2 columns (unitN or NM)
+  idx <- which(unlist(lapply(x.list, length))==1)
+  if (length(idx) > 0) {
+    x.list2change <- lapply(x.list[idx], function(y){ c(NA, NA, y) })
+    x.list[idx] <- x.list2change
+  }
+
+  # Add NA to col5 (IDs) files when no data in the unitN or NM columns
+  idx <- which(unlist(lapply(x.list, length))==2)
+  if (length(idx) > 0) {
+    x.list2change <- lapply(x.list[idx], function(y){ c(NA, y) })
+    x.list[idx] <- x.list2change
+  }
+  
+  out <- do.call("rbind", x.list)
+  #head(f2p.cr)
+  #colnames(f2p.cr)
+  #dim(out)
+  #head(out)
+  #dim(f2p.cr)
+  colnames(out) <- c("unitN", "NM","GeneSymbol")  # unitN stands for exonNumber
+                                                  # or IntronNumber or similar
+  #summary(out2)
+  #--------
+ 
+  return(out)
+}
+
 
 ##########################
 ### FUNCTION fun.exon.coverage

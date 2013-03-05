@@ -87,7 +87,7 @@ p_dbsnp     <- "132" # 132 for dbsnp132 is the one supported throughout the whol
 p_summarize <- TRUE  
 p_snpeff.of <- "txt" # Output format for snpEff. Possible values: txt, vcf, gatk, bed, bedAnn (txt will be deprecated, but it can be ocasionally useful still in the meantime)
 p_cpus      <- 4             
-p_parallel  <- FALSE #FALSE #TRUE # Do you want to allow running some parallelized processes at all? (which ones will be specified elsewhere in the code)
+p_parallel  <- TRUE #FALSE #FALSE #TRUE # Do you want to allow running some parallelized processes at all? (which ones will be specified elsewhere in the code)
 p_bwa       <- 2          # Algorythm for mapping with bwa - http://bio-bwa.sourceforge.net/bwa.shtml
                         # 1: bwa aln      + samse  (short reads, single ends, low errors);
                         # 2: bwa aln (x2) + sampe  (short reads, paired ends, low errors);
@@ -142,12 +142,12 @@ runParam <- TRUE #######################
 p_sam2bam.and.sort		        <- runParam
 p_remove.pcr.dup		          <- runParam
 p_gatk.sortbyref              <- FALSE # runParam # Not working properly yet. Error message: Can not open temporary file 1080: Too many open files at /home/ueb/Data/gatk-data-2.3/SortByRef.pl line 95, <$INPUT> line 50737751.
-p_gatk.local.realign.step1    <- TRUE # FALSE # runParam
+p_gatk.local.realign.step1    <- FALSE # TRUE # FALSE # runParam
 p_gatk.local.realign.step2    <- FALSE # runParam # Unfinished work
 p_gatk.local.realign.step3    <- FALSE # runParam # Unfinished work
 p_index.bam.file		          <- runParam
 p_stats			                  <- runParam
-p_snpeff.count.reads          <- FALSE # TRUE # runParam # Not working properly yet
+p_snpeff.count.reads          <- TRUE # runParam # Not working properly yet
 p_exon.coverage   	          <- FALSE # runParam # Unfinished work
 #####
 runParam <- FALSE #######################
@@ -235,7 +235,8 @@ if (p_server==1) { # MainHead server
       path_genome2 = "/home/ueb/Data/Data_Genomes/hg19_Broad_Reference_Genome/Homo_sapiens_assembly19.fasta" # chromosome names without prefix "chr"
       path_genome3 = "/home/ueb/Data/gatk-data-2.3/hg19/ucsc.hg19.fasta"
       path_genome4 = "/home/ueb/Data/Data_Genomes/forGATK/hg19_rCRSchrm.fa" # from http://epigenome.usc.edu/publicationdata/bissnp2011/utilies.html
-    path_genome = path_genome1 
+      path_genome5 = "/home/ueb/Data/Data_Genomes/hg19/chr/hg19gatk.fa"  # chromosome names with prefix "chr" and in the order for gatk indicated in http://seqanswers.com/wiki/How-to/exome_analysis
+    path_genome = path_genome5 
     # A.ii) dbSNP
 #      path_dbSNP1 = "/home/ueb/Data/dbSNP/dbsnp132_20101103.vcf" # chromosome names without prefix "chr"
       path_dbSNP1 = "/home/ueb/Data/dbSNP/dbsnp132_20101103_gatk.vcf" # chromosome names with the prefix "chr" being added by Xavi (Jan 23, 2013)
