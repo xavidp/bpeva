@@ -23,6 +23,9 @@
 
 # 0. Basic startup process (for the working direectory)
 # ---------------------------------------------------------------------
+# Start clean
+rm(list=ls())
+# Add new values, starting from the program name
 program_ueb <- "eva_main.R";
 
 # Set the working directory from either one of the two options (a and b) listed below
@@ -151,10 +154,14 @@ my.options <- c(
   'summarize', 's', 0, "logical"  , # "__S__summarize results in a single .csv file with annotations # Optional",
   'dbsnp'    , 'd', 1, "integer"  , #, "__d__bSNP version used. E.g.: 132, 135, 137, ...".
   'keep'     , 'k', 0, "logical"  , #, "__K__eep temporal dummy files after they have been used # Optional",
+  'showc'    , 'sc',0, "logical"  , #, "__S__how commands run literally # Optional",
   'cpus'     , 'c', 1, "integer"  , #, "__C__pus to use from the multicore computer or cluster # Optional".
   'parallel' , 'p', 0, "logical"  , #, "__P__arallel processing using SnowFall package # Optional"
   'label'    , 'b', 1, "character"  #, "Run la__B__el to add to output file names, Like: "test-paralel-a", or "sample with param X as Y" # Optional"
 )
+
+#Clean opt from the last run/s (spceially if running through R editors)
+opt <- NULL;
 
 opt <- getopt(matrix(my.options, ncol=4, byrow=TRUE))
 #help was asked for and the script was called from the command line.
@@ -184,6 +191,7 @@ if ( is.null(opt$dbsnp    ) ) { opt$dbsnp    = p_dbsnp              }
 if ( is.null(opt$summarize) ) { opt$summarize= p_summarize          }
 if ( is.null(opt$snpeff.of) ) { opt$snpeff.of= p_snpeff.of          }
 if ( is.null(opt$keep     ) ) { opt$keep     = p_keep         } # Enable if run through editor and you want to keep temp files
+if ( is.null(opt$showc    ) ) { opt$showc    = p_showc        } # Enable to show the exact commands run in he command line
 if ( is.null(opt$cpus     ) ) { opt$cpus     = p_cpus             }
 if ( is.null(opt$parallel ) ) { opt$parallel = p_parallel        }
 if ( is.null(opt$label    ) ) { opt$label    = p_label	} # "sara207_4s4cpu"        } # Run Label for output filenames
@@ -370,7 +378,6 @@ sfExport( "params",
           "fun.quality.control",
           "fun.index.reference.genome",
           "fun.map.on.reference.genome",
-          "fun.map.on.reference.genome",
           "fun.convert.file.list.pe",
           "fun.bowtie2sam",
           "fun.sam2bam.and.sort",
@@ -447,7 +454,7 @@ unlist(result)
 # If paired end data, and the user has not requested to merge the 2 sai files into one merged12.sam file (in mapping genome, sequentially or in parallel)
 # and the user explicitly requested to have the list of files to process converted to the merged12.sam file ones, then do it here.
 # Otherwise, the list will be converted just after the merged12.sam files have been created
-#if ( (params$opt$bwa == 2) && (!params_wseq$p_map.on.reference.genome.sequential && !params_wseq$p_map.on.reference.genome.parallel)
+#if ( (params$opt$bwa == 2) && (!params_wseq$p_map.on.reference.genome.sequential.mt && !params_wseq$p_map.on.reference.genome.parallel)
 #     && params_w2pps$p_convert.file.list.pe) {
   if (params$opt$bwa == 2 && params_w2pps$p_convert.file.list.pe) {
   # Next Step
@@ -471,13 +478,15 @@ unlist(result)
 # We changed the file_list parameter for the params$file_list parameter, so that in cases of paired-emnd mode, 
 # this file list will have been rewritten to the new one at this step, and therefore, we will be able to process at this time step half the number of initial fastq files
 if (length(params$file_list) > 1 ) {
+  
   ## Using sfLapply (Parallel version of function lapply.)
   #start3 <- Sys.time(); result2 <- sfLapply(1:length(params$file_list), wrapper2.parallelizable.per.sample) ; duration <- Sys.time()-start3;
+  start3 <- Sys.time(); result2 <- lapply(1:length(params$file_list), wrapper2.parallelizable.per.sample) ; duration <- Sys.time()-start3;
   
   ## using sfClusterApplyLB instead (Load balanced version of function sfLapply)
   # which should be better, as shown in figure 2, p13 as printed (p15 in pdf) in
   # http://www.imbi.uni-freiburg.de/parallel/docs/Reisensburg2009_TutParallelComputing_Knaus_Porzelius.pdf
-  start3 <- Sys.time(); result2 <- sfClusterApplyLB(1:length(params$file_list), wrapper2.parallelizable.per.sample) ; duration <- Sys.time()-start3;
+  #start3 <- Sys.time(); result2 <- sfClusterApplyLB(1:length(params$file_list), wrapper2.parallelizable.per.sample) ; duration <- Sys.time()-start3;
   } else {
   start3 <- Sys.time(); result2 <- lapply(1:length(params$file_list), wrapper2.parallelizable.per.sample) ; duration <- Sys.time()-start3;
 }

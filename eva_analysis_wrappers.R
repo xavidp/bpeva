@@ -36,7 +36,7 @@ wrapper.sequential <- function(datastep.my) {
   # Define which processes to run (in later stage, this will be in an external R file sourced here)
   # names of control process are like functions but without the "fun." prefix.
   # -----------------------------
-  map.on.reference.genome.sequential               <- params_wseq$p_map.on.reference.genome.sequential
+  map.on.reference.genome.sequential.mt               <- params_wseq$p_map.on.reference.genome.sequential.mt
   # -----------------------------
   
   
@@ -54,7 +54,7 @@ wrapper.sequential <- function(datastep.my) {
   }
   
   # Re-set the log file, if it exists already and log is requested
-  if (params$log && map.on.reference.genome.sequential) { 
+  if (params$log && map.on.reference.genome.sequential.mt) { 
     write(paste("\n", sep=""), file=paste(params$log.folder,"/log.", params$startdate, ".", params$opt$label, ".", file2process.my1, ".txt", sep=""), append = TRUE, sep = "");
     print_mes("\n################################################################################\n", file2process.my1);
     print_mes(paste("  		Part A. SEQUENTIAL. ", params$n_files, " files; Current: *** ", file2process.my1, " ***\n", sep=""), file2process.my1);
@@ -67,7 +67,7 @@ wrapper.sequential <- function(datastep.my) {
   
   #--- Sequential Pipeline steps into wrapper.sequential function ###----------------------------------------
   
-  if (map.on.reference.genome.sequential) { 
+  if (map.on.reference.genome.sequential.mt) { 
     # Next Step
     step <- fun.map.on.reference.genome(file2process.my2  = file2process.my1,
                                         step.my  = step)
@@ -88,7 +88,6 @@ wrapper2.parallelizable.per.sample <- function(datastep.my2) {
   # Define which processes to run (in later stage, this will be in an external R file sourced here)
   # names of control process are like functions but without the "fun." prefix.
   # -----------------------------
-  
   map.on.reference.genome.parallel  <- params_w2pps$p_map.on.reference.genome.parallel
   quality.control   	              <- params_w2pps$p_quality.control
   convert.file.list.pe              <- params_w2pps$p_convert.file.list.pe
@@ -176,7 +175,7 @@ wrapper2.parallelizable.per.sample <- function(datastep.my2) {
   # This can be checked against the presence of lock files in the file system.
   # By default, there is one lock file for the whole run (whan you have paired data),
   # and one other lock file per sample when each sample is being processed.
-#  if (params$opt$bwa == 2 && (!params_wseq$p_map.on.reference.genome.sequential && !params_wseq$p_map.on.reference.genome.parallel)
+#  if (params$opt$bwa == 2 && (!params_wseq$p_map.on.reference.genome.sequential.mt && !params_wseq$p_map.on.reference.genome.parallel)
 #     && p_convert.file.list.pe) {
   if (params$opt$bwa == 2 && convert.file.list.pe) {
     
@@ -208,7 +207,7 @@ wrapper2.parallelizable.per.sample <- function(datastep.my2) {
     
     # Remake the file list with the definitive filenames with merged reads (_merged12.sam), and not just all .fastq files
     
-    if (params$opt$bwa == 2 && (params_wseq$p_map.on.reference.genome.sequential || params_wseq$p_map.on.reference.genome.parallel)) {
+    if (params$opt$bwa == 2 && (params_wseq$p_map.on.reference.genome.sequential.mt || params_wseq$p_map.on.reference.genome.parallel)) {
       # Next Step
       list.collected <- fun.convert.file.list.pe(file2process.my2  = routlogfile,
                                                  step.my  = step)
