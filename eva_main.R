@@ -480,8 +480,7 @@ unlist(result)
 if (length(params$file_list) > 1 ) {
   
   ## Using sfLapply (Parallel version of function lapply.)
-  #start3 <- Sys.time(); result2 <- sfLapply(1:length(params$file_list), wrapper2.parallelizable.per.sample) ; duration <- Sys.time()-start3;
-  start3 <- Sys.time(); result2 <- lapply(1:length(params$file_list), wrapper2.parallelizable.per.sample) ; duration <- Sys.time()-start3;
+  start3 <- Sys.time(); result2 <- sfLapply(1:length(params$file_list), wrapper2.parallelizable.per.sample) ; duration <- Sys.time()-start3;
   
   ## using sfClusterApplyLB instead (Load balanced version of function sfLapply)
   # which should be better, as shown in figure 2, p13 as printed (p15 in pdf) in
