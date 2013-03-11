@@ -135,13 +135,12 @@ check2clean <- function(my.option, filename.my1)
 ###   Check if the user wants to show the exact commands run
 ##########################
 
-check2showcommand <- function(option.my, command.my)
+check2showcommand <- function(option.my, command.my, file.my)
 {
   # show exact commands run if requested
   if ( option.my ) { 
-    cat("\n[COMMAND RUN]----->\n");
-    cat(command.my);
-    cat("\n<-----\n");
+    mess.my <- paste("\n[COMMAND RUN]----->\n", command.my, "\n<-----\n", sep="");
+    print_mes(mess=mess.my, filename.my1=file.my)
   } 
 }
 
@@ -287,7 +286,7 @@ mail.send <- function(attachmentPath, attachmentName)
   command(paste("sendEmail -f ", params$p_from, " -t ", params$p_to, " -u ", params$p_subject,
                " -m ", params$p_body, " -s ", params$p_smtp, " -a ", attachmentPath,
                " >> ", attachmentPath, sep=""));
-  check2showcommand(params$opt$showc, command);
+  check2showcommand(params$opt$showc, command, routlogfile);
   system(command);
 #  return() # return nothing
 }
@@ -349,7 +348,7 @@ fun.quality.control <- function(file2process.my2, step.my) {
   #	$command00 = "ls"; # next command.
   options00 = paste(file_in, " --outdir=", params$directory_out, sep="");
   command = paste(command00, " ", options00, sep="");
-  check2showcommand(params$opt$showc, command);
+  check2showcommand(params$opt$showc, command, file2process.my2);
   system(command);
   print_done(file2process.my2);
   
@@ -376,7 +375,7 @@ fun.index.reference.genome <- function(step.my, filename.my1) {
     options00 <- "";
   }
   command = paste(command00, " ", options00, sep="");
-  check2showcommand(params$opt$showc, command);
+  check2showcommand(params$opt$showc, command, filename.my1);
   # Annotate the subprocess start time; launch the subprocess; and annotate the end time & duration
   start.my <- Sys.time(); system(command); duration <- Sys.time()-start.my;
   print_done("Index reference genome");
@@ -394,6 +393,11 @@ fun.index.reference.genome <- function(step.my, filename.my1) {
 ##########################
 
 fun.map.on.reference.genome <- function(file2process.my2, step.my) {
+  ## Manual debugging
+  # step.my <- data.frame(1, 0)
+  # colnames(step.my) <- c("n","tmp")
+  # file2process.my2 <- params$file_list[step.my$n]
+
   # update step number
   step.my$tmp <- step.my$tmp + 1
   print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Map against reference genome: do the mapping with: ", file2process.my2, " ###\n", sep=""), file2process.my2);
@@ -446,7 +450,7 @@ fun.map.on.reference.genome <- function(file2process.my2, step.my) {
     file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
     options00 = paste(" -t ", params$opt$cpus, " ", params$path_genome, " ", file_in, " > ", file_out, " 2>> ", file_stderr, sep="");
     command = paste(command00, " ", options00, sep="");
-    check2showcommand(params$opt$showc, command);
+    check2showcommand(params$opt$showc, command, file2process.my2);
     # Annotate the subprocess start time; launch the subprocess; and annotate the end time & duration
     start.my <- Sys.time(); system(command); duration <- Sys.time()-start.my;
     # Show the duration of this subprocess
@@ -463,7 +467,7 @@ fun.map.on.reference.genome <- function(file2process.my2, step.my) {
                       " -r \"@RG\tID:", file2process.my2, "\tLB:", file2process.my2, "\tPL:ILLUMINA\tSM:", 
                       file2process.my2, "\"", " > ", file_out, " 2>> ", file_stderr, sep="");
     command = paste(command00, " ", options00, sep="");
-    check2showcommand(params$opt$showc, command);
+    check2showcommand(params$opt$showc, command, file2process.my2);
     # Annotate the subprocess start time; launch the subprocess; and annotate the end time & duration
     start.my <- Sys.time(); system(command); duration <- Sys.time()-start.my;
     # Show the duration of this subprocess
@@ -484,7 +488,7 @@ fun.map.on.reference.genome <- function(file2process.my2, step.my) {
     file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
     options00 = paste(" -t ", params$opt$cpus, " ", params$path_genome, " ", file_in, " > ", file_out,  " 2>> ", file_stderr, sep="");
     command = paste(command00, " ", options00, sep="");
-    check2showcommand(params$opt$showc, command);
+    check2showcommand(params$opt$showc, command, file2process.my2);
     # Annotate the subprocess start time; launch the subprocess; and annotate the end time & duration
     start.my <- Sys.time(); system(command); duration <- Sys.time()-start.my;
     # Show the duration of this subprocess
@@ -544,7 +548,7 @@ fun.map.on.reference.genome <- function(file2process.my2, step.my) {
                         #                        " -r \"@RG\tID:", file2process.my2, "\tLB:", file2process.my2, "\tPL:ILLUMINA\tSM:", file2process.my2, "\"",
                         " > ", file_out,       " 2>> ", file_stderr, sep="");
       command = paste(command00, " ", options00, sep="");
-      check2showcommand(params$opt$showc, command);
+      check2showcommand(params$opt$showc, command, file2process.my2);
       # Annotate the subprocess start time; launch the subprocess; and annotate the end time & duration
       start.my <- Sys.time(); system(command); duration <- Sys.time()-start.my;
       # Show the duration of this subprocess
@@ -574,7 +578,7 @@ fun.map.on.reference.genome <- function(file2process.my2, step.my) {
                       " -r \"@RG\tID:", file2process.my2, "\tLB:", file2process.my2, "\tPL:Roche454\tSM:", 
                       file2process.my2, "\"", " > ", file_out,  " 2>> ", file_stderr, sep="");
     command = paste(command00, " ", options00, sep="");
-    check2showcommand(params$opt$showc, command);
+    check2showcommand(params$opt$showc, command, file2process.my2);
     # Annotate the subprocess start time; launch the subprocess; and annotate the end time & duration
     start.my <- Sys.time(); system(command); duration <- Sys.time()-start.my;
     # Show the duration of this subprocess
@@ -666,7 +670,7 @@ fun.bowtie2sam <- function(file2process.my2, step.my) {
   # perl allbowtie2sam.pl Sample_1820.bowtie > Sample_1820.bowtie.sam
   
   command = paste(command00, " ", options00, sep="");
-  check2showcommand(params$opt$showc, command);
+  check2showcommand(params$opt$showc, command, file2process.my2);
   system(command);
   check2clean(file_in, file2process.my2);
   print_done(file2process.my2);
@@ -713,7 +717,7 @@ fun.sam2bam.and.sort <- function(file2process.my2, step.my) {
 # XXX ToDo : In theory, the -u option is better (faster) for piped processes, since it does not compress/uncrompress data.... but untested yet.
 #  options00 = paste(" view -buS ", file_in, " | ", command00, " sort - ", file_out,   " 2>> ", file_stderr, sep="");
   command = paste(command00, " ", options00, sep="");
-  check2showcommand(params$opt$showc, command);
+  check2showcommand(params$opt$showc, command, file2process.my2);
   system(command);
   check2clean(file_in, file2process.my2);
   print_done(file2process.my2);
@@ -741,7 +745,7 @@ fun.remove.pcr.dup <- function(file2process.my2, step.my) {
   file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
   options00 = paste("rmdup -s ", file_in, " ", file_out,  " 2>> ", file_stderr, sep="");
   command = paste(command00, " ", options00, sep="");
-  check2showcommand(params$opt$showc, command);
+  check2showcommand(params$opt$showc, command, file2process.my2);
   system(command);
   check2clean(file_in, file2process.my2);
   print_done(file2process.my2);
@@ -788,7 +792,7 @@ fun.gatk.sortbyref <- function(file2process.my2, step.my) {
                     , sep="");
   
   command = paste(command00, " ", options00, sep="");
-  check2showcommand(params$opt$showc, command);
+  check2showcommand(params$opt$showc, command, file2process.my2);
   system(command);
   check2clean(file_in, file2process.my2);
   print_done(file2process.my2);
@@ -852,7 +856,7 @@ fun.gatk.local.realign.step1 <- function(file2process.my2, step.my) {
   # [does the actual realignment with output to a new BAM file]
      
   command = paste(command00, " ", options00, sep="");
-  check2showcommand(params$opt$showc, command);
+  check2showcommand(params$opt$showc, command, file2process.my2);
   system(command);
   check2clean(file_in, file2process.my2);
   print_done(file2process.my2);
@@ -878,7 +882,7 @@ fun.gatk.local.realign.step2 <- function(file2process.my2, step.my) {
   # options00 = ...
   
   command = paste(command00, " ", options00, sep="");
-  check2showcommand(params$opt$showc, command);
+  check2showcommand(params$opt$showc, command, file2process.my2);
   system(command);
   check2clean(file_in, file2process.my2);
   print_done(file2process.my2);
@@ -904,7 +908,7 @@ fun.gatk.local.realign.step3 <- function(file2process.my2, step.my) {
   # options00 = ...
   
   command = paste(command00, " ", options00, sep="");
-  check2showcommand(params$opt$showc, command);
+  check2showcommand(params$opt$showc, command, file2process.my2);
   system(command);
   check2clean(file_in, file2process.my2);
   print_done(file2process.my2);
@@ -929,7 +933,7 @@ fun.index.bam.file <- function(file2process.my2, step.my) {
   command00 = "samtools"; # next command.
   options00 = paste(" index ", file_in, sep="");
   command = paste(command00, " ", options00, sep="");
-  check2showcommand(params$opt$showc, command);
+  check2showcommand(params$opt$showc, command, file2process.my2);
   system(command);
   # Don't check for check2clean("$file_in") since we still need it to do some stats upon it
   print_done(file2process.my2);
@@ -960,7 +964,7 @@ fun.stats <- function(file2process.my2, step.my) {
   file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
   options00 = paste(" flagstat ", file_in,  " >> ", file_stderr,  " 2>> ", file_stderr, sep="");
   command = paste(command00, " ", options00, sep="");
-  check2showcommand(params$opt$showc, command);
+  check2showcommand(params$opt$showc, command, file2process.my2);
   system(command);
   # Don't check for check2clean("$file_in") since we still need it for the variant calling
   print_done(file2process.my2);
@@ -1026,7 +1030,7 @@ fun.snpeff.count.reads <- function(file2process.my2, step.my) {
 #  options00 = paste(params$path_snpEff, "/snpEff.jar  -c ", params$path_snpEff, "/snpEff.config countReads ", params$opt$genver," ", file_in, " > ", file_out, sep="");
   options00 = paste(params$path_snpEff, "/snpEff.jar  countReads ", params$opt$genver," ", file_in, " > ", file_out, sep="");
   command = paste(command00, " ", options00, sep="");
-  check2showcommand(params$opt$showc, command);
+  check2showcommand(params$opt$showc, command, file2process.my2);
   system(command);
   
   # Manual debugging XXX
@@ -1234,7 +1238,7 @@ fun.exon.coverage <- function(file2process.my2, step.my) {
 #   command00 = "samtools"; # next command.
 #   options00 = paste(" mpileup -uf ", params$path_genome, " ", file_in, " | bcftools view -vcg - >  ", file_out, sep="");
 #   command = paste(command00, " ", options00, sep="");
-#   check2showcommand(params$opt$showc, command);  
+#   check2showcommand(params$opt$showc, command, file2process.my2);  
 #   system(command);
 #   check2clean(file_in, file2process.my2);
 #   print_done(file2process.my2);
@@ -1432,7 +1436,7 @@ fun.variant.calling <- function(file2process.my2, step.my) {
   ##  -A: Retain all possible alternate alleles at variant sites. By default, the view command discards unlikely alleles.
   
   command = paste(command00, " ", options00, sep="");
-  check2showcommand(params$opt$showc, command);
+  check2showcommand(params$opt$showc, command, file2process.my2);
   system(command);
   check2clean(file_in, file2process.my2);
   print_done(file2process.my2);
@@ -1459,7 +1463,7 @@ fun.variant.filtering <- function(file2process.my2, step.my) {
 #  options00 = paste(" varFilter -Q 10 -d 15 -a 5 ", file_in, " > ", file_out, sep="");
   options00 = paste(" varFilter -Q1 -d15 -D10000000 -a2 -S1 ", file_in, " > ", file_out, sep="");
   command = paste(command00, " ", options00, sep="");
-  check2showcommand(params$opt$showc, command);
+  check2showcommand(params$opt$showc, command, file2process.my2);
   system(command);
   check2clean(file_in, file2process.my2);
   print_done(file2process.my2);
@@ -1489,7 +1493,7 @@ fun.gatk.combine.vcfs <- function(file2process.my2, step.my) {
 
   #but see also full documentation here: http://www.broadinstitute.org/gatk/gatkdocs/org_broadinstitute_sting_gatk_walkers_variantutils_CombineVariants.html
   command = paste(command00, " ", options00, sep="");
-  check2showcommand(params$opt$showc, command);
+  check2showcommand(params$opt$showc, command, file2process.my2);
   system(command);
   # check2clean(file_in, file2process.my2); #  # Commented out so that samtools standard .vcf files (and not only the converted to .vcf4 - .vcf.annovar - format) are also always kept.
   print_done(file2process.my2);
@@ -1533,7 +1537,7 @@ fun.convert2vcf4 <- function(file2process.my2, step.my) {
   #   --allallele                 print all alleles when multiple calls are present (for vcf4 format)
   #   --withzyg                   print zygosity when -includeinfo is used (for vcf4 format)
   command = paste(command00, " ", options00, sep="");
-  check2showcommand(params$opt$showc, command);
+  check2showcommand(params$opt$showc, command, file2process.my2);
   system(command);
   # check2clean(file_in, file2process.my2); #  # Commented out so that samtools standard .vcf files (and not only the converted to .vcf4 - .vcf.annovar - format) are also always kept.
   print_done(file2process.my2);
@@ -1576,7 +1580,7 @@ fun.variant.annotation.geneb <- function(file2process.my2, step.my) {
   file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
   options00 = paste(" ", params$path_annotate_variation, " -geneanno --buildver ", params$opt$genver, " ", file_in, " ", params$path_annotate_humandb, " 2>> ", file_stderr, sep="");
   command = paste(command00, " ", options00, sep="");
-  check2showcommand(params$opt$showc, command);
+  check2showcommand(params$opt$showc, command, file2process.my2);
   system(command);
   # We don't do check2clean here  either since we will still use the .vcf.annovar file in the next steps
   print_done(file2process.my2);
@@ -1629,7 +1633,7 @@ fun.variant.annotation.filterb <- function(file2process.my2, step.my) {
   options00 = paste(" ", params$path_annotate_variation, " -filter --buildver ", params$opt$genver,
                     " -dbtype snp", params$opt$dbsnp," ", file_in, " ", params$path_annotate_humandb, " 2>> ", file_stderr, sep="");
   command = paste(command00, " ", options00, sep="");
-  check2showcommand(params$opt$showc, command);
+  check2showcommand(params$opt$showc, command, file2process.my2);
   system(command);
   # We don't do check2clean here  either since we will still use the .vcf.annovar file in the next steps (summarizing annotations and filtering)
   print_done(file2process.my2);
@@ -1664,7 +1668,7 @@ fun.variant.annotation.summarize <- function(file2process.my2, step.my) {
   options00 = paste(" ", params$path_summarize_annovar, " --buildver ", params$opt$genver,
                     " --verdbsnp ", params$opt$dbsnp," ", file_in, " ", params$path_annotate_humandb, " --outfile ", file_out, " 2>> ", file_stderr, sep="");
   command = paste(command00, " ", options00, sep="");
-  check2showcommand(params$opt$showc, command);
+  check2showcommand(params$opt$showc, command, file2process.my2);
   system(command);
   # # We don't do check2clean here  either since we will still use the .vcf.annovar file in the next steps (filtering)
   print_done(file2process.my2);
@@ -1725,21 +1729,21 @@ fun.grep.variants <- function(file2process.my2, step.my) {
     options00 = "";
   }
   command = paste(command00, " ", options00, sep="");
-  check2showcommand(params$opt$showc, command);
+  check2showcommand(params$opt$showc, command, file2process.my2);
   system(command);
   if (!is.null(params$opt$filter) && (params$opt$filter != "") && !is.null(params$opt$summarize) ) # case to have a file with summarized annotations to search also for specific target genes 
   {
     command = paste(command01, " ", options01, sep="");
-    check2showcommand(params$opt$showc, command);
+    check2showcommand(params$opt$showc, command, file2process.my2);
     system(command);
     command = paste(command02, " ", options02, sep="");
-    check2showcommand(params$opt$showc, command);
+    check2showcommand(params$opt$showc, command, file2process.my2);
     system(command);
     command = paste(command03, " ", options03, sep="");
-    check2showcommand(params$opt$showc, command);
+    check2showcommand(params$opt$showc, command, file2process.my2);
     system(command);
     command = paste(command04, " ", options04, sep="");
-    check2showcommand(params$opt$showc, command);
+    check2showcommand(params$opt$showc, command, file2process.my2);
     system(command);
   }
   
@@ -1911,7 +1915,7 @@ fun.variant.eff.report <- function(file2process.my2, step.my) {
   #   -snp                    : Only SNPs (single nucleotide polymorphisms)
      
   command = paste(command00, " ", options00, sep="");
-  check2showcommand(params$opt$showc, command);
+  check2showcommand(params$opt$showc, command, file2process.my2);
   system(command);
   # Show errors (if any)
   obj.file_stderr <- read.delim(file_stderr, header = FALSE, sep=":")
@@ -1998,11 +2002,11 @@ fun.grep.post.snpeff.variants <- function(file2process.my2, step.my) {
     options02 = paste(" '", params$opt$filter,"' ", file_in, " >> ", file_out, sep="");
     
     command = paste(command01, " ", options01, sep="");
-    check2showcommand(params$opt$showc, command);
+    check2showcommand(params$opt$showc, command, file2process.my2);
     system(command);
     
     command = paste(command02, " ", options02, sep="");
-    check2showcommand(params$opt$showc, command);
+    check2showcommand(params$opt$showc, command, file2process.my2);
     system(command);
 
     #######################
@@ -2021,11 +2025,11 @@ fun.grep.post.snpeff.variants <- function(file2process.my2, step.my) {
     options02 = paste(" '", params$opt$filter,"' ", file_in, " >> ", file_out, sep="");
     
     command = paste(command01, " ", options01, sep="");
-    check2showcommand(params$opt$showc, command);
+    check2showcommand(params$opt$showc, command, file2process.my2);
     system(command);
     
     command = paste(command02, " ", options02, sep="");
-    check2showcommand(params$opt$showc, command);
+    check2showcommand(params$opt$showc, command, file2process.my2);
     system(command);
     
   } else { # skip the searching for specific target genes 
@@ -2033,7 +2037,7 @@ fun.grep.post.snpeff.variants <- function(file2process.my2, step.my) {
     command00 = "echo '  ...skipped...'"; # next command.
     options00 = "";
     command = paste(command00, " ", options00, sep="");
-    check2showcommand(params$opt$showc, command);
+    check2showcommand(params$opt$showc, command, file2process.my2);
     system(command);
   }
   
