@@ -118,6 +118,9 @@ wrapper2.parallelizable.per.sample <- function(datastep.my2) {
   
   # -----------------------------
   
+  ## Manual debugging
+  # datastep.my2 <- 1
+
   # Get the file name to process now
   file2process.my1 <- params$file_list[datastep.my2]
   
@@ -207,7 +210,7 @@ wrapper2.parallelizable.per.sample <- function(datastep.my2) {
     
     # Remake the file list with the definitive filenames with merged reads (_merged12.sam), and not just all .fastq files
     
-    if (params$opt$bwa == 2 && (params_wseq$p_map.on.reference.genome.sequential.mt || params_wseq$p_map.on.reference.genome.parallel)) {
+    if (params$opt$bwa == 2 && (params_wseq$p_map.on.reference.genome.sequential.mt || map.on.reference.genome.parallel)) {
       # Next Step
       list.collected <- fun.convert.file.list.pe(file2process.my2  = routlogfile,
                                                  step.my  = step)

@@ -26,6 +26,7 @@
 # ----------------------
 # (See also http://ueb.vhir.org/PendentsEVA )
 ##
+## * Revision of error MapQ 0 in BAM files (detected at snpEff countReads) [DONE]
 ## * get snpEff countReads fixed [DONE]
 ## * SnpSift Filter: replace the basic filtering based on grep on the annotated results and filter after the vcf is created using SnpSift
 ##   * add dbNSFP annotation
@@ -68,7 +69,7 @@ if (p_test==1) {
                   # p_desc = Description in longer format of the run. DEscribe that for you to understand in the future what were the conditions and params of this run. 
   p_desc     <-   "c3: processat d'un fastq de prova fins a sam i bam amb el pipeline eva per a ratoli rn4."
   p_keep     <- TRUE # Enable if run through editor and you want to keep temp files
-  p_showc    <- FALSE #TRUE # Enable if you want to see the commands literally that are run in the command line
+  p_showc    <- TRUE #TRUE # Enable if you want to see the commands literally that are run in the command line
 #  p_filter   <- "BRCA"
 #  p_filter   <- "BRCA1\\|BRCA2\\|CHEK2\\|PALB2\\|BRIP1\\|TP53\\|PTEN\\|STK11\\|CDH1\\|ATM\\|BARD1\\|APC\\|MLH1\\|MRE11\\|MSH2\\|MSH6\\|MUTYH\\|NBN\\|PMS1\\|PMS2\\|RAD50\\|RAD51D\\|RAD51C\\|XRCC2\\|UIMC1\\|FAM175A\\|ERCC4\\|RAD51\\|RAD51B\\|XRCC3\\|FANCA\\|FANCB\\|FANCC\\|FANCD2\\|FANCE\\|FANCF\\|FANCG\\|FANCI\\|FANCL\\|FANCM\\|SLX4\\|CASP8\\|FGFR2\\|TOX3\\|MAP3K1\\|MRPS30\\|SLC4A7\\|NEK10\\|COX11\\|ESR1\\|CDKN2A\\|CDKN2B\\|ANKRD16\\|FBXO18\\|ZNF365\\|ZMIZ1\\|BABAM1\\|LSP1\\|ANKLE1\\|TOPBP1\\|BCCIP\\|53BP1"            
   # for p_filter, keep in mind that we want to find 'foo1', and there is one 'foo10', we need to indicate somehow to grep for the whole word
@@ -245,6 +246,7 @@ if (p_server==1) { # MainHead server
       path_dbSNP2 = "/home/ueb/Data/Data_Genomes/hg19_Broad_Reference_Genome/dbsnp_135_human_9606_v4.0_00-All.vcf" # chromosome names without prefix "chr"
       path_dbSNP3 = "/home/ueb/Data/gatk-data-2.3/hg19/dbsnp_137.hg19.vcf"
       path_dbSNP4 = "/home/ueb/Data/Data_Genomes/forGATK/dbsnp_135.hg19.sort.vcf"
+      path_dbSNP5 = "/home/ueb/Data/dbSNP/dbSnp.vcf.gz" # (v 18-JUN-2012) Taken and renamed from ftp://ftp.ncbi.nih.gov/snp/organisms/human_9606/VCF/00-All.vcf.gz
     path_dbSNP = path_dbSNP1
     # A.iii) Exon Capture File (Intervals list)
       path_exon_capture_file1 = "/home/ueb/Data/BED/TruSeq_exome_targeted_regions.hg19.bed.chr"

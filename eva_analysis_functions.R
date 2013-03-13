@@ -283,9 +283,9 @@ mail.send <- function(attachmentPath, attachmentName)
   # To check whether this also works in parallel-run mode.
   params$p_subject <- paste("EVA Pipeline run finished: ", params$p_label, sep="")
   params$p_body <- paste(params$p_subject, " _ See some log information attached", sep="")                   
-  command(paste("sendEmail -f ", params$p_from, " -t ", params$p_to, " -u ", params$p_subject,
+  command <- paste("sendEmail -f ", params$p_from, " -t ", params$p_to, " -u ", params$p_subject,
                " -m ", params$p_body, " -s ", params$p_smtp, " -a ", attachmentPath,
-               " >> ", attachmentPath, sep=""));
+               " >> ", attachmentPath, sep="");
   check2showcommand(params$opt$showc, command, routlogfile);
   system(command);
 #  return() # return nothing
@@ -401,7 +401,7 @@ fun.map.on.reference.genome <- function(file2process.my2, step.my) {
   # update step number
   step.my$tmp <- step.my$tmp + 1
   print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Map against reference genome: do the mapping with: ", file2process.my2, " ###\n", sep=""), file2process.my2);
-  
+
   ## TODO: 
   ## Add a param to allow the user to choose the aligner with 'bwa aln' (<200bp and <3% error rate, allowing paired end reads)
   ##    or 'bwa bwasw' (for longer reads and/or with higher errors).
@@ -554,10 +554,6 @@ fun.map.on.reference.genome <- function(file2process.my2, step.my) {
       # Show the duration of this subprocess
       cat("\n 2nd part (sampe) - Relative duration since last step: "); print(duration); cat("\n")
 
-      # direct calls to this step in a terminal (indicated here for debugging purposes):
-      # ueb@ueb:/path1$ bwa sampe /home/ueb/Data/Data_Genomes/hg19.fa Sample_1820_1_sequence.sai  Sample_1820_2_sequence.sai  ../dir_in/Sample_1820_1_sequence.fastq ../dir_in/Sample_1820_2_sequence.fastq  -r "@RG\tID:Sample_1820\tLB:Sample_1820\tPL:ILLUMINA\tSM:Sample_1820" > Sample_18020_merged12.sam
-      # ueb@ueb:/path2# bwa sampe /home/ueb/Data/Data_Genomes/rn4/rn4.fa Sample_1797_1_sequence.sai  Sample_1797_2_sequence.sai  /path2/Sample_1797_1.fastq /path2/Sample_1797_2.fastq  > Sample_1797_merged12.byhand.sam
-
 ##      cat("\nWe will now stop the pipeline. You need to tweak the eva_params.R file to stop any attemp to rerun the previous steps and continue from here");
 ##      stop()
       # geterrmessage()
@@ -601,8 +597,8 @@ fun.map.on.reference.genome <- function(file2process.my2, step.my) {
 fun.convert.file.list.pe <- function(file2process.my2, step.my) {
 
 #   # Manual debuging - ini
-#   file2process.my2 <- "s_4_m11_145b_1_sequence.fastq"
-#   #file2process.my2 <- "s_3_m11_145b_merged12.sam"
+#   file2process.my2 <- "sample_a_1_sequence.fastq"
+#   #file2process.my2 <- "sample_a_merged12.sam"
 #   step.my <- data.frame(1, 0)
 #   colnames(step.my) <- c("n","tmp")
 #   step.my$tmp <- 0
@@ -686,7 +682,7 @@ fun.bowtie2sam <- function(file2process.my2, step.my) {
 
 fun.sam2bam.and.sort <- function(file2process.my2, step.my) {
   #   #Manual debugging - ini
-  #   file2process.my2 <-"s_1_m11_143b_merged12.sam"
+  #   file2process.my2 <-"sample_a_merged12.sam"
   #   step.my <- data.frame(10, 0)
   #   colnames(step.my) <- c("n","tmp")
   #   step.my$tmp <- 0
@@ -708,7 +704,12 @@ fun.sam2bam.and.sort <- function(file2process.my2, step.my) {
   command00 = "samtools"; # next command.
   # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
   file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
-  options00 = paste(" view -bS -t ", params$path_genome, ".fai ", file_in, " 2>> ", file_stderr, # Captured the type of line "[samopen] SAM header is present: NN sequences" as appended to the sample log file since it was sent through the stderr
+  options00 = paste(" view -bS ",
+                    " -F 4 ", # this part is for filtering out unmmaped reads, which were causing issues in snpEff later on (MAPQ should be zero for unmapped reads).
+                              # More information: 
+                                # http://www.biostars.org/p/55830/ 
+                                # http://seqanswers.com/forums/showpost.php?p=57348&postcount=2
+                    " -t ", params$path_genome, ".fai ", file_in, " 2>> ", file_stderr, # Captured the type of line "[samopen] SAM header is present: NN sequences" as appended to the sample log file since it was sent through the stderr
                     " | ", command00, " sort - ", file_out,   " 2>> ", file_stderr, sep="");
 
   # direct command line call for testing other things:
@@ -974,7 +975,7 @@ fun.stats <- function(file2process.my2, step.my) {
 }
 
 ##########################
-### fun.addleading0.ids
+### FUNCTION fun.addleading0.ids
 ###
 ### By Josep LLuis Mosquera, UEB-VHIR. jl.mosquera at vhir.org, & 
 ###    Xavier de Pedro, UEB-VHIR. xavier.depedro at vhir.org
@@ -989,20 +990,24 @@ fun.stats <- function(file2process.my2, step.my) {
 ##
 ##          x   : numeric or character vector with ids nn of differnt number of characters (like string_nn) 
 ##          sep : separator character to split by. E.g. "_", " ", "-" ...
+##          nd  : number of digits needed in the end after adding as many leading zeroes (o) as required (integer value: 2, 3, etc)
 ##
 
-fun.addleading0.ids <- function(x, sep)
+fun.addleading0.ids <- function(x, sep, nd)
 {
   
-  # Manual debugging
+  # First, some data massaging...
   out.list <- strsplit(x, split = sep)
   out.df <- do.call("rbind", out.list)
   out.df2 <-out.df
   
-  #idx.na   <- which(is.na(out.df[,2]))
+  # Get the indexes of values containing NA
   idx.nona <- which(!is.na(out.df[,2]))
   
-  out.df2[idx.nona,2] <- unlist(lapply(out.df[idx.nona,2], function(x) sprintf("%02d", as.numeric(x) ) ) )
+  # Add as many leading zeroes (0) to the left of the number to have 'nd' digits (2, 3, ...), in all numbers that are no NA
+  # so that even if those numbers were treated as characters (in the variable class in R) they would get sorted properly
+  # also as characters. And exons normally are numbered in tens or hundreds, so that nd should be 2 or 3, repectively (from 01 to 99, or from 001 to 999)
+  out.df2[idx.nona,2] <- unlist(lapply(out.df[idx.nona,2], function(x) sprintf(paste("%0", nd ,"d", sep=""), as.numeric(x) ) ) )
   
   # join the two parts again with the same character splitter
   out.df2 <- paste(out.df2[,1], out.df2[,2], sep=sep)
@@ -1027,8 +1032,8 @@ fun.snpeff.count.reads <- function(file2process.my2, step.my) {
   file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam", sep="");
   file_out = paste(file_in, ".cr.txt", sep="");
   command00 = "java -Xmx4g -jar "; # next command.
-#  options00 = paste(params$path_snpEff, "/snpEff.jar  -c ", params$path_snpEff, "/snpEff.config countReads ", params$opt$genver," ", file_in, " > ", file_out, sep="");
-  options00 = paste(params$path_snpEff, "/snpEff.jar  countReads ", params$opt$genver," ", file_in, " > ", file_out, sep="");
+#  options00 = paste(params$path_snpEff, "snpEff.jar  -c ", params$path_snpEff, "snpEff.config countReads ", params$opt$genver," ", file_in, " > ", file_out, sep="");
+  options00 = paste(params$path_snpEff, "snpEff.jar  countReads ", params$opt$genver," ", file_in, " > ", file_out, sep="");
   command = paste(command00, " ", options00, sep="");
   check2showcommand(params$opt$showc, command, file2process.my2);
   system(command);
@@ -1036,66 +1041,124 @@ fun.snpeff.count.reads <- function(file2process.my2, step.my) {
   # Manual debugging XXX
   # file_in <- "./test_out/testset1_sgs7.sam.sorted.noDup.bam"
   # file_out <- "./test_out/testset1_sgs7.sam.sorted.noDup.bam.cr.txt"
+  # file_in <- "./test_out/sample_a_merged12.sam.sorted.noDup.bam"
+  # file_out <- "./test_out/sample_a_merged12.sam.sorted.noDup.bam.cr.txt"
+  
   # load the file created as file2process.countreads (aka: f2p.cr)
   f2p.cr <- read.table(file_out, header=T, sep="\t")
   #dim(f2p.cr)
   x.my <- as.character(f2p.cr$IDs)
-  # Split IDs by ; and create the new columns on the right with separated unitN, NM & GeneSymbol codes.
-  out.my <- fun.splitAnnot(x.my)
-  f2p.cr <- cbind(f2p.cr, out.my)
   
-  # convert column 8 into character vectors and apply the function to add leading zeros for correct ordering as text
-  x <- as.character(f2p.cr[,8])
-  f2p.cr[,8] <- fun.addleading0.ids(x, "_")
-  
-  # Get the last three columns as Gene symbols and exon and intro numbers
-  f2p.cr.genes <- f2p.cr[,c(8,10)]
-  #summary(f2p.cr.genes)
+  # Do all the processing only if there is some data to process. To avoid the program to break when snpEff fails to count reads
+  # dues to the issues with "MAPQ should be zero for unmmaped reads", etc. 
+  if (length(x.my) > 0) {
+    
+    # Split IDs by ; and create the new columns on the right with separated unitN, NM & GeneSymbol codes.
+    out.my <- fun.splitAnnot(x.my)
+    f2p.cr <- cbind(f2p.cr, out.my)
+    
+    # convert column 8 into character vectors and apply the function to add leading zeros for correct ordering as text
+    x <- as.character(f2p.cr[,8])
+    # Add leading zeros whre needed to have up to 3 digits for all numbers (from exon_001 to exon_999)
+    f2p.cr[,8] <- fun.addleading0.ids(x, "_", 3)
+    
+    # Filter results by the genes of interest only
+    #
+    # BEWARE that subset function can lead to confusion in some cases. Subset is useful for interactive programming, not for automatic scripts.
+    # See:
+    # (1) The easy subset way: http://www.ats.ucla.edu/stat/r/faq/subset_R.htm
+    # (2) The potential problems: see 
+    #   http://stackoverflow.com/questions/9860090/in-r-why-is-better-than-subset 
+    #   https://github.com/hadley/devtools/wiki/Evaluation
 
-  ## Convert into true/false
-  #f2p.cr.genes.tf <- suppressWarnings(is.na(as.numeric(as.character(unlist(f2p.cr.genes[2])))) )
-  
-  # We want to apply the table function to the subset of values of the data frames (since it seems to be much more complicated
-  # to create a subset of values once the object of type "table" is created)
-  # We do the subset through getting the indexes of these GeneSymbol values (and not the numbers from chromosomes) 
-  f2p.cr.genes.idx <- which(suppressWarnings(is.na(as.numeric(as.character(unlist(f2p.cr.genes[2]))))) )
-  
-  # this is the list of values with gene symbols only, and not the values the chromosome number as gene symbol
-  f2p.cr.genes2 <- f2p.cr.genes[f2p.cr.genes.idx,]
-  #str(f2p.cr.genes2)
-  #summary(f2p.cr.genes[f2p.cr.genes.idx,])
+    # Get first the list of Gene Symbols for the "target genes" of interest for the researcher (tgenes)
+      # Split values by pipe (it will create some empty values also, but we will remove them later)
+      tgenes <- strsplit(opt$filter, "|", fixed=TRUE)
+      tgenes <- unlist(tgenes) # Convert those values from a list into a character vector 
+      # Remove non-intended characters (all except numbers and letters)
+        ## This could be performed with a fairly simple regular expression, such as: 
+        #tgenes <- gsub(pattern="[^A-Za-z0-9]", replacement="",  x=tgenes, fixed=FALSE)
+        ## But I'm not sure that some error would be introduced in the future by removing some otehr valid character.
+        ## Therefore, just in case, I remove the other sets of characters by steps in a FIXED form
+    
+        # Remove non-intended characters (it will create some empty values also, but we will remove them later)
+        tgenes <- gsub(pattern=":", replacement="",  x=tgenes, fixed=TRUE)
+        tgenes <- gsub(pattern="^", replacement="",  x=tgenes, fixed=TRUE)
+        tgenes <- gsub(pattern="\t", replacement="",  x=tgenes, fixed=TRUE)
+        tgenes <- gsub(pattern="\\", replacement="",  x=tgenes, fixed=TRUE)
+        tgenes <- gsub(pattern="\"", replacement="",  x=tgenes, fixed=TRUE)
 
-  # We fix the levels of the variable Genesymbol from the data frame, which still hold bad names from chromosome numbers
-  # we can't assign the unique value of f2p.cr.genes2$GeneSymbol to the levels of f2p.cr.genes2$GeneSymbol because they differ in length
-  # therefore we apply this trick (thanks jl.moquera!)
-  f2p.cr.genes2$GeneSymbol <- as.factor(as.character(f2p.cr.genes2$GeneSymbol))
-  #str(f2p.cr.genes2)
-  
-  # Therefore, this (below) is the table with all values (including the wrong chromosome numbers as gene symbols by mistake)
-  # convert in a flat table sorting first by Gene Symbol, and then, by exon number.
-  f2p.cr.table <- ftable(f2p.cr.genes2, row.vars = 2:1)
-  #str(f2p.cr.table)
-  #?print.ftable
+      # Remove duplicates of GeneSymbols
+      tgenes <- unique(tgenes)
+      # Remove the case of an empty value
+      tgenes <- tgenes[-match("", tgenes)]
 
-  # [SOLVED] as.data.frame.table or as.data.frame.matrix !!!!!!
-  f2p.cr.dft <- as.data.frame.table(f2p.cr.table)
-  # We need to re-sort in a similar way to what the ftable was
-  f2p.cr.dft <- f2p.cr.dft[order(f2p.cr.dft$GeneSymbol, f2p.cr.dft$unitN),]
-  
-  ## as.data.frame.matrix was useful when f2p.cr.table was another type of object, but not nowadays
-  #f2p.cr.dfm <- as.data.frame.matrix(f2p.cr.table)
-
-  file_out.table = paste(file_in, ".cr.table.csv", sep="");
-  # Write the first line with the column names
-  write("\"N\", \"GeneSymbol\", \"unitN\", \"Count\"", file=file_out.table, append = F, sep = "")
-#  write.table(f2p.cr.table, file=file_out.table, append=T, quote=T, sep=",", row.names=T, col.names=F)
-  
-  #tapply(as.numeric(colnames(f2p.cr.table)), 1:9, FUN=is.numeric)
-  
-  # I remove the warning messages from this call (below) because of the coercion type of message (harmless, afaik, but annoying and polluting output in log files)
-  # Write the rest: all data without column names
-  write.table(f2p.cr.dft, file=file_out.table, append=T, quote=T, sep=",", row.names=T, col.names=F)
-  #write.ftable(f2p.cr.table, file=file_out.table, append=T, quote=T)
+    ## Filter results by the genes of interest only WITH A SUBSET
+      ## Works easily with one value
+      # f2p.cr.tg <- f2p.cr[f2p.cr$GeneSymbol == "WASH7P",]
+      ## For multiple values like "1" and "4", we can use the syntax "x.sub5 <- x.df[x.df$y %in% c(1, 4), ]"
+      ## Example for a couple of gene Symbols
+      #f2p.cr.tg <- f2p.cr[f2p.cr$GeneSymbol %in% c("WASH7P", "OR4F5"), ]
+    # Do the filtering for the genes of interest (in the list of target genes: tgenes) 
+    f2p.cr.tg <- f2p.cr[f2p.cr$GeneSymbol %in% tgenes, ]
+    # for the sake of simplicity and effectiveness, we assign the subset of count reads 
+    # for the genes of interest ("target genes", aka, "tg") to the whole list of count reads in the file to process (f2p.cr)
+    f2p.cr <- f2p.cr.tg
+    
+    # Get the last three columns as Gene symbols and exon and intron numbers
+    f2p.cr.genes <- f2p.cr[,c(8,9,10)]
+    #summary(f2p.cr.genes)
+    
+    ## Convert into true/false
+    #f2p.cr.genes.tf <- suppressWarnings(is.na(as.numeric(as.character(unlist(f2p.cr.genes[2])))) )
+    
+    # We want to apply the table function to the subset of values of the data frames (since it seems to be much more complicated
+    # to create a subset of values once the object of type "table" is created)
+    # We do the subset through getting the indexes of these GeneSymbol values (and not the numbers from chromosomes) 
+    f2p.cr.genes.idx <- which(suppressWarnings(is.na(as.numeric(as.character(unlist(f2p.cr.genes[2]))))) )
+    
+    # this is the list of values with gene symbols only, and not the values the chromosome number as gene symbol
+    f2p.cr.genes2 <- f2p.cr.genes[f2p.cr.genes.idx,]
+    #str(f2p.cr.genes2)
+    #summary(f2p.cr.genes[f2p.cr.genes.idx,])
+    
+    # We fix the levels of the variable Genesymbol from the data frame, which still hold bad names from chromosome numbers
+    # we can't assign the unique value of f2p.cr.genes2$GeneSymbol to the levels of f2p.cr.genes2$GeneSymbol because they differ in length
+    # therefore we apply this trick (thanks jl.moquera!)
+    f2p.cr.genes2$GeneSymbol <- as.factor(as.character(f2p.cr.genes2$GeneSymbol))
+    #str(f2p.cr.genes2)
+    
+    # Therefore, this (below) is the table with all values (including the wrong chromosome numbers as gene symbols by mistake)
+    # convert in a flat table sorting first by Gene Symbol, and then, by exon number.
+    f2p.cr.table <- ftable(f2p.cr.genes2, row.vars = 2:1)
+    #str(f2p.cr.table)
+    #?print.ftable
+    
+    # [SOLVED] as.data.frame.table or as.data.frame.matrix !!!!!!
+    f2p.cr.dft <- as.data.frame.table(f2p.cr.table)
+    # We need to re-sort in a similar way to what the ftable was
+    f2p.cr.dft <- f2p.cr.dft[order(f2p.cr.dft$GeneSymbol, f2p.cr.dft$unitN),]
+    # And last, we remove all row with 0 in the column Counts
+    f2p.cr.dft <- f2p.cr.dft[!f2p.cr.dft$Freq==0,]
+    
+    ## as.data.frame.matrix was useful when f2p.cr.table was another type of object, but not nowadays
+    #f2p.cr.dfm <- as.data.frame.matrix(f2p.cr.table)
+    
+    file_out.table = paste(file_in, ".cr.table.csv", sep="");
+    # Write the first line with the column names
+    write("\"RNA_NM\", \"unitN\", \"GeneSymbol\", \"Count\"", file=file_out.table, append = F, sep = "")
+    #  write.table(f2p.cr.table, file=file_out.table, append=T, quote=T, sep=",", row.names=T, col.names=F)
+    
+    #tapply(as.numeric(colnames(f2p.cr.table)), 1:9, FUN=is.numeric)
+    
+    # I remove the warning messages from this call (below) because of the coercion type of message (harmless, afaik, but annoying and polluting output in log files)
+    # Write the rest: all data without column names
+    write.table(f2p.cr.dft, file=file_out.table, append=T, quote=T, sep=",", row.names=F, col.names=F)
+    #write.ftable(f2p.cr.table, file=file_out.table, append=T, quote=T)
+    
+  } else {
+    print_mes("XXX Count Reads failed XXX; no results saved.", file2process.my2)
+  }
   
   # Don't check for check2clean("$file_in") since we still need it for the variant calling
   print_done(file2process.my2);
@@ -1195,7 +1258,6 @@ fun.splitAnnot <- function(x, myNames) {
  
   return(out)
 }
-
 
 ##########################
 ### FUNCTION fun.exon.coverage
@@ -1795,6 +1857,147 @@ fun.visualize.variants <- function(file2process.my2, step.my) {
   # TODO XXX
 }
 
+##########################
+### FUNCTION fun.variant.filter.pre.snpeff
+###
+###     We annotate using dbSnp before using SnpEff in order to have 'known' and 'unknown' statistics in SnpEff's summary page.
+###     Those stats are based on the presence of an ID field. If the ID is non-empty, then it is assumed to be a 'known variant'. 
+###     From: http://snpeff.sourceforge.net/examples.html
+##########################
+
+fun.variant.filter.pre.snpeff <- function(file2process.my2, step.my) {
+  
+  
+  #   SnpSift (related software)
+  #  From http://snpeff.sourceforge.net/SnpSift.html
+  #   SnpSift is a collection of tools to manipulate VCF (variant call format) files.
+  
+  #   What can you do:
+  #     
+  #   Filter: You can filter using arbitrary expressions, for instance "(QUAL > 30) | (exists INDEL) | ( countHet() > 2 )". The actual expressions can be quite complex, so it allows for a lot of flexibility.
+  #   Annotate: You can add 'ID' from another database (e.g. variants from dbSnp)
+  #   CaseControl: You can compare how many variants are in 'case' and in 'control' groups. Also calculates p-values (Fisher exact test).
+  #   Intervals: Filter variants that intersect with intervals.
+  #   Intervals (intidx): Filter variants that intersect with intervals. Index the VCF file using memory mapped I/O to speed up the search. This is intended for huge VCF files and a small number of intervals to retrieve.
+  #   Join: Join by generic genomic regions (intersecting or closest).
+  #   RmRefGen: Remove reference genotype (i.e. replace '0/0' genotypes by '.')
+  #   TsTv: Calculate transiton to transversion ratio.
+  #   Extract fields: Extract fields from a VCF file to a TXT (tab separated) format.
+  #   Variant type: Adds SNP/MNP/INS/DEL to info field. It also adds "HOM/HET" if there is only one sample.
+  #   GWAS Catalog: Annotate using GWAS Catalog.
+  #   dbNSFP: Annotate using dbNSFP: The dbNSFP is an integrated database of functional predictions from multiple algorithms (SIFT, Polyphen2, LRT and MutationTaster, PhyloP and GERP++, etc.) 
+  
+  #   # Download and uncompress dbSnp database.
+  #   wget -O dbSnp.vcf.gz ftp://ftp.ncbi.nih.gov/snp/organisms/human_9606/VCF/00-All.vcf.gz
+  #   gunzip dbSnp.vcf.gz
+  #   
+  #   # Annotate ID field using dbSnp
+  #   java -jar SnpSif.jar annotate -v dbSnp.vcf.gz file.vcf > file.dbSnp.vcf
+  #   
+  #   2-) Annotate using SnpEff:
+  #   
+  #   # Do this only if you don't already have the database installed.
+  #   java -jar snpEff.jar download -v GRCh37.66
+  # 
+  # # Annotate the file
+  # java -Xmx4g -jar snpEff.jar eff -v GRCh37.66 file.dbSnp.vcf > file.eff.vcf
+  # 
+  # 3-) Filter out variants that have a non-empty ID field. These variants are the ones that are NOT in dbSnp, since we annotated the ID field using rs-numbers from dbSnp in step 1.
+  # 
+  # java -jar SnpSift.jar filter -f file.eff.vcf "! exists ID" > file.eff.not_in_dbSnp.vcf
+  # 
+  # Note: The expression using to filter the file is "! exists ID". This means that the ID field does not exists (i.e. the value is empty) which is represented as a dot (".") in a VCF file. 
+
+  #   Annotate dbNSFP database
+  #   From http://snpeff.sourceforge.net/SnpSift.html#dbnsfp
+  #   -----------------------------------------------------------
+  #
+  #   The dbNSFP is an integrated database of functional predictions from multiple algorithms (SIFT, Polyphen2, LRT and MutationTaster, PhyloP and GERP++, etc.). One of the main advantages is that you can annotate using multiple prediction tools with just one command. Here is the link to dbNSFP database website.
+  #   In order to use this command, you need to download the dbNSFP database file from our 'databases' directory. The file is named 'dbNSFP-version.txt.gz', where 'version' is the version number (e.g. 'dbNSFP2.0b3.txt.gz').
+  #   Another option is to download from the original dbNSFP site, and create a single file from the individual chromosome files (a simple 'cat dbNSFP2.0b3_variant.chr* | grep -v "^#" > dbNSFP2.0b3.txt' command will be enough).
+  #   
+  #   Here is a full example how to perform annotations:
+  #     
+  #     # Donload and uncompress database (you need to do this only once):
+  #     # WARNING: The database is 3Gb when compressed and 30Gb uncompressed.
+  #     wget http://sourceforge.net/projects/snpeff/files/databases/dbNSFP2.0b3.txt.gz
+  #   gunzip dbNSFP2.0b3.txt.gz
+  #   
+  #   # Annotate using dbNSFP
+  #   java -jar SnpSift.jar dbnsfp -v dbNSFP2.0b3.txt myFile.vcf > myFile.annotated.vcf
+  #   Note: You can now specify which fields you want to use for annotation using the '-f' command line option followed by a comma separated list of field names.
+  #   Defaults fileds are "Ensembl_transcriptid,Uniprot_acc,Interpro_domain,SIFT_score,Polyphen2_HVAR_pred,GERP++_NR,GERP++_RS,29way_logOdds,1000Gp1_AF,1000Gp1_AFR_AF,1000Gp1_EUR_AF,1000Gp1_AMR_AF,1000Gp1_ASN_AF,ESP5400_AA_AF,ESP5400_EA_AF".
+  #   ---------------------------
+  
+  #   #Manual debugging - ini
+  #   file2process.my2 <-"sample_a_merged12.sam"
+  #   step.my <- data.frame(10, 0)
+  #   colnames(step.my) <- c("n","tmp")
+  #   step.my$tmp <- 0
+  #   #Manual debugging - end
+  
+  # update step number
+  step.my$tmp <- step.my$tmp + 1
+  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Variant Filtration with SnpSift: ", file2process.my2, " ###\n", sep=""), file2process.my2);
+  
+  # From http://snpeff.sourceforge.net/SnpSift.html#filter
+  #   I want to keep samples where the ID matches a set defined in a file:
+  #
+  #     cat variants.vcf | java -jar SnpSift.jar filter --set my_rs.txt "ID in SET[0]" > filtered.vcf
+  #
+  #   and the file my_rs.txt has one string per line, e.g.:
+  #   rs58108140
+  #   rs71262674
+  #   rs71262673
+  
+  file_in  = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam.samtools.var.filtered.vcf", sep=""); 
+  file_out = paste(params$directory_out, "/", file2process.my2, ".f.snpEff.", params$opt$snpeff.of, sep=""); 
+  file_out_base = paste(params$directory_out, "/", file2process.my2, ".f.snpEff", sep="");     
+  command00 = "java -jar"; # next command.
+  # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
+  file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
+  options00 = paste(" ", params$path_snpEff, "snpEff.jar -c ", params$path_snpEff, "snpEff.config ", params$opt$genver," ", file_in, 
+                    " -a 0 -i vcf -o ", params$opt$snpeff.of," -chr chr -stats ", file_out_base,"_summary.html > ", file_out,
+                    " 2>> ", file_stderr, sep="");
+  
+  
+  command = paste(command00, " ", options00, sep="");
+  check2showcommand(params$opt$showc, command, file2process.my2);
+  system(command);
+  # Show errors (if any)
+  obj.file_stderr <- read.delim(file_stderr, header = FALSE, sep=":")
+  obj.file_stderr <- unlist(obj.file_stderr, use.names = FALSE)[obj.file_stderr$V1=="Error"]
+  # If we found any error, print it.
+  if (length(obj.file_stderr) > 2) {
+    print_doc(obj.file_stderr[1:2],  file2process.my2);
+    # If this shows NA, then there was only 1 error message
+    print_doc(obj.file_stderr[3:4],  file2process.my2);  
+  } # Display the error message
+  # # We don't do check2clean here  since the output are results
+  print_done(file2process.my2);
+  
+  #   ####### test in
+  #   #   tmp_file_in = "/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a/s_4_m11_146b_merged12.f.vcf4"; 
+  #      tmp_file_in = "/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a/s_4_m11_146b_merged12.sam.sorted.noDup.bam.samtools.var.filtered.vcf"; 
+  #     tmp_file_out = "/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a/00snpeff_146b_merged12.vcf"; 
+  #     tmp_command00 = "java -Xmx4g -jar"; # next command. -Xmx4g stands for indicating the computer to use at least 4Gb of RAM because the Human Genome Database is large
+  # #   #tmp_file_stderr = "/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a/log.121207.sg293a.s_4_m11_146b_merged12.txt";
+  #    tmp_file_stderr = "/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a/00snpeff_log.txt";
+  #    tmp_options00 = paste("/home/ueb/snpEff/snpEff.jar -c /home/ueb/snpEff/snpEff.config hg19 ", tmp_file_in, 
+  #                      " -a 0 -i vcf -o vcf -chr chr -stats /mnt/magatzem02/tmp/run_sara_293a/dir_out_293a/snpEff_summary.html > ", tmp_file_out, " 2>> ", tmp_file_stderr, sep="");
+  #    tmp_command = paste(tmp_command00, " ", tmp_options00, sep="");
+  #    system(tmp_command);
+  ####### test out
+  
+  # Other stuff snpEff related
+  # v3.1 (2012-11): SnpEff 'countReads' count number of reads and bases (form a BAM file) on each gene, transcript, exon, intron, etc. 
+  # See https://ueb.vhir.org/PEEVA+4+Execuci%C3%B3+detalls&no_bl=y#Other_calculations_for_the_report
+  
+  gc() # Let's clean ouR garbage if possible
+  return(step.my) # return nothing, since results are saved on disk from the system command
+  
+  
+}
 
 ##########################
 ### FUNCTION fun.variant.dbsnp.pre.snpeff
@@ -1868,7 +2071,7 @@ fun.variant.dbsnp.pre.snpeff <- function(file2process.my2, step.my) {
 fun.variant.eff.report <- function(file2process.my2, step.my) {
 
 #   #Manual debugging - ini
-#   file2process.my2 <-"s_1_m11_143b_merged12.sam"
+#   file2process.my2 <-"sample_a_merged12.sam"
 #   step.my <- data.frame(10, 0)
 #   colnames(step.my) <- c("n","tmp")
 #   step.my$tmp <- 0
@@ -1884,7 +2087,7 @@ fun.variant.eff.report <- function(file2process.my2, step.my) {
   command00 = "java -jar"; # next command.
   # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
   file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
-  options00 = paste(" ", params$path_snpEff, "/snpEff.jar -c ", params$path_snpEff, "/snpEff.config ", params$opt$genver," ", file_in, 
+  options00 = paste(" ", params$path_snpEff, "snpEff.jar -c ", params$path_snpEff, "snpEff.config ", params$opt$genver," ", file_in, 
                     " -a 0 -i vcf -o ", params$opt$snpeff.of," -chr chr -stats ", file_out_base,"_summary.html > ", file_out,
                     " 2>> ", file_stderr, sep="");
 

@@ -235,13 +235,13 @@ sfInit(parallel=opt$parallel, cpus=opt$cpus, useRscript=TRUE) # Amb parallel=TRU
 # use shell scripts or R-script for startup 
 # (R-scripts beeing the new variant, but not working with sfCluster).
 
-# Si es posa "parallel=FALSE" no ho paralelitzara 
-# i mostrara els missatges d'error per pantalla de forma normal. 
+# If we set "parallel=FALSE" there will be no parallel processes (all will be run in serial) 
+# and error messages will be shown normally in the command line
 
-# Amb la següent línia s'hauria de poder debuggar: sortira una llista del recorregut de crides de funcions
-# fins el punt que peta. 
-# La llista esta enumerdada, així que si li poses el numero pots anar al punt del proces que vulguis
-# i resseguir els calculs per a veure què ha fallat.
+# With the following line we should be able to DEBUG: 
+# * The list of functions called will be shown until the point where the program stops
+# * That list will be numbered, so that if you set/type the number you will be able to go to the process 
+#   that you are interested in, and re-follow the process to see what went wrong
 
 #options(error = recover)
 
