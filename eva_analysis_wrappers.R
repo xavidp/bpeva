@@ -112,6 +112,7 @@ wrapper2.parallelizable.per.sample <- function(datastep.my2) {
   variant.annotation.summarize      <- params_w2pps$p_variant.annotation.summarize
   grep.variants		                  <- params_w2pps$p_grep.variants
   visualize.variants		            <- params_w2pps$p_visualize.variants
+  variant.filter.pre.snpeff          <- params_w2pps$p_variant.filter.pre.snpeff
   variant.dbsnp.pre.snpeff          <- params_w2pps$p_variant.dbsnp.pre.snpeff
   variant.eff.report                <- params_w2pps$p_variant.eff.report
   grep.post.snpeff.variants         <- params_w2pps$p_grep.post.snpeff.variants
@@ -352,6 +353,12 @@ wrapper2.parallelizable.per.sample <- function(datastep.my2) {
                                    step.my  = step)
   }
   
+  if (variant.filter.pre.snpeff) {
+    # Next Step
+    step <- fun.variant.filter.pre.snpeff(file2process.my2  = file2process.my1,
+                                         step.my  = step)
+  }
+
   if (variant.dbsnp.pre.snpeff) {
     # Next Step
     step <- fun.variant.dbsnp.pre.snpeff(file2process.my2  = file2process.my1,

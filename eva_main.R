@@ -149,6 +149,7 @@ my.options <- c(
   'genver'   , 'g', 1, "character", #, "__G__enome version used. E.g.: hg18, hg19, even if only hg19 is supported as of Jan 2013",
   'index'    , 'n', 0, "logical"  , # "i__N__dex the reference genome # Optional",
   'bwa'      , 'w', 1, "integer"  , #, "b__W__a algorythm used. See http://bio-bwa.sourceforge.net/bwa.shtml ".
+  'only.m.r' , 'om',1, "character", # "__O__nly__ __M__apped reads used in bam files # Optional",
   'filter'   , 'f', 1, "character", # "__F__ilter results for these target genes # Optional",
   'log'      , 'l', 1, "integer"  , # "__L__og info about the process into a log file # Optional",
   'summarize', 's', 0, "logical"  , # "__S__summarize results in a single .csv file with annotations # Optional",
@@ -196,6 +197,7 @@ if ( is.null(opt$cpus     ) ) { opt$cpus     = p_cpus             }
 if ( is.null(opt$parallel ) ) { opt$parallel = p_parallel        }
 if ( is.null(opt$label    ) ) { opt$label    = p_label	} # "sara207_4s4cpu"        } # Run Label for output filenames
 if ( is.null(opt$bwa      ) ) { opt$bwa      = p_bwa          } # 1: bwa aln (short reads, low errors, allowing paired end also); 2= bwa bwasw (longer reads, single end only) # Algorythm for mapping with bwa
+if ( is.null(opt$only.m.r ) ) { opt$only.m.r = p_only.m.r     } # 0/n: no, use mapped and unmapped reads; 1/y: yes, use only mapped reads; -1/u: the opposite, use only unmapped reads
 
 
 # 0d. Check requirements for the libraries dependent on params added by the user in the program run (such as genome version hg18 or hg19, etc)
@@ -403,6 +405,7 @@ sfExport( "params",
 	        "fun.variant.annotation.summarize",
 	        "fun.grep.variants",
 	        "fun.visualize.variants",
+          "fun.variant.filter.pre.snpeff",
           "fun.variant.dbsnp.pre.snpeff",
           "fun.variant.eff.report",
           "fun.grep.post.snpeff.variants",

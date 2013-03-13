@@ -704,11 +704,31 @@ fun.sam2bam.and.sort <- function(file2process.my2, step.my) {
   command00 = "samtools"; # next command.
   # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
   file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
-  options00 = paste(" view -bS ",
-                    " -F 4 ", # this part is for filtering out unmmaped reads, which were causing issues in snpEff later on (MAPQ should be zero for unmapped reads).
-                              # More information: 
-                                # http://www.biostars.org/p/55830/ 
-                                # http://seqanswers.com/forums/showpost.php?p=57348&postcount=2
+
+  # Define samtools.bit.wise.flag.param. 
+  # -------------------------------------
+  # This part is for filtering out unmmaped reads, which were causing issues in snpEff later on (MAPQ should be zero for unmapped reads).
+  # To understand how this works we first need to inspect the SAM format. 
+  #   The SAM format includes a bitwise FLAG field described here: http://picard.sourceforge.net/explain-flags.html 
+  #   The -f/-F options to the samtools command allow us to query based on the presense/absence of bits in the FLAG field.
+  #   So -f 4 only output alignments that are unmapped (flag 0×0004 is set) 
+  #   and -F 4 only output alignments that are not unmapped (i.e. flag 0×0004 is not set),
+  #   hence these would only include mapped alignments.
+  # More information: 
+  # http://left.subtree.org/2012/04/13/counting-the-number-of-reads-in-a-bam-file/
+  # http://www.biostars.org/p/55830/ 
+  # http://seqanswers.com/forums/showpost.php?p=57348&postcount=2
+  if (params$opt$only.m.r == 1 || params$opt$only.m.r == "y") {
+    # Show only mappèd
+    samtools.bitwise.flag.param <- " -F 4 " 
+  } else if (params$opt$only.m.r == -1 || params$opt$only.m.r == "u") {
+    # Show only unmapped (-1 to imply "the opposite of", or "u" for unmapped)
+    samtools.bitwise.flag.param <- " - f 4 " 
+  } else {
+    # Show all (no -F/-f param with bitwise param: include all mapped and unmapped)
+    samtools.bitwise.flag.param <- " "
+  }
+  options00 = paste(" view -bS ", samtools.bitwise.flag.param,  
                     " -t ", params$path_genome, ".fai ", file_in, " 2>> ", file_stderr, # Captured the type of line "[samopen] SAM header is present: NN sequences" as appended to the sample log file since it was sent through the stderr
                     " | ", command00, " sort - ", file_out,   " 2>> ", file_stderr, sep="");
 
@@ -963,10 +983,36 @@ fun.stats <- function(file2process.my2, step.my) {
   command00 = "samtools"; # next command.
   # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
   file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
+
+#   # Substep 1a: by samtools idxstats - total reads
+#   #---------------
+#   # Reads can be nicely counted from bam index by using samtools idxstats (or picard BamIndexStats):
+#   # samtools idxstats in.bam | awk '{s+=$3+$4} END {print s}' // total reads
+#   options00 = paste(" idxstats ", file_in,  " | awk '{s+=$3+$4} END {print s}' ", 
+#                     ">> ", file_stderr,  " 2>> ", file_stderr, sep="");
+#   command = paste(command00, " ", options00, sep="");
+#   check2showcommand(params$opt$showc, command, file2process.my2);
+#   print_doc(paste("Total reads: ", sep=""), file2process.my2);
+#   system(command);
+# 
+#   # Substep 1b: by samtools idxstats - mapped reads 
+#   #---------------
+#   # Reads can be nicely counted from bam index by using samtools idxstats (or picard BamIndexStats):
+#   # samtools idxstats in.bam | awk '{s+=$3} END {print s}' // mapped reads
+#   options00 = paste(" idxstats ", file_in,  " | awk '{s+=$3} END {print s}' ", 
+#                     ">> ", file_stderr,  " 2>> ", file_stderr, sep="");
+#   command = paste(command00, " ", options00, sep="");
+#   check2showcommand(params$opt$showc, command, file2process.my2);
+#   print_doc(paste("Mapped reads: ", sep=""), file2process.my2);
+#   system(command);
+  
+  # Substep 2: by samtools flagstat 
+  #---------------
   options00 = paste(" flagstat ", file_in,  " >> ", file_stderr,  " 2>> ", file_stderr, sep="");
   command = paste(command00, " ", options00, sep="");
   check2showcommand(params$opt$showc, command, file2process.my2);
   system(command);
+  
   # Don't check for check2clean("$file_in") since we still need it for the variant calling
   print_done(file2process.my2);
   
@@ -1489,6 +1535,8 @@ fun.variant.calling <- function(file2process.my2, step.my) {
   # Jan 9th, 2013: 
   ## added params in samtools mpileup: 
   ##  -C50: for short reads (recommended)
+  ##      One may consider to add -C50 to mpileup if mapping quality is overestimated for reads containing excessive mismatches. 
+  ##      Applying this option usually helps BWA-short but may not other mappers.
   ##  -E: extended BAQ calculation
   ##  -D: Output per-sample read depth
   ##  -S: write down strand-bias p-value: "Output per-sample Phred-scaled strand bias P-value"
@@ -1511,19 +1559,48 @@ fun.variant.calling <- function(file2process.my2, step.my) {
 ##########################
 ### FUNCTION fun.variant.filtering
 ###
-### 	Variant Filtering
+### 	Variant Filtering, with BCFTOOLS vcfutils.pl varFilter, from Samtools package
+###   http://samtools.sourceforge.net/samtools.shtml
 ##########################
 
 fun.variant.filtering <- function(file2process.my2, step.my) {
   # update step number
   step.my$tmp <- step.my$tmp + 1
-  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Variant Filtering: ", file2process.my2, " ###\n", sep=""), file2process.my2);
+  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Variant Filtering with vcfutils.pl (Samtools): ", file2process.my2, " ###\n", sep=""), file2process.my2);
   
   file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam.samtools.var.raw.vcf", sep="");
   file_out = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam.samtools.var.filtered.vcf", sep="");
   command00 = params$path_vcfutils ; # next command.
-#  options00 = paste(" varFilter -Q 10 -d 15 -a 5 ", file_in, " > ", file_out, sep="");
-  options00 = paste(" varFilter -Q1 -d15 -D10000000 -a2 -S1 ", file_in, " > ", file_out, sep="");
+
+  ## This line below contain the new params set as default for the EVA pipeline, as of March 13th, 2013.
+  options00 = paste(" varFilter -Q10 -d2 -D10000000 -a2 -S1000 ", file_in, " > ", file_out, sep=""); 
+  ## ToDo: set this values as params that can be set from the command line at pipeline run time (opt$...)
+        ## Former params used in other test cases in the past while finetunning the pipeline
+        ##   options00 = paste(" varFilter -Q 10 -d 15 -a 5 ", file_in, " > ", file_out, sep="");
+        ##   options00 = paste(" varFilter -Q1 -d15 -D10000000 -a2 -S1 ", file_in, " > ", file_out, sep="");
+    #
+    # varFilter" params (SAMTOOLS vcftools.pl):
+    # ------------------------------------------
+    # (1) From "path_vcfutils" (usually in /usr/share/samtools/vcfutils.pl but path might depend on your system)
+    # * Default values used by vcfutils.pl
+    #     d=>2, D=>10000000, a=>2, W=>10, Q=>10, w=>3, p=>undef, 
+    #     1=>1e-4, 2=>1e-100, 3=>0, 4=>1e-4, G=>0, S=>1000, e=>1e-4);
+    #
+    # (2) From "BCFTOOLS COMMANDS AND OPTIONS": http://samtools.sourceforge.net/samtools.shtml#4 )
+    # * Minimum base quality for a base to be considered (param "Q"): 10. We filtered out variants with less than this value in quality (so nothing was left out due to low quality at this stage).
+    # * Minimum read depth (coverage) to call a SNP (param "d"): 15. We filtered out variants with less than this number of reads for that variant.
+    # * Minimum number of alternate bases (param "a"): 5.
+    # * Maximum read depth (coverage) to call a SNP (param "D"): 10.000.000
+    #     The -D option of varFilter controls the maximum read depth, 
+    #     which should be adjusted to about twice the average read depth.
+    # * min P-value for strand bias (given PV4, param "1"). By default: 1e-4.
+    # * min P-value for baseQ bias (param "2"). By default: 1e-100.
+    # * min P-value for mapQ bias (param "3"). By default: 0.
+    # * min P-value for end distance bias (param "4"). By default: 1e-4.
+    # * min indel score for nearby SNP filtering (param "G"). By default: 0.
+    # * minimum SNP quality (param "S"). By default: 1000.
+    # * min P-value for HWE (plus F<0; param "e"). By default: 1e-4.
+  
   command = paste(command00, " ", options00, sep="");
   check2showcommand(params$opt$showc, command, file2process.my2);
   system(command);
@@ -1783,7 +1860,7 @@ fun.grep.variants <- function(file2process.my2, step.my) {
       file_out_e_csv = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.sum.exome_summary.fg.csv", sep=""); 
       command03 = "head -1";
       command04 = command00;
-      options03 = paste(" ", file_in_e_csv2, " > ", file_out_e_csv, sep="");
+      options03 = paste(" ", file_in_e_csv, " > ", file_out_e_csv, sep="");
       options04 = paste(" '", params$opt$filter,"' ", file_in_e_csv, " >> ", file_out_e_csv, sep="");
     }
   } else { # skip the searching for specific target genes 
@@ -1866,8 +1943,6 @@ fun.visualize.variants <- function(file2process.my2, step.my) {
 ##########################
 
 fun.variant.filter.pre.snpeff <- function(file2process.my2, step.my) {
-  
-  
   #   SnpSift (related software)
   #  From http://snpeff.sourceforge.net/SnpSift.html
   #   SnpSift is a collection of tools to manipulate VCF (variant call format) files.
@@ -1893,7 +1968,7 @@ fun.variant.filter.pre.snpeff <- function(file2process.my2, step.my) {
   #   
   #   # Annotate ID field using dbSnp
   #   java -jar SnpSif.jar annotate -v dbSnp.vcf.gz file.vcf > file.dbSnp.vcf
-  #   
+  #
   #   2-) Annotate using SnpEff:
   #   
   #   # Do this only if you don't already have the database installed.
@@ -1940,6 +2015,55 @@ fun.variant.filter.pre.snpeff <- function(file2process.my2, step.my) {
   step.my$tmp <- step.my$tmp + 1
   print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Variant Filtration with SnpSift: ", file2process.my2, " ###\n", sep=""), file2process.my2);
   
+  # SubStep 1 # Annotate ID field using dbSnp
+  # ------------------------------------------
+  #   java -jar SnpSif.jar annotate -v dbSnp.vcf.gz file.vcf > file.dbSnp.vcf
+  file_in  = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam.samtools.var.filtered.vcf", sep=""); 
+  file_out = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam.samtools.var.filtered.ssann.vcf", sep=""); 
+  # "ssann" in "...filtered.ssann.vcf" stands for annotated (ann) by SnpSift (ss)
+  command00 = "java -jar"; # next command.
+  # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
+  file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
+  options00 = paste(" ", params$path_snpEff, "SnpSift.jar annotate -v ", params$path_dbSNP," ",
+                    file_in, " > ", file_out, " 2>> ", file_stderr, sep="");
+  
+  command = paste(command00, " ", options00, sep="");
+  check2showcommand(params$opt$showc, command, file2process.my2);
+  system(command);
+
+  # SubStep 2 # Filter ID field using SnpSift
+  # ------------------------------------------
+  # Filter out variants that have a non-empty ID field. These variants are the ones that are NOT in dbSnp, since we annotated the ID field using rs-numbers from dbSnp in step 1.
+  # java -jar SnpSift.jar filter -f file.eff.vcf "! exists ID" > file.eff.not_in_dbSnp.vcf
+  # 
+  # Note: The expression using to filter the file is "! exists ID". This means that the ID field does not exists (i.e. the value is empty) which is represented as a dot (".") in a VCF file. 
+  
+  file_in  = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam.samtools.var.filtered.ssann.vcf", sep=""); 
+  file_out = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam.samtools.var.filtered.ssann.not_in_dbSnp.vcf", sep=""); 
+  # "ssann" in "...filtered.ssann.vcf" stands for annotated (ann) by SnpSift (ss)
+  command00 = "java -jar"; # next command.
+  # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
+  file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
+  options00 = paste(" ", params$path_snpEff, "SnpSift.jar filter -f ", 
+                    file_in, " \"! exists ID\" ", " > ", file_out, " 2>> ", file_stderr, sep="");
+  
+  command = paste(command00, " ", options00, sep="");
+  check2showcommand(params$opt$showc, command, file2process.my2);
+  system(command);
+  
+  # Show errors (if any)
+  obj.file_stderr <- read.delim(file_stderr, header = FALSE, sep=":")
+  obj.file_stderr <- unlist(obj.file_stderr, use.names = FALSE)[obj.file_stderr$V1=="Error"]
+  # If we found any error, print it.
+  if (length(obj.file_stderr) > 2) {
+    print_doc(paste(obj.file_stderr[1:2], "\n", sep=""),  file2process.my2);
+    # If this shows NA, then there was only 1 error message
+    print_doc(paste(obj.file_stderr[3:4], "\n", sep=""), file2process.my2);  
+  } # Display the error message
+  # # We don't do check2clean here  since the output are results
+  print_done(file2process.my2);
+  
+  ##################### Another potential approach, maybe? - ini #############
   # From http://snpeff.sourceforge.net/SnpSift.html#filter
   #   I want to keep samples where the ID matches a set defined in a file:
   #
@@ -1949,49 +2073,7 @@ fun.variant.filter.pre.snpeff <- function(file2process.my2, step.my) {
   #   rs58108140
   #   rs71262674
   #   rs71262673
-  
-  file_in  = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam.samtools.var.filtered.vcf", sep=""); 
-  file_out = paste(params$directory_out, "/", file2process.my2, ".f.snpEff.", params$opt$snpeff.of, sep=""); 
-  file_out_base = paste(params$directory_out, "/", file2process.my2, ".f.snpEff", sep="");     
-  command00 = "java -jar"; # next command.
-  # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
-  file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
-  options00 = paste(" ", params$path_snpEff, "snpEff.jar -c ", params$path_snpEff, "snpEff.config ", params$opt$genver," ", file_in, 
-                    " -a 0 -i vcf -o ", params$opt$snpeff.of," -chr chr -stats ", file_out_base,"_summary.html > ", file_out,
-                    " 2>> ", file_stderr, sep="");
-  
-  
-  command = paste(command00, " ", options00, sep="");
-  check2showcommand(params$opt$showc, command, file2process.my2);
-  system(command);
-  # Show errors (if any)
-  obj.file_stderr <- read.delim(file_stderr, header = FALSE, sep=":")
-  obj.file_stderr <- unlist(obj.file_stderr, use.names = FALSE)[obj.file_stderr$V1=="Error"]
-  # If we found any error, print it.
-  if (length(obj.file_stderr) > 2) {
-    print_doc(obj.file_stderr[1:2],  file2process.my2);
-    # If this shows NA, then there was only 1 error message
-    print_doc(obj.file_stderr[3:4],  file2process.my2);  
-  } # Display the error message
-  # # We don't do check2clean here  since the output are results
-  print_done(file2process.my2);
-  
-  #   ####### test in
-  #   #   tmp_file_in = "/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a/s_4_m11_146b_merged12.f.vcf4"; 
-  #      tmp_file_in = "/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a/s_4_m11_146b_merged12.sam.sorted.noDup.bam.samtools.var.filtered.vcf"; 
-  #     tmp_file_out = "/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a/00snpeff_146b_merged12.vcf"; 
-  #     tmp_command00 = "java -Xmx4g -jar"; # next command. -Xmx4g stands for indicating the computer to use at least 4Gb of RAM because the Human Genome Database is large
-  # #   #tmp_file_stderr = "/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a/log.121207.sg293a.s_4_m11_146b_merged12.txt";
-  #    tmp_file_stderr = "/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a/00snpeff_log.txt";
-  #    tmp_options00 = paste("/home/ueb/snpEff/snpEff.jar -c /home/ueb/snpEff/snpEff.config hg19 ", tmp_file_in, 
-  #                      " -a 0 -i vcf -o vcf -chr chr -stats /mnt/magatzem02/tmp/run_sara_293a/dir_out_293a/snpEff_summary.html > ", tmp_file_out, " 2>> ", tmp_file_stderr, sep="");
-  #    tmp_command = paste(tmp_command00, " ", tmp_options00, sep="");
-  #    system(tmp_command);
-  ####### test out
-  
-  # Other stuff snpEff related
-  # v3.1 (2012-11): SnpEff 'countReads' count number of reads and bases (form a BAM file) on each gene, transcript, exon, intron, etc. 
-  # See https://ueb.vhir.org/PEEVA+4+Execuci%C3%B3+detalls&no_bl=y#Other_calculations_for_the_report
+  ##################### Another potential approach, maybe? - end #############
   
   gc() # Let's clean ouR garbage if possible
   return(step.my) # return nothing, since results are saved on disk from the system command
