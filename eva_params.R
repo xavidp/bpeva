@@ -131,9 +131,17 @@ if (p_test==1) {
   p_tggbf     <- TRUE # TRUE=A bed file will be generated with the intersecting intervals for the target genes. Needed to filter vcf files for target genes before reunning custom snpEff Report 
   p_mail.send <- 0 # 0=FALSE, 1=TRUE ; Indicate whether we want an email sent when the run is finished
   p_only.m.r  <- 0 # Use only Mapped reads to created the corresponding bam files?
-                    # 0/n: no, use mapped and unmapped reads; 
-                    # 1/y: yes, use only mapped reads; 
-                    # -1/u: the opposite, use only unmapped reads.
+  #                  0/n: no, use mapped and unmapped reads; 
+  #                  1/y: yes, use only mapped reads; 
+  #                 -1/u: the opposite, use only unmapped reads.
+  p_convert.file.list.pe1        <- TRUE #FALSE #TRUE # Keep as TRUE if you have paired end samples (sampe; p_bwa=2)
+  p_convert.file.list.pe2        <- TRUE # This needs to be FALSE for using sam files as input files for the pipeline
+  #                                 --and you are re-processing just some steps--, since you will need
+  #                                 the input file list 1_sequence.fastq etc converted into the _merged12.sam 
+  #                                 IMPORTANT: 
+  #                                 Since revision bzr 70'ish (mid Jan'2013), this might need to be enabled as TRUE in both cases 
+  #                                 of running the whole pipeline or just some steps, when using short reads paired end (sampe; p_bwa=2)
+  
 } else if (p_test==2) {
   path_input_absolute <- "0" # Define whether the p_input is absolute or relative
   p_input    <- "test_in2" #"/mnt/magatzem02/tmp/run_sara_293a/dir_in_293a3" #"test_in2" # "../test_in2"  # "test_in"
@@ -193,9 +201,16 @@ if (p_test==1) {
   p_tggbf     <- TRUE # TRUE=A bed file will be generated with the intersecting intervals for the target genes. Needed to filter vcf files for target genes before reunning custom snpEff Report 
   p_mail.send <- 1 # 0=FALSE, 1=TRUE ; Indicate whether we want an email sent when the run is finished
   p_only.m.r  <- 0 # Use only Mapped reads to created the corresponding bam files?
-  # 0/n: no, use mapped and unmapped reads; 
-  # 1/y: yes, use only mapped reads; 
-  # -1/u: the opposite, use only unmapped reads.
+  #                 0/n: no, use mapped and unmapped reads; 
+  #                 1/y: yes, use only mapped reads; 
+  #                -1/u: the opposite, use only unmapped reads.
+  p_convert.file.list.pe1        <- TRUE #FALSE #TRUE # Keep as TRUE if you have paired end samples (sampe; p_bwa=2)
+  p_convert.file.list.pe2        <- FALSE # This needs to be FALSE for using sam files as input files for the pipeline
+  #                                 --and you are re-processing just some steps--, since you will need
+  #                                 the input file list 1_sequence.fastq etc converted into the _merged12.sam 
+  #                                 IMPORTANT: 
+  #                                 Since revision bzr 70'ish (mid Jan'2013), this might need to be enabled as TRUE in both cases 
+  #                                 of running the whole pipeline or just some steps, when using short reads paired end (sampe; p_bwa=2)
   } else {
   path_input_absolute <- "1" # Define whether the p_input is absolute or relative
   p_input    <- "/mnt/magatzem02/tmp/run_sara_293a/dir_in_293a5" # "../dir_in" # "test_in"   # "dir_in"     
@@ -237,7 +252,15 @@ if (p_test==1) {
                       # 0/n: no, use mapped and unmapped reads; 
                       # 1/y: yes, use only mapped reads; 
                       # -1/u: the opposite, use only unmapped reads.
+  p_convert.file.list.pe1        <- TRUE #FALSE #TRUE # Keep as TRUE if you have paired end samples (sampe; p_bwa=2)
+  p_convert.file.list.pe2        <- TRUE # This needs to be FALSE for using sam files as input files for the pipeline
+  #                                 --and you are re-processing just some steps--, since you will need
+  #                                 the input file list 1_sequence.fastq etc converted into the _merged12.sam 
+  #                                 IMPORTANT: 
+  #                                 Since revision bzr 70'ish (mid Jan'2013), this might need to be enabled as TRUE in both cases 
+  #                                 of running the whole pipeline or just some steps, when using short reads paired end (sampe; p_bwa=2)
 }
+###########################
 # Common params for test runs and non-test runs 
 p_genver    <- "hg19" # hg19 is the only one supported throughout the whole pipeline still, as of January 2013.
 p_se_db_rg  <- "GRCh37.66" # GRCh37.66 is the only one supported for SnpEff v3.1 throughout the whole pipeline still, as of March 2013.
@@ -252,13 +275,6 @@ p_bwa       <- 2          # Algorythm for mapping with bwa - http://bio-bwa.sour
                         # 1: bwa aln      + samse  (short reads, single ends, low errors);
                         # 2: bwa aln (x2) + sampe  (short reads, paired ends, low errors);
                         # 3: bwa bwasw             (longer reads, single end only) 
-p_convert.file.list.pe1        <- TRUE #FALSE #TRUE # Keep as TRUE if you have paired end samples (sampe; p_bwa=2)
-p_convert.file.list.pe2        <- FALSE #FALSE #TRUE # Keep as TRUE if you have paired end samples (sampe; p_bwa=2)
-                                      # --and you are re-processing just some steps--, since you will need
-                                      # the input file list 1_sequence.fastq etc converted into the _merged12.sam 
-                                      # IMPORTANT: 
-                                      # Since revision bzr 70'ish (mid Jan'2013), this might need to be enabled as TRUE in both cases 
-                                      # of running the whole pipeline or just some steps, when using short reads paired end (sampe; p_bwa=2)
 
 # Reporting by email at the end of the run
 p_from <- "xavier.depdedro@vhir.org"
