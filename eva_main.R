@@ -30,7 +30,7 @@ program_ueb <- "eva_main.R";
 
 # Set the working directory from either one of the two options (a and b) listed below
 ## a) the hardcoded way
-wd <- "/home/ueb/repo/peeva/"
+wd <- "/home/ueb/repo/peeva2/"
 setwd(wd)
 
 #wd <- "/home/ueb/repo/peeva/"
@@ -70,21 +70,6 @@ library(snowfall, quietly = TRUE)
 if(!exists("biocLite")){
   source("http://bioconductor.org/biocLite.R")
 }
-if(!require(Rsamtools)){ biocLite("Rsamtools") }
-library(Rsamtools, quietly = TRUE)
-
-if(!require(GenomicFeatures)){ biocLite("GenomicFeatures") }
-library(GenomicFeatures, quietly = TRUE)
-
-# Check for the TxDb.Hsapiens.UCSC.hg19.knownGene or TxDb.Hsapiens.UCSC.hg18.knownGene dynamically 
-# based on the contents of param opt$genver, where hg19 or hg18 is set. 
-# See below after the opt$genver is defined
-
-if(!require(org.Hs.eg.db)){ biocLite("org.Hs.eg.db") }
-library(org.Hs.eg.db, quietly = TRUE)
-
-# if(!require(annotate)){ biocLite("annotate") }
-# library(annotate, quietly = TRUE)
 
 # Command to run on Debian machines to install some of the requriements
 # ---------------------------------------------------------------------
@@ -99,13 +84,19 @@ library(org.Hs.eg.db, quietly = TRUE)
 # Annovar:
 ## fetch, uncompress somewhere, and update the path in ueb_params.R accordingly
 ### wget http://bioinform.usc.edu/annovar/xmpVO9ISYx/annovar.tar.gz (Versión from May 2012)
-# snpEff:
-## Fetch program and db for organism. See http://snpeff.sourceforge.net/manual.html
-## Program: uncompress and leave as ~/snpEff
-### wget http://sourceforge.net/projects/snpeff/files/snpEff_latest_core.zip/download # v3.1 as of Dec 2012, 10th.
-## DB for organism (hg19 in this example): fetch, uncompress, and leave file as ~/snpEff/data/hg19/snpEffectPredictor.bin
-### wget http://sourceforge.net/projects/snpeff/files/databases/v3_1/snpEff_v3_1_hg19.zip/download 
-
+#
+# Proxy?:
+#   If you are behind a proxy, you can download also manually these packages with urls like:
+#   SNP for a version of hg
+#     http://www.openbioinformatics.org/annovar/download/hg18_snp132.txt.gz
+#     http://www.openbioinformatics.org/annovar/download/hg19_snp132.txt.gz
+#     http://www.openbioinformatics.org/annovar/download/hg19_snp135.txt.gz
+#     http://www.openbioinformatics.org/annovar/download/hg19_snp137.txt.gz
+#     http://www.openbioinformatics.org/annovar/download/hg19_snp137NonFlagged.txt.gz 
+#     ...
+#   Cosmic63:
+#     http://www.openbioinformatics.org/annovar/download/hg19_cosmic63.txt.gz 
+#     http://www.openbioinformatics.org/annovar/download/hg19_cosmic63.txt.idx.gz
 #
 # For annovar to work, you need to download many annotation db to your hard disk
 # with commands like:
@@ -119,11 +110,16 @@ library(org.Hs.eg.db, quietly = TRUE)
 #perl /home/ueb/annovar/annotate_variation.pl -downdb avsift -buildver hg19 /home/ueb/annovar/humandb/
 # ...
 
-# ToDo: check
-# http://www.bioconductor.org/help/workflows/variants/
-# log file param: implement it.
-# add new optional param: make colors of log files
-# make number of core to use a param callable as a command line argument of the Rscript call
+# snpEff:
+## Fetch program and db for organism. See http://snpeff.sourceforge.net/manual.html
+## Program: uncompress and leave as ~/snpEff
+### wget http://sourceforge.net/projects/snpeff/files/snpEff_latest_core.zip/download # v3.1 as of Dec 2012, 10th.
+## DB for organism (hg19 in this example): fetch, uncompress, and leave file as ~/snpEff/data/hg19/snpEffectPredictor.bin
+### wget http://sourceforge.net/projects/snpeff/files/databases/v3_1/snpEff_v3_1_hg19.zip/download 
+
+#
+# R packages 
+# Rsamtools, GenomicFeatures, TxDb.Hsapiens.UCSC.hg19.knownGene, TxDb.Hsapiens.UCSC.hg18.knownGene, org.Hs.eg.db
 
 ##############################################################
 
@@ -146,16 +142,25 @@ my.options <- c(
   'in.suffix', 'x', 2, "character", # "Suffi__x__ (ending) of the input file names without extension # Optional",
   'in.ext'   , 'e', 2, "character", # ".__E__xtension of the input filenames (.fastq, .fa, .sam, ...)# Optional",
   'output'   , 'o', 1, "character", # "Directory with __O_utput data files # Compulsory",
+  'f_my_rs'  , 'm', 2, "character", # File my_rs.txt needed by SnpEff to filter by those rs SNP codes only (corresponding to the target genes).,
   'genver'   , 'g', 1, "character", #, "__G__enome version used. E.g.: hg18, hg19, even if only hg19 is supported as of Jan 2013",
+  'se_db_rg' , 'G', 2, "character", #, "__S__npEffect reference __G__enome version used. GRCh37.66 as of March 2013",
   'index'    , 'n', 0, "logical"  , # "i__N__dex the reference genome # Optional",
   'bwa'      , 'w', 1, "integer"  , #, "b__W__a algorythm used. See http://bio-bwa.sourceforge.net/bwa.shtml ".
-  'only.m.r' , 'om',1, "character", # "__O__nly__ __M__apped reads used in bam files # Optional",
-  'filter'   , 'f', 1, "character", # "__F__ilter results for these target genes # Optional",
+  'only.m.r' , 'y', 1, "character", # "__O__nly__ __M__apped reads used in bam files # Optional",
+  'st.vf.Q'  , 'Q', 2, "integer"  , #, "__S__am__T__ools vcftools.pl __v__ariant__F__ilter Q param: Minimum base quality for a base to be considered: 10 (same for small testing sets). 10 (90% accuracy)|20 (99.9%)|30 (99.99%)|40 (99.999%)|50 (99.9999%). See Wikipedia.".
+  'st.vf.d'  , 'd', 2, "integer"  , #, "__S__am__T__ools vcftools.pl __v__ariant__F__ilter d param: Minimum read depth (coverage) to call a SNP: 10-15 (1-2 for small testing sets)".
+  'st.vf.a'  , 'a', 2, "integer"  , #, "__S__am__T__ools vcftools.pl __v__ariant__F__ilter a param: Minimum number of alternate bases: 2-3 (1-2 for small testing sets)".
+  'st.vf.D'  , 'D', 2, "integer"  , #, "__S__am__T__ools vcftools.pl __v__ariant__F__ilter D param: Maximum read depth (coverage) to call a SNP: 10000000 (same for small testing sets)".
+  'st.vf.S'  , 'S', 2, "integer"  , #, "__S__am__T__ools vcftools.pl __v__ariant__F__ilter S param: minimum SNP quality: 1000 (same for small testing sets). The smaller, the better (more precise, more quality in the SNP). High values are too permissive.".
+  'filter'   , 'f', 1, "character", # "__F__ilter results for these target genes (showing all variants | ^: )# Optional",
+  'filter.c' , 'F', 1, "character", # "Filter (__C__lean) results for these target genes: "g1 g2 g3 ..." # Optional",
+  'tggbf'    , 'B', 0, "logical",   # "__B__ed file generation with the intervals for the target genes # Optional",
   'log'      , 'l', 1, "integer"  , # "__L__og info about the process into a log file # Optional",
   'summarize', 's', 0, "logical"  , # "__S__summarize results in a single .csv file with annotations # Optional",
-  'dbsnp'    , 'd', 1, "integer"  , #, "__d__bSNP version used. E.g.: 132, 135, 137, ...".
+  'dbsnp'    , 'N', 1, "integer"  , #, "dbS__N__P version used. E.g.: 132, 135, 137, ...".
   'keep'     , 'k', 0, "logical"  , #, "__K__eep temporal dummy files after they have been used # Optional",
-  'showc'    , 'sc',0, "logical"  , #, "__S__how commands run literally # Optional",
+  'showc'    , 'C', 0, "logical"  , #, "__S__how commands run literally # Optional",
   'cpus'     , 'c', 1, "integer"  , #, "__C__pus to use from the multicore computer or cluster # Optional".
   'parallel' , 'p', 0, "logical"  , #, "__P__arallel processing using SnowFall package # Optional"
   'label'    , 'b', 1, "character"  #, "Run la__B__el to add to output file names, Like: "test-paralel-a", or "sample with param X as Y" # Optional"
@@ -184,9 +189,18 @@ if ( is.null(opt$input    ) ) { opt$input    = p_input   } # "dir_in_sara_207"  
 if ( is.null(opt$in.suffix) ) { opt$in.suffix= p_in.suffix} # "_sequence"    
 if ( is.null(opt$in.ext   ) ) { opt$in.ext   = p_in.ext  } # ".fastq" ".fa"...   
 if ( is.null(opt$output   ) ) { opt$output   = p_output	 } # "dir_out_sara_207"    }
+if ( is.null(opt$f_my_rs  ) ) { opt$f_my_rs  = p_f_my_rs   } # file_my_rs.txt    }
 if ( is.null(opt$genver   ) ) { opt$genver   = p_genver        }
+if ( is.null(opt$se_db_rg ) ) { opt$se_db_rg = p_se_db_rg      } # GRCh37.66
 if ( is.null(opt$index    ) ) { opt$index    = p_index         }
+if ( is.null(opt$st.vf.Q  ) ) { opt$st.vf.Q  = p_st.vf.Q       } #
+if ( is.null(opt$st.vf.d  ) ) { opt$st.vf.d  = p_st.vf.d       } #
+if ( is.null(opt$st.vf.a  ) ) { opt$st.vf.a  = p_st.vf.a       } #
+if ( is.null(opt$st.vf.D  ) ) { opt$st.vf.D  = p_st.vf.D       } #
+if ( is.null(opt$st.vf.S  ) ) { opt$st.vf.S  = p_st.vf.S       } #
 if ( is.null(opt$filter   ) ) { opt$filter   = p_filter           }
+if ( is.null(opt$filter.c ) ) { opt$filter.c = p_filter.c         } # The clean version of target names: "Gene1 Gene2 Gene3 ..."
+if ( is.null(opt$tggbf    ) ) { opt$tggbf    = p_tggbf            } # Logical to indicate whether the bed file with regions for the target gene needs to be
 if ( is.null(opt$log) || opt$log ==1) { opt$log      = p_log        }
 if ( is.null(opt$dbsnp    ) ) { opt$dbsnp    = p_dbsnp              }
 if ( is.null(opt$summarize) ) { opt$summarize= p_summarize          }
@@ -315,7 +329,8 @@ params <- list(startdate = startdate,
                p_smtp = p_smtp,
                p_label = p_label,
                p_desc = p_desc,
-               p_convert.file.list.pe = p_convert.file.list.pe,
+               p_convert.file.list.pe1 = p_convert.file.list.pe1,
+               p_convert.file.list.pe2 = p_convert.file.list.pe2,
                path_fastq = path_fastq,
                path_genome = path_genome,
                path_vcfutils = path_vcfutils,
@@ -405,10 +420,13 @@ sfExport( "params",
 	        "fun.variant.annotation.summarize",
 	        "fun.grep.variants",
 	        "fun.visualize.variants",
+          "fun.tgenes.generate.bed.file",
+          "fun.variant.fii.pre.snpeff",
           "fun.variant.filter.pre.snpeff",
           "fun.variant.dbsnp.pre.snpeff",
+          "fun.grep.pre.snpeff.report",
           "fun.variant.eff.report",
-          "fun.grep.post.snpeff.variants",
+          "fun.grep.post.snpeff.report",
           "fun.build.html.report"
           ) # functions can be passed also to workers from master
 
@@ -433,12 +451,25 @@ sfExport( "params",
     
     step <- fun.index.reference.genome(step.my  = step, abs_routlogfile)
     duration <- Sys.time()-start;
-    cat("\n(Chunk 6) Relative duration since last step: ")
+    cat("\n(Chunk 6a) Relative duration since last step: ")
     print(duration)
   } else {
     step <- data.frame(0, 0)
     colnames(step) <- c("n","tmp")
   }
+
+# Generate the bed file (with sequence intervals) associated with the filters for target genes
+if ( length(opt$filter.c) > 0 && opt$tggbf) { 
+  # Next Step
+  step$tmp <- step$tmp + 1
+  start <- Sys.time(); 
+  # opt$filter.c = p_filter.c -> stands for the list of target genes to process. Separated by spaces
+  step <- fun.tgenes.generate.bed.file(step.my  = step, abs_routlogfile, opt$filter.c)
+  duration <- Sys.time()-start;
+  cat("\n(Chunk 6b) Relative duration since last step: ")
+  print(duration)
+}
+
 
 ##############################################################
 
@@ -460,7 +491,7 @@ unlist(result)
 # Otherwise, the list will be converted just after the merged12.sam files have been created
 #if ( (params$opt$bwa == 2) && (!params_wseq$p_map.on.reference.genome.sequential.mt && !params_wseq$p_map.on.reference.genome.parallel)
 #     && params_w2pps$p_convert.file.list.pe) {
-  if (params$opt$bwa == 2 && params_w2pps$p_convert.file.list.pe) {
+  if (params$opt$bwa == 2 && params_w2pps$p_convert.file.list.pe1) {
   # Next Step
   print_mes(paste("\n ### 1st call to fun.convert.file.list.pe ###\n\n", sep=""), routlogfile);
   list.collected <- fun.convert.file.list.pe(file2process.my2  = routlogfile,
@@ -482,7 +513,7 @@ unlist(result)
 # We changed the file_list parameter for the params$file_list parameter, so that in cases of paired-emnd mode, 
 # this file list will have been rewritten to the new one at this step, and therefore, we will be able to process at this time step half the number of initial fastq files
 if (length(params$file_list) > 1 ) {
-  
+
   ## Using sfLapply (Parallel version of function lapply.)
   start3 <- Sys.time(); result2 <- sfLapply(1:length(params$file_list), wrapper2.parallelizable.per.sample) ; duration <- Sys.time()-start3;
   

@@ -90,7 +90,8 @@ wrapper2.parallelizable.per.sample <- function(datastep.my2) {
   # -----------------------------
   map.on.reference.genome.parallel  <- params_w2pps$p_map.on.reference.genome.parallel
   quality.control   	              <- params_w2pps$p_quality.control
-  convert.file.list.pe              <- params_w2pps$p_convert.file.list.pe
+  convert.file.list.pe1             <- params_w2pps$p_convert.file.list.pe1
+  convert.file.list.pe2             <- params_w2pps$p_convert.file.list.pe2
   bowtie2sam                        <- params_w2pps$p_bowtie2sam
   sam2bam.and.sort	 	              <- params_w2pps$p_sam2bam.and.sort
   remove.pcr.dup		                <- params_w2pps$p_remove.pcr.dup
@@ -112,18 +113,23 @@ wrapper2.parallelizable.per.sample <- function(datastep.my2) {
   variant.annotation.summarize      <- params_w2pps$p_variant.annotation.summarize
   grep.variants		                  <- params_w2pps$p_grep.variants
   visualize.variants		            <- params_w2pps$p_visualize.variants
-  variant.filter.pre.snpeff          <- params_w2pps$p_variant.filter.pre.snpeff
+  variant.fii.pre.snpeff            <- params_w2pps$p_variant.fii.pre.snpeff
+  variant.filter.pre.snpeff         <- params_w2pps$p_variant.filter.pre.snpeff
   variant.dbsnp.pre.snpeff          <- params_w2pps$p_variant.dbsnp.pre.snpeff
+  grep.pre.snpeff.report            <- params_w2pps$p_grep.pre.snpeff.report
   variant.eff.report                <- params_w2pps$p_variant.eff.report
-  grep.post.snpeff.variants         <- params_w2pps$p_grep.post.snpeff.variants
+  grep.post.snpeff.report           <- params_w2pps$p_grep.post.snpeff.report
   
   # -----------------------------
   
   ## Manual debugging
   # datastep.my2 <- 1
-
+  
   # Get the file name to process now
   file2process.my1 <- params$file_list[datastep.my2]
+  # Remove the path of the input (in case of some .sam files as input)  or output (other normal cases) dirs
+  file2process.my1 <- gsub(paste(params$opt$input, "/", sep=""), "", file2process.my1)
+  file2process.my1 <- gsub(paste(params$opt$output, "/", sep=""), "", file2process.my1)
   
   # Re-set working directory while in child worker, just in case
   setwd(params$wd)
@@ -137,7 +143,6 @@ wrapper2.parallelizable.per.sample <- function(datastep.my2) {
     print_mes(paste("	Part A. PARALLELIZED. ", params$n_files, " files; Current: *** ", file2process.my1, " ***\n", sep=""), file2process.my1);
     print_mes("################################################################################\n\n", file2process.my1);
   }
-  
   
   
   #--- Parallel Pipeline steps into wrapper2.parallelizable.per.sample function ###----------------------------------------
@@ -181,7 +186,7 @@ wrapper2.parallelizable.per.sample <- function(datastep.my2) {
   # and one other lock file per sample when each sample is being processed.
 #  if (params$opt$bwa == 2 && (!params_wseq$p_map.on.reference.genome.sequential.mt && !params_wseq$p_map.on.reference.genome.parallel)
 #     && p_convert.file.list.pe) {
-  if (params$opt$bwa == 2 && convert.file.list.pe) {
+  if (params$opt$bwa == 2 && convert.file.list.pe1) {
     
     # Check if general lock file exist.   
     #	  if ( file.exists(paste(params$abs_path_to_script, "/", params$filename_list, ".lock", sep="")) ) {
@@ -204,24 +209,55 @@ wrapper2.parallelizable.per.sample <- function(datastep.my2) {
         # clean the lock file
         #	        system(paste("rm ", params$opt$output, "/", "log.",params$startdate, ".", params$opt$label, ".fastq_pe_tmp.txt.lock", sep=""), TRUE)
         print_mes(paste("\n ### Both single sam files found from this set of paired samples: Removing the general lock file in order to continue processing this paired sample###\n\n", sep=""), file2process.my1);
-        system(paste("rm ", params$filename_list, ".lock", sep=""), TRUE)
+        if (file.exists(paste(params$filename_list, ".lock", sep=""))){
+          system(paste("rm ", params$filename_list, ".lock", sep=""), TRUE)
+        }
       } # end of process to clean the general lock file 
       
     } # end of check for parent lock file. No parent lock file left (removed).
     
     # Remake the file list with the definitive filenames with merged reads (_merged12.sam), and not just all .fastq files
     
-    if (params$opt$bwa == 2 && (params_wseq$p_map.on.reference.genome.sequential.mt || map.on.reference.genome.parallel)) {
-      # Next Step
-      list.collected <- fun.convert.file.list.pe(file2process.my2  = routlogfile,
-                                                 step.my  = step)
-      print_mes(paste("\n ### 2nd call to fun.convert.file.list.pe ###\n\n", sep=""), routlogfile);
-      step.my           <- list.collected[[1]]
-      params$file_list  <- list.collected[[2]]
-      params$n_files    <- list.collected[[3]]
-      file2process.my1 <- params$file_list[datastep.my2]
+
+    # This next condition is critical to make the pipeline robust for all conditions of runs.
+    # ----------------------------------------------------------------------------------------
+    # When the whole pipeline is run from scratch, there use to be no problem at all for paired end samples
+    # but when you run some parts of the pipeline with paired end samples, but you don't do the mapping (because you already did in a previous successful step)
+    # then you need to convert the file list to process from the list of _1_sequence.fastq & _2_sequence.fastq files into the list of _merged12.sam files.
+    # so that we need to check a few conditions, to avoid converting the file list to process in the wrong case.
+    # (1) it needs to be a run with paired end samples (params$opt$bwa == 2)
+    # AND 
+    # (2) it needs to be set to convert in the second momment (other wise it fails for sam files as input files)
+    # AND 
+    # (3) it needs to be either one of the following cases:
+    #   (3a) Mapping was requested, either in sequential-mt or parallel modes.
+    #   OR
+    #   (3b) No Mapping was requested (no sequential-mt nor parallel modes) 
+    #        BUT the param to force the conversion is set to TRUE (params_w2pps$p_convert.file.list.pe1)
+    if (params$opt$bwa == 2 # Case 1
+        # Case 2
+        && (convert.file.list.pe2)    
+          # Case 3
+        && (            
+          # Case 3a
+            (params_wseq$p_map.on.reference.genome.sequential.mt || params_wseq$p_map.on.reference.genome.parallel)
+          ||
+            # Case 3b
+            (!params_wseq$p_map.on.reference.genome.sequential.mt && !params_wseq$p_map.on.reference.genome.parallel && convert.file.list.pe1 )
+          ) # end of Case 3 (either Case 3a or 3b) 
+        ) # end of the set of conditions at the "if" clause
       
-    }
+      { # Do the following when the condition is true
+      
+        # Next Step
+        list.collected <- fun.convert.file.list.pe(file2process.my2  = routlogfile,
+                                                   step.my  = step)
+        print_mes(paste("\n ### 2nd call to fun.convert.file.list.pe ###\n\n", sep=""), routlogfile);
+        step.my           <- list.collected[[1]]
+        params$file_list  <- list.collected[[2]]
+        params$n_files    <- list.collected[[3]]
+        file2process.my1 <- params$file_list[datastep.my2]
+      }
     
   } # end of the case bwa=2 (paired end) ####################################
   
@@ -352,6 +388,12 @@ wrapper2.parallelizable.per.sample <- function(datastep.my2) {
     step <- fun.visualize.variants(file2process.my2  = file2process.my1,
                                    step.my  = step)
   }
+    
+  if (variant.fii.pre.snpeff) {
+    # Next Step
+    step <- fun.variant.fii.pre.snpeff(file2process.my2  = file2process.my1,
+                                          step.my  = step)
+  }
   
   if (variant.filter.pre.snpeff) {
     # Next Step
@@ -365,15 +407,21 @@ wrapper2.parallelizable.per.sample <- function(datastep.my2) {
                                          step.my  = step)
   }
   
+  if (grep.pre.snpeff.report) {
+    # Next Step
+    step <- fun.grep.pre.snpeff.report(file2process.my2  = file2process.my1,
+                                        step.my  = step)
+  }
+  
   if (variant.eff.report) {
     # Next Step
     step <- fun.variant.eff.report(file2process.my2  = file2process.my1,
                                    step.my  = step)
   }
   
-  if (grep.post.snpeff.variants) {
+  if (grep.post.snpeff.report) {
     # Next Step
-    step <- fun.grep.post.snpeff.variants(file2process.my2  = file2process.my1,
+    step <- fun.grep.post.snpeff.report(file2process.my2  = file2process.my1,
                                           step.my  = step)
   }
   
@@ -411,6 +459,9 @@ wrapper2.parallelizable.final <- function(datastep.my2) {
   
   # Get the file name to process now
   file2process.my1 <- params$file_list[datastep.my2]
+  # Remove the path of the input (in case of some .sam files as input)  or output (other normal cases) dirs
+  file2process.my1 <- gsub(paste(params$opt$input, "/", sep=""), "", file2process.my1)
+  file2process.my1 <- gsub(paste(params$opt$output, "/", sep=""), "", file2process.my1)
   
   # Re-set working directory while in child worker, just in case
   setwd(params$wd)
