@@ -64,7 +64,7 @@
 # ---------------------------------------------------------------------
 startdate <- paste(format(Sys.Date(), "%y%m%d"), sep="")
 
-p_test     = 2 # 0-1-2; ### Is this a test run? ###
+p_test     = 0 # 0-1-2; ### Is this a test run? ###
                 # 0 = normal run
                 # 1 = test run, so that use the predefined values for a test run, with samples: ; 
                 # 2 = test run, so that use the predefined values for a test run; 
@@ -198,12 +198,14 @@ if (p_test==1) {
   # -1/u: the opposite, use only unmapped reads.
   } else {
   path_input_absolute <- "1" # Define whether the p_input is absolute or relative
-  p_input    <- "/mnt/magatzem02/tmp/run_sara_293a/dir_in_293a3" # "../dir_in" # "test_in"   # "dir_in"     
-  p_output   <- "/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a3c" #../dir_out_293" # "../dir_out_293" # "test_out"	 # "dir_out_293"
+  p_input    <- "/mnt/magatzem02/tmp/run_sara_293a/dir_in_293a5" # "../dir_in" # "test_in"   # "dir_in"     
+  p_output   <- "/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a5" #../dir_out_293" # "../dir_out_293" # "test_out"	 # "dir_out_293"
   p_f_my_rs  <- "file_my_rs.txt" # In p_input. Needed by SnpEff to filter for the target genes before the report (well, filter for the potential snp rs codes in those genes)
-  p_label    <-  "sg293a3c_2" # sg293a2b2.snpeff.greped" # "test-121002" # ".sg293_qa_sg3sg4"   # "test-121002" ".sara207_4s4cpu"        # Run Label for output filenames
-  p_desc     <-   "Individual 7. With samtools view '-F 4' to filter out unmapped reads."
-#  p_input     <- "/backups_disk_03/tmp/bam_mv311" # "../dir_in" # "test_in"   # "dir_in"     
+  p_label    <-  "sg293a5_b6" # sg293a2b2.snpeff.greped" # "test-121002" # ".sg293_qa_sg3sg4"   # "test-121002" ".sara207_4s4cpu"        # Run Label for output filenames
+  p_desc     <- "Individuals 5 & 6.   Just Mapping multi-thread.
+                      sg293a5_b6: as in sg293a5_b5. After count reads done. Following with Variant calling and filtering"
+  #                    sg293a5_b5: as in sg293a5_b4 but count reads failed due to lack of enough RAM (other process aside of this one eat it all)"
+  #  p_input     <- "/backups_disk_03/tmp/bam_mv311" # "../dir_in" # "test_in"   # "dir_in"     
   p_in.suffix <- "_sequence" #  "_sequence" # "" # This is the suffix of all input filenames (without extension) used for the pipeline to process
   p_in.ext    <-  ".fastq" #".fastq" # ".fa" ".sam" ".bam" # This is the .extension of all files used as input for the pipeline to process
 #  p_output   <- "/backups_disk_03/tmp/bam_mv311" #"/home/xavi/Estudis/eva_bowtie/dir_out" #../dir_out_293" # "../dir_out_293" # "test_out"   # "dir_out_293"
@@ -309,19 +311,19 @@ p_gatk.local.realign.step1    <- FALSE # TRUE # FALSE # runParam
 p_gatk.local.realign.step2    <- FALSE # runParam # Unfinished work
 p_gatk.local.realign.step3    <- FALSE # runParam # Unfinished work
 p_index.bam.file		          <- runParam
-#####
-runParam <- FALSE #######################
-####
 p_stats			                  <- runParam
 p_snpeff.count.reads          <- runParam 
 p_exon.coverage   	          <- FALSE # runParam # Unfinished work
-p_variant.calling		          <- runParam
 #####
-runParam <- FALSE #######################
+runParam <- TRUE #######################
 ####
+p_variant.calling		          <- runParam
 p_variant.filtering		        <- runParam
 p_gatk.combine.vcfs           <- FALSE # runParam # Non-started work (place holder only)
 p_convert2vcf4		            <- runParam
+#####
+runParam <- FALSE #######################
+####
 p_variant.annotation.geneb	  <- runParam
 p_variant.annotation.regionb	<- FALSE # runParam # Non-started work (place holder only)
 p_variant.annotation.filterb	<- runParam
@@ -329,7 +331,7 @@ p_variant.annotation.summarize<- runParam
 p_grep.variants		            <- runParam
 p_visualize.variants		      <- FALSE # runParam # Non-started work (place holder only)
 #####
-runParam <- TRUE #######################
+runParam <- FALSE #######################
 ####
 p_variant.fii.pre.snpeff      <- runParam
 p_variant.filter.pre.snpeff   <- FALSE # runParam # Not running properly yet
