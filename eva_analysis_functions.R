@@ -123,11 +123,9 @@ check2clean <- function(my.option, filename.my1)
   if ( !is.null(params$opt$keep) ) # keep temporary files if requested by the user 
   { 
     # do nothing
-  } else if (file.exists(var)) { # clean temporary files not from this but from the previous step
+  } else { # clean temporary files not from this but from the previous step
     print_mes(paste("\t\t\t\t\tOk. Removing temporary file ", var, "\n\n", sep=""), filename.my1);
     system(paste("rm  ", var, sep=""));
-  } else {
-    print_mes(paste("\t\t\t\t\t[Warning] The file to be removed is missing: ", var, "\n\n", sep=""), filename.my1);
   }
 }
 
@@ -154,17 +152,7 @@ check2showcommand <- function(option.my, command.my, file.my)
 
 w.output.samples <- function(mess, filename.my2)
 {
-  # Make the abs path the file to write to, with the sample to process in it
-  file2write2sample <- paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", filename.my2, ".txt", sep="")
-  # Make the abs path the file to write to, without the filename.my2 added which is a duplicate, it seems, for processes run only once for all samples such as converting file list, indexing the genome, etc.
-  file2write2other <- paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".run.txt", sep="")
-  if (file.exists(file2write2sample)) {
-    write(mess, file=file2write2sample, append = TRUE, sep = "");
-  } else if (file.exists(file2write2other)) {
-    write(mess, file=file2write2other, append = TRUE, sep = "");
-  } else {
-    print(paste("This file doesn't exist: ", file2write2sample, " (nor without '", filename.my2 , "') ", sep="") )
-  }
+  write(mess, file=paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", filename.my2, ".txt", sep=""), append = TRUE, sep = "");
 }
 
 ##########################
@@ -241,12 +229,10 @@ w.checklock.allsamples.pe <- function(file_list.my2)
 
 w.unlock.sample.pe <- function(filename.my2)
 {
-  if (file.exists(paste(params$filename_list, ".lock", sep=""))){
-    print_mes(paste(now(), "Removing lock: ", params$opt$output, "/", "log.",params$startdate, ".", params$opt$label, ".", filename.my2, ".lock \n", sep=""), filename.my2)
-    file2remove <- paste(params$opt$output, "/", "log.",params$startdate, ".", params$opt$label, ".", filename.my2, ".lock", sep="")
-    system(paste("rm ", file2remove, sep=""), TRUE)
-  }
+	print_mes(paste(now(), "Removing lock: ", params$opt$output, "/", "log.",params$startdate, ".", params$opt$label, ".", filename.my2, ".lock \n", sep=""), filename.my2)
+  system(paste("rm ", params$opt$output, "/", "log.",params$startdate, ".", params$opt$label, ".", filename.my2, ".lock", sep=""), TRUE)
 }
+
 
 ##########################
 ### FUNCTION mail.send
@@ -379,7 +365,7 @@ fun.index.reference.genome <- function(step.my, filename.my1) {
   # update step number
   step.my$tmp <- step.my$tmp + 1
 
-  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Map against reference genome: Index the reference genome (if needed) ###\n", sep=""), "run");
+  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Map against reference genome: Index the reference genome (if needed) ###\n", sep=""), "Index the reference genome");
   if ((params$opt$index) & (step.my$n == 0)) { # case to index the reference genome (time consuming, do only when really needed as requested)
     # Index the reference genome, if requested with argument -n and only for the first file if more than one sample to process
     command00 <- "bwa index"; # next command
@@ -624,22 +610,8 @@ fun.convert.file.list.pe <- function(file2process.my2, step.my) {
   
   # When input files contain paired end reads (_pe), a temporal (_tmp) file name will be used first until we combine the data from both strands
   params$filename_list <- paste(params$opt$output, "/", "log.",params$startdate, ".", params$opt$label, ".merged12_input_list.txt", sep="")
-  # Name of the sam file to start with
-  pattern_sam <- "merged12.sam"
-  # Check if there is at least one merged12.sam file
-  #list.files(path=params$opt$input, pattern=pattern_sam)
-  if (length(list.files(path=params$opt$input, pattern=pattern_sam, full.names=F, recursive=F, ignore.case=F)) > 0) {
-      files_sam = paste(params$opt$input, "/", "*merged12.sam", sep="");
-      # Get the list of files in "input" directory through a system call to "ls *" and save the result to a file on disk
-      system(paste("ls ", files_sam, " > ", params$filename_list, sep=""), TRUE)
-      
-  } else if (length(list.files(path=params$opt$output, pattern=pattern_sam, full.names=F, recursive=F, ignore.case=F)) > 0) {
-      files_sam <- paste(params$opt$output,"/", "*merged12.sam", sep="")
-      # Get the list of files in "input" directory through a system call to "ls *" and save the result to a file on disk
-      system(paste("ls ", files_sam, " > ", params$filename_list, sep=""), TRUE)
-  } else {
-      print_doc(paste(" [Error] ", step.my$n, ".", step.my$tmp, ". No *merged12.sam files found neither in input nor ouptput dirs ###\n", sep=""), file2process.my2);
-  }
+  # Get the list of files in "input" directory through a system call to "ls *" and save the result to a file on disk
+  system(paste("ls ", params$opt$output,"/", "*merged12.sam > ", params$filename_list, sep=""), TRUE)
   
   # Read the file with the list of files to be processed
   params$file_list <- read.table(params$filename_list, sep="")
@@ -1144,10 +1116,7 @@ fun.snpeff.count.reads <- function(file2process.my2, step.my) {
     # (2) The potential problems: see 
     #   http://stackoverflow.com/questions/9860090/in-r-why-is-better-than-subset 
     #   https://github.com/hadley/devtools/wiki/Evaluation
-    
-    # We could use params$opt$filter.c since it's already clean (added in March 2013)
-    #  but we do clean params$opt$filter here still  
-    # ---------------------------------------------
+
     # Get first the list of Gene Symbols for the "target genes" of interest for the researcher (tgenes)
       # Split values by pipe (it will create some empty values also, but we will remove them later)
       tgenes <- strsplit(params$opt$filter, "|", fixed=TRUE)
@@ -1169,7 +1138,6 @@ fun.snpeff.count.reads <- function(file2process.my2, step.my) {
       tgenes <- unique(tgenes)
       # Remove the case of an empty value
       tgenes <- tgenes[-match("", tgenes)]
-    # --------------------------------------------------
 
     ## Filter results by the genes of interest only WITH A SUBSET
       ## Works easily with one value
@@ -1347,22 +1315,6 @@ fun.exon.coverage <- function(file2process.my2, step.my) {
   # update step number
   step.my$tmp <- step.my$tmp + 1
   print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Gene Exons Coverage: ", file2process.my2, " ###\n", sep=""), file2process.my2);
-
-  if(!require(Rsamtools)){ biocLite("Rsamtools") }
-  library(Rsamtools, quietly = TRUE)
-  
-  if(!require(GenomicFeatures)){ biocLite("GenomicFeatures") }
-  library(GenomicFeatures, quietly = TRUE)
-  
-  # Check for the TxDb.Hsapiens.UCSC.hg19.knownGene or TxDb.Hsapiens.UCSC.hg18.knownGene dynamically 
-  # based on the contents of param opt$genver, where hg19 or hg18 is set. 
-  # See below after the opt$genver is defined
-  
-  if(!require(org.Hs.eg.db)){ biocLite("org.Hs.eg.db") }
-  library(org.Hs.eg.db, quietly = TRUE)
-  
-  # if(!require(annotate)){ biocLite("annotate") }
-  # library(annotate, quietly = TRUE)
   
   # From http://www.bioconductor.org/help/workflows/variants/
   #   > ## get entrez ids from gene symbols
@@ -1578,9 +1530,7 @@ fun.variant.calling <- function(file2process.my2, step.my) {
 #  options00 = paste(" mpileup -uf                         ", params$path_genome, " ", file_in, " | bcftools view -vcg - >  ", file_out, sep="");
 
   # Those params needed to be called after the file_in!!!
-#  options00 = paste(" mpileup -uf ", params$path_genome, " ", file_in, " -C50 -EDS -q50 -d10000 | bcftools view -Avcg - >  ", file_out, sep="");
-## March 18th: Removing the -A from bcftools to see whether the weird X letters in alternative nucleotide go away from vcf files. 
-  options00 = paste(" mpileup -uf ", params$path_genome, " ", file_in, " -C50 -EDS -q50 -d10000 | bcftools view -vcg - >  ", file_out, sep="");
+  options00 = paste(" mpileup -uf ", params$path_genome, " ", file_in, " -C50 -EDS -q50 -d10000 | bcftools view -Avcg - >  ", file_out, sep="");
   
   # Jan 9th, 2013: 
   ## added params in samtools mpileup: 
@@ -1635,14 +1585,7 @@ fun.variant.filtering <- function(file2process.my2, step.my) {
   command00 = params$path_vcfutils ; # next command.
 
   ## This line below contain the new params set as default for the EVA pipeline, as of March 13th, 2013.
-  #former hardcoded params in 1 line: options00 = paste(" varFilter -Q10 -d10 -a2 -D10000000 -S1000 ", file_in, " > ", file_out, sep=""); 
-  options00 = paste(" varFilter ",
-                    " -Q", params$opt$st.vf.Q, # by default:        10
-                    " -d", params$opt$st.vf.d, # by default:        10
-                    " -a", params$opt$st.vf.a, # by default:         2
-                    " -D", params$opt$st.vf.D, # by default:  10000000
-                    " -S", params$opt$st.vf.S, # by default:      1000
-                    " ", file_in, " > ", file_out, sep=""); 
+  options00 = paste(" varFilter -Q10 -d10 -a2 -D10000000 -S1000 ", file_in, " > ", file_out, sep=""); 
   ## ToDo: set this values as params that can be set from the command line at pipeline run time (opt$...)
         ## Former params used in other test cases in the past while finetunning the pipeline
         ##   options00 = paste(" varFilter -Q 10 -d 15 -a 5 ", file_in, " > ", file_out, sep="");
@@ -2004,167 +1947,6 @@ fun.visualize.variants <- function(file2process.my2, step.my) {
 }
 
 ##########################
-### FUNCTION fun.tgenes.generate.bed.file
-###
-###     Generate a bed file with the intersecting intervals (genomic regions) for the target genes
-###     Needed to filter vcf files with SnpSift.jar for target genes before reunning custom snpEff Report 
-
-##########################
-# x stands for the list of target genes to process. Separated by spaces
-
-fun.tgenes.generate.bed.file <- function(step.my, file2process.my2, x) {
-  
-  # Manual debugging
-  # file2process.my2 <- abs_routlogfile
-  # x <- "BRCA1 BRCA2 CHEK2 PALB2 BRIP1 TP53 PTEN STK11 CDH1 ATM BARD1 APC MLH1 MRE11A MSH2 MSH6 MUTYH NBN PMS1 PMS2 RAD50 RAD51D RAD51C XRCC2 UIMC1 FAM175A ERCC4 RAD51 RAD51B XRCC3 FANCA FANCB FANCC FANCD2 FANCE FANCF FANCG FANCI FANCL FANCM SLX4 CASP8 FGFR2 TOX3 MAP3K1 MRPS30 SLC4A7 NEK10 COX11 ESR1 CDKN2A CDKN2B ANKRD16 FBXO18 ZNF365 ZMIZ1 BABAM1 LSP1 ANKLE1 TOPBP1 BCCIP TP53BP1"
-  # step.my <- data.frame(0, 0)
-  # colnames(step.my) <- c("n","tmp")
-
-  # update step number
-  #step.my$tmp <- step.my$tmp + 1
-  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Generate a bed file with the genomic regions for the target genes (...my_bed.txt) ###\n", sep=""), "run");
-  
-  # Get a list of the genetic intervals of those genes (in BED format): my_genes.bed
-  # Using Bioconductor R package biomaRt
-
-  # Install library if necessary
-  if(!require(biomaRt)){ biocLite("biomaRt") }
-  # Load libraries 
-  library(biomaRt, quietly = TRUE)
-  
-  # Load the mart for ensembl
-  mart <- useMart(biomart = "ensembl", dataset = "hsapiens_gene_ensembl")
-
-  ## Manual debugging
-  #listMarts()
-  # g = getGene( id = "BRCA1", type = "hgnc_symbol", mart = mart)
-  # show(g)
-  #x <- "BRCA1 BRCA2 CHEK2 PALB2 BRIP1 TP53 PTEN STK11 CDH1 ATM BARD1 APC MLH1 MRE11A MSH2 MSH6 MUTYH NBN PMS1 PMS2 RAD50 RAD51D RAD51C XRCC2 UIMC1 FAM175A ERCC4 RAD51 RAD51B XRCC3 FANCA FANCB FANCC FANCD2 FANCE FANCF FANCG FANCI FANCL FANCM SLX4 CASP8 FGFR2 TOX3 MAP3K1 MRPS30 SLC4A7 NEK10 COX11 ESR1 CDKN2A CDKN2B ANKRD16 FBXO18 ZNF365 ZMIZ1 BABAM1 LSP1 ANKLE1 TOPBP1 BCCIP TP53BP1"
-
-  tgenes <- unlist(strsplit(x, split=" ", fixed=TRUE))
-  #length(tgenes)
-  #head(tgenes)
-  tgenes.o <- tgenes[order(tgenes)]
-  #head(tgenes2)
-  
-  tg = getGene( id = tgenes, type = "hgnc_symbol", mart = mart)
-  #dim(tg)
-  #head(tg)
-  
-  # Remove the LRG (Locus Reference Genome) names, since they show up as duplicated records to a differnt chromosome called LR_xxx, besides the other record for the normal chromosome. 
-  #   "LRG sequences provide a stable genomic DNA framework for reporting mutations with a permanent ID and core content that never changes."
-  #   See http://www.lrg-sequence.org/
-  tg.lrg.idx <- grep("LRG", tg$chromosome_name, fixed=T)
-  # Keep only the list of target genes without lrg 
-  tg.nolrg <- tg[-tg.lrg.idx,]
-  
-  # Sort results by gene name
-  tg.nolrg.o <- tg.nolrg[order(tg.nolrg$hgnc_symbol),]
-  #head(tg.nolrg.o)
-  #head(tg.nolrg.o$hgnc_symbol)
-  #str(tg2)
-  #?match
-  
-  # Get the indexes of genes from the ordered list of target genes which are not found in the results 
-  tg.nolrg.o.new.idx <- which(!tgenes.o %in% tg.nolrg.o$hgnc_symbol)
-  # If there are missmatches between target gene names, display a warning and display them
-  if ( length(tg.nolrg.o.new.idx) > 0) {
-    print("Warning: some missmatch found between target gene names and their corresponding matches through biomaRt")
-    # Display those gene names
-    tgenes.o[tg.nolrg.o.new.idx]
-  }
-  #dim(tg.nolrg.o)
-  #tg.nolrg.o
-  #row.names(tg.nolrg.o)
-  #dim(tg.nolrg.o)[1]
-  score <- rep(0, dim(tg.nolrg.o)[1])
-  #class(foo)
-  tg.nolrg.o <- cbind(tg.nolrg.o, score)
-  #str(tg.nolrg.o)
-  
-  # Get just the columns of interest to generate a valid BED file. 
-  # See http://genome.ucsc.edu/FAQ/FAQformat.html#format1
-  my_bed <- tg.nolrg.o[, c("chromosome_name", "start_position", "end_position", "hgnc_symbol", "score", "strand")]
-
-  # I sort by Chromosome first, and by Start position later. 
-  # In addition, I remove warnings explicitly because I'm coercing chr names to integers, adn Chr X is not an integer.
-  my_bed <- suppressWarnings(my_bed[order(as.integer(my_bed$chromosome_name), as.integer(my_bed$start_position)), ])
-
-  # Write the results to the file my_bed.txt
-  file_my_bed = file=paste(params$log.folder,"/log.", startdate, ".", opt$label,".tg.bed", sep="")
-  
-  # I remove the warning messages from this call (below) because of the coercion type of message (harmless, afaik, but annoying and polluting output in log files)
-  # Write all: data with column names in one go
-  suppressWarnings(write.table(my_bed, file=file_my_bed, append=T, quote=T, sep=",", row.names=F, col.names=T))
-
-  # # We don't do check2clean here  since the output are results
-  print_done("run");
-  
-  
-  gc() # Let's clean ouR garbage if possible
-  return(step.my) # return nothing, since results are saved on disk from the system command
-  
-}
-
-##########################
-### FUNCTION fun.variant.fii.pre.snpeff
-###
-###     Filter Intersecting Intervals to get only values for the target genes in vcf files
-###     Get a list of the genetic intervals of those target genes (in BED format): targetgenes.bed
-###     Use "SnpSift intidx" to extract those regions: 
-###
-###     More details here: http://snpeff.sourceforge.net/SnpSift.html#intidx
-###
-##########################
-
-fun.variant.fii.pre.snpeff <- function(file2process.my2, step.my) {
-  
-# - Get a list of the genetic intervals of those genes (in BED format): my_genes.bed
-# - Use "SnpSift intidx" to extract those regions: 
-#   java -jar SnpSift.jar intidx variants.vcf my_genes.bed > variants_intersecting_intervals.vcf
-# 
-# More details here: http://snpeff.sourceforge.net/SnpSift.html#intidx
-
-  #   #Manual debugging - ini
-  #   file2process.my2 <-"sample_a_merged12.sam"
-  #   step.my <- data.frame(10, 0)
-  #   colnames(step.my) <- c("n","tmp")
-  #   step.my$tmp <- 0
-  #   #Manual debugging - end
-  
-  # update step number
-  step.my$tmp <- step.my$tmp + 1
-  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Filter Intersecting Intervals in f.vcf from target genes (SnpSift using tg.bed): ", file2process.my2, " ###\n", sep=""), file2process.my2);
-  
-  # Example of process in the command line
-  #   java -jar SnpSift.jar intidx variants.vcf my_genes.bed > variants_intersecting_intervals.vcf
-  file_in  = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam.samtools.var.filtered.vcf", sep=""); 
-  file_out = paste(params$directory_out, "/", file2process.my2, ".f.ssfii.vcf", sep="");
-  # "ssfii" stands for SnpSift Filtered Interseting Intervals
-  
-  # As defined in the previous step
-  file_my_bed = file=paste(params$log.folder,"/", params$startdate, ".", params$opt$label,".ssfiitg.bed", sep="")
-  
-  command00 = "java -jar"; # next command.
-  # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
-  file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
-  options00 = paste(" ", params$path_snpEff, "SnpSift.jar intidx ", file_in," ",
-                    file_my_bed, " > ", file_out, " 2>> ", file_stderr, sep="");
-  
-  command = paste(command00, " ", options00, sep="");
-  check2showcommand(params$opt$showc, command, file2process.my2);
-  system(command);
-  
-  # # We don't do check2clean here  since the output are results
-  print_done(file2process.my2);
-  
-  
-  gc() # Let's clean ouR garbage if possible
-  return(step.my) # return nothing, since results are saved on disk from the system command
-  
-}
-
-##########################
 ### FUNCTION fun.variant.filter.pre.snpeff
 ###
 ###     We annotate using dbSnp before using SnpEff in order to have 'known' and 'unknown' statistics in SnpEff's summary page.
@@ -2245,15 +2027,11 @@ fun.variant.filter.pre.snpeff <- function(file2process.my2, step.my) {
   step.my$tmp <- step.my$tmp + 1
   print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Variant Filtration with SnpSift: ", file2process.my2, " ###\n", sep=""), file2process.my2);
   
-  # SubStep 1 # Annotate ID field using SnpSift & dbSnp
-  # ----------------------------------------------------
-  # Display substep name
-  print_doc(paste(" Step ", step.my$n, ".", step.my$tmp, "a) Annotate ID field using SnpSift & dbSnp: ", file2process.my2, " ###\n", sep=""), file2process.my2);
-
-  # Example of process in the command line
-  #   java -jar SnpSift.jar annotate -v dbSnp.vcf.gz file.vcf > file.dbSnp.vcf
+  # SubStep 1 # Annotate ID field using dbSnp
+  # ------------------------------------------
+  #   java -jar SnpSif.jar annotate -v dbSnp.vcf.gz file.vcf > file.dbSnp.vcf
   file_in  = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam.samtools.var.filtered.vcf", sep=""); 
-  file_out = paste(params$directory_out, "/", file2process.my2, ".f.ssann.vcf", sep=""); 
+  file_out = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam.samtools.var.filtered.ssann.vcf", sep=""); 
   # "ssann" in "...filtered.ssann.vcf" stands for annotated (ann) by SnpSift (ss)
   command00 = "java -jar"; # next command.
   # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
@@ -2265,86 +2043,15 @@ fun.variant.filter.pre.snpeff <- function(file2process.my2, step.my) {
   check2showcommand(params$opt$showc, command, file2process.my2);
   system(command);
 
-  # SubStep 2 # Annotate using SnpEff
+  # SubStep 2 # Filter ID field using SnpSift
   # ------------------------------------------
-  # Display substep name
-  print_doc(paste(" Step ", step.my$n, ".", step.my$tmp, "b) Annotate using SnpEff the file from the previous step: ", file2process.my2, " ###\n", sep=""), file2process.my2);
-
-  # # Do this only if you don't already have the database installed.
-  #     java -jar snpEff.jar download -v GRCh37.66
-  #       or this if you are behind a proxy:
-  #     java -DproxySet=true -DproxyHost=yourproxy -DproxyPort=portnumber -jar snpEff.jar download -v GRCh37.66
-
-  # # Annotate the file
-  # java -Xmx4g -jar snpEff.jar eff -v GRCh37.66 file.dbSnp.vcf > file.eff.vcf
-  file_in  = paste(params$directory_out, "/", file2process.my2, ".f.ssann.vcf", sep=""); 
-  file_out = paste(params$directory_out, "/", file2process.my2, ".f.ssann.eff.vcf", sep=""); 
-  # "ssann" in "...filtered.ssann.vcf" stands for annotated (ann) by SnpSift (ss)
-  command00 = "java -jar"; # next command.
-  # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
-  file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
-  options00 = paste(" ", params$path_snpEff, "snpEff.jar eff -t  -c ", params$path_snpEff, "snpEff.config ",
-                    " -v ", params$opt$se_db_rg," ",
-                    file_in, " > ", file_out, " 2>> ", file_stderr, sep="");
-  
-  command = paste(command00, " ", options00, sep="");
-  check2showcommand(params$opt$showc, command, file2process.my2);
-  system(command);
-
-
-  # SubStep 3 # Generate file with my_rs codes from target genes 
-  # ------------------------------------------------------------
-  # Display substep name
-#  print_doc(paste(" Step ", step.my$n, ".", step.my$tmp, "c) Generate file with my_rs codes from target genes", file2process.my2, " ###\n", sep=""), file2process.my2);
-
-  # From http://snpeff.sourceforge.net/SnpSift.html#filter
-  #   I want to keep samples where the ID matches a set defined in a file:
-  #
-  #     cat variants.vcf | java -jar SnpSift.jar filter --set my_rs.txt "ID in SET[0]" > filtered.vcf
-  #
-  #   The file my_rs.txt has one string per line, e.g.:
-  #   rs58108140
-  #   rs71262674
-  #   rs71262673
-  ##################### Another potential approach, maybe? #############
-  # So far, I'm getting this list by hand from   
-  # http://www.scandb.org/newinterface/index.html
-  # I upload there the list of genes with 
-  ##################### Another potential approach, maybe? #############
-  
-  
-  # SubStep 4 # Filter using SnpSift for target genes (my_rs.txt) 
-  # ------------------------------------------
-  # Display substep name
-  print_doc(paste(" Step ", step.my$n, ".", step.my$tmp, "c) Filter using SnpSift for target genes (my_rs.txt): ", file2process.my2, " ###\n", sep=""), file2process.my2);
-  #     cat variants.vcf | java -jar SnpSift.jar filter --set my_rs.txt "ID in SET[0]" > filtered.vcf
-  file_in  = paste(params$directory_out, "/", file2process.my2, ".f.ssann.eff.vcf", sep=""); 
-  file_out = paste(params$directory_out, "/", file2process.my2, ".f.ssann.eff.fss.vcf", sep=""); # fss stands for Filtered by SnipSift
-  # "ssann" in "...f.ssann.vcf" stands for annotated (ann) by SnpSift (ss)
-  # "fss" in "....f.ssann.eff.fss.vcf" stands for Filtered by SnipSift
-  command00 = paste("cat ", file_in, " | java -jar", sep=""); # next command.
-  # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
-  file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
-  options00 = paste(" ", params$path_snpEff, "SnpSift.jar filter --set ", 
-                    paste(params$directory_in, "/", params$opt$f_my_rs, sep=""), 
-                    " \"ID in SET[0]\" ", " > ", file_out, " 2>> ", file_stderr, sep="");
-  
-  command = paste(command00, " ", options00, sep="");
-  check2showcommand(params$opt$showc, command, file2process.my2);
-  system(command);
-  
-  
-  # SubStep 5 # Filter ID field using SnpSift
-  # ------------------------------------------
-  # Display substep name
-  print_doc(paste(" Step ", step.my$n, ".", step.my$tmp, "e) Filter ID field using SnpSift: ", file2process.my2, " ###\n", sep=""), file2process.my2);
   # Filter out variants that have a non-empty ID field. These variants are the ones that are NOT in dbSnp, since we annotated the ID field using rs-numbers from dbSnp in step 1.
   # java -jar SnpSift.jar filter -f file.eff.vcf "! exists ID" > file.eff.not_in_dbSnp.vcf
   # 
   # Note: The expression using to filter the file is "! exists ID". This means that the ID field does not exists (i.e. the value is empty) which is represented as a dot (".") in a VCF file. 
   
-  file_in  = paste(params$directory_out, "/", file2process.my2, ".f.ssann.vcf", sep=""); 
-  file_out = paste(params$directory_out, "/", file2process.my2, ".f.ssann.not_in_dbSnp.vcf", sep=""); 
+  file_in  = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam.samtools.var.filtered.ssann.vcf", sep=""); 
+  file_out = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam.samtools.var.filtered.ssann.not_in_dbSnp.vcf", sep=""); 
   # "ssann" in "...filtered.ssann.vcf" stands for annotated (ann) by SnpSift (ss)
   command00 = "java -jar"; # next command.
   # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
@@ -2368,7 +2075,18 @@ fun.variant.filter.pre.snpeff <- function(file2process.my2, step.my) {
   # # We don't do check2clean here  since the output are results
   print_done(file2process.my2);
   
- 
+  ##################### Another potential approach, maybe? - ini #############
+  # From http://snpeff.sourceforge.net/SnpSift.html#filter
+  #   I want to keep samples where the ID matches a set defined in a file:
+  #
+  #     cat variants.vcf | java -jar SnpSift.jar filter --set my_rs.txt "ID in SET[0]" > filtered.vcf
+  #
+  #   and the file my_rs.txt has one string per line, e.g.:
+  #   rs58108140
+  #   rs71262674
+  #   rs71262673
+  ##################### Another potential approach, maybe? - end #############
+  
   gc() # Let's clean ouR garbage if possible
   return(step.my) # return nothing, since results are saved on disk from the system command
   
@@ -2429,63 +2147,6 @@ fun.variant.dbsnp.pre.snpeff <- function(file2process.my2, step.my) {
   
 }
 
-
-##########################
-### FUNCTION fun.grep.pre.snpeff.report
-###
-###   Select variants (based on grep calls) for the target genes
-###   in the vcf file before the snpEff report is called 
-
-##########################
-
-fun.grep.pre.snpeff.report <- function(file2process.my2, step.my) {
-  # update step number
-  step.my$tmp <- step.my$tmp + 1
-  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Select variants for the target genes based on grep calls before the snpEff report: ", file2process.my2, " ###\n", sep=""), file2process.my2);
-  
-  if (!is.null(params$opt$filter) && (params$opt$filter != "")) {
-    #######################
-    # 1st part - sample.*.snpEff.[params$opt$snpeff.of] (= .vcf, .txt, ...)
-    #-------------------------------
-#    file_in  = paste(params$directory_out, "/", file2process.my2, ".f.ssann.eff.vcf", sep=""); 
-#    file_out = paste(params$directory_out, "/", file2process.my2, ".f.ssann.eff.fg.vcf", sep=""); 
-    file_in  = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam.samtools.var.filtered.vcf", sep=""); 
-    file_out = paste(params$directory_out, "/", file2process.my2, ".f.fg.vcf", sep=""); 
-    command00 = "grep -P"; # next command.
-    options00 = paste(" '", params$opt$filter,"' ", file_in, " > ", file_out, sep="");
-    # Remember that the values in the previous opt$filter variable needs to be like: 'BRCA1\|BRCA2' 
-    # in order to end up performing a command like:
-    # grep 'BRCA1\|BRCA2' dir_out/Gutierrez_A_*.exonic* 
-    command01 = "grep ^\\#";
-    command02 = command00;
-    options01 = paste(" ", file_in, " > ", file_out, sep="");
-    options02 = paste(" '", params$opt$filter,"' ", file_in, " >> ", file_out, sep="");
-    
-    command = paste(command01, " ", options01, sep="");
-    check2showcommand(params$opt$showc, command, file2process.my2);
-    system(command);
-    
-    command = paste(command02, " ", options02, sep="");
-    check2showcommand(params$opt$showc, command, file2process.my2);
-    system(command);
-    
-  } else { # skip the searching for specific target genes 
-    
-    command00 = "echo '  ...skipped...'"; # next command.
-    options00 = "";
-    command = paste(command00, " ", options00, sep="");
-    check2showcommand(params$opt$showc, command, file2process.my2);
-    system(command);
-  }
-  
-  #check2clean(file_in, file2process.my2);
-  print_done(file2process.my2);
-  
-  gc() # Let's clean ouR garbage if possible
-  return(step.my) # return nothing, since results are saved on disk from the system command
-}
-
-
 ##########################
 ### FUNCTION fun.variant.eff.report
 ###
@@ -2514,21 +2175,9 @@ fun.variant.eff.report <- function(file2process.my2, step.my) {
   step.my$tmp <- step.my$tmp + 1
   print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Variant Annotation & Effect prediction with snpEff: ", file2process.my2, " ###\n", sep=""), file2process.my2);
 
-#  file_in  = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam.samtools.var.filtered.vcf", sep=""); 
-#  file_in  = paste(params$directory_out, "/", file2process.my2, ".f.ssann.eff.fss.vcf", sep=""); 
-#  file_in  = paste(params$directory_out, "/", file2process.my2, ".f.ssann.eff.fg.vcf", sep=""); 
-#  file_in  = paste(params$directory_out, "/", file2process.my2, ".f.fg.vcf", sep=""); 
-  file_in  = paste(params$directory_out, "/", file2process.my2, ".f.ssfii.vcf", sep="");   
-#  file_out = paste(params$directory_out, "/", file2process.my2, ".f.snpEff.", params$opt$snpeff.of, sep=""); 
-#  file_out = paste(params$directory_out, "/", file2process.my2, ".f.ssann.eff.fss.snpEff.", params$opt$snpeff.of, sep=""); 
-#  file_out = paste(params$directory_out, "/", file2process.my2, ".f.ssann.eff.fg.", params$opt$snpeff.of, sep=""); 
-#  file_out = paste(params$directory_out, "/", file2process.my2, ".f.fg.", params$opt$snpeff.of, sep=""); 
-  file_out = paste(params$directory_out, "/", file2process.my2, ".f.ssfii.", params$opt$snpeff.of, sep=""); 
-  #  file_out_base = paste(params$directory_out, "/", file2process.my2, ".f.snpEff", sep="");     
-#  file_out_base = paste(params$directory_out, "/", file2process.my2, ".f.ssann.eff.fss.snpEff", sep="");     
-#  file_out_base = paste(params$directory_out, "/", file2process.my2, ".f.ssann.eff.fg", sep="");     
-#  file_out_base = paste(params$directory_out, "/", file2process.my2, ".f.fg", sep="");     
-  file_out_base = paste(params$directory_out, "/", file2process.my2, ".f.ssfii", sep="");     
+  file_in  = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam.samtools.var.filtered.vcf", sep=""); 
+  file_out = paste(params$directory_out, "/", file2process.my2, ".f.snpEff.", params$opt$snpeff.of, sep=""); 
+  file_out_base = paste(params$directory_out, "/", file2process.my2, ".f.snpEff", sep="");     
   command00 = "java -jar"; # next command.
   # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
   file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
@@ -2577,7 +2226,16 @@ fun.variant.eff.report <- function(file2process.my2, step.my) {
   # # We don't do check2clean here  since the output are results
   print_done(file2process.my2);
   
-
+#   # a mà la instrucció al mainhead és:
+# Estudi 293
+# java  -Xmx4g -jar /home/ueb/snpEff/snpEff.jar  -c /home/ueb/snpEff/snpEff.config hg19 /mnt/magatzem02/tmp/run_sara_293a/dir_out_293a/s_4_m11_146b_merged12.sam.sorted.noDup.bam.samtools.var.filtered.vcf -a 0 -i vcf -o vcf -chr chr -stats /mnt/magatzem02/tmp/run_sara_293a/dir_out_293a/s_4_m11_146b_merged12.f.snpEff_summary.html > /mnt/magatzem02/tmp/run_sara_293a/dir_out_293a/s_4_m11_146b_merged12.f.snpEff.vcf
+# java  -Xmx4g -jar /home/ueb/snpEff/snpEff.jar  -c /home/ueb/snpEff/snpEff.config hg19 /mnt/magatzem02/tmp/run_sara_293a/dir_out_293a/s_3_m11_145b_merged12.sam.sorted.noDup.bam.samtools.var.filtered.vcf -a 0 -i vcf -o vcf -chr chr -stats /mnt/magatzem02/tmp/run_sara_293a/dir_out_293a/s_3_m11_145b_merged12.f.snpEff_summary.html > /mnt/magatzem02/tmp/run_sara_293a/dir_out_293a/s_3_m11_145b_merged12.f.snpEff.vcf
+#Estudi 207
+# java  -Xmx4g -jar /home/ueb/snpEff/snpEff.jar  -c /home/ueb/snpEff/snpEff.config hg19 /mnt/magatzem02/tmp/run_sara_207v05/G_A_I.sam.sorted.noDup.bam.samtools.var.filtered.vcf -a 0 -i vcf -o vcf -chr chr -stats /mnt/magatzem02/tmp/run_sara_207v05/G_A_I.f.snpEff_summary.html > /mnt/magatzem02/tmp/run_sara_207v05/G_A_I.f.snpEff.vcf
+# java  -Xmx4g -jar /home/ueb/snpEff/snpEff.jar  -c /home/ueb/snpEff/snpEff.config hg19 /mnt/magatzem02/tmp/run_sara_207v05/G_A_S.sam.sorted.noDup.bam.samtools.var.filtered.vcf -a 0 -i vcf -o vcf -chr chr -stats /mnt/magatzem02/tmp/run_sara_207v05/G_A_S.f.snpEff_summary.html > /mnt/magatzem02/tmp/run_sara_207v05/G_A_S.f.snpEff.vcf
+# java  -Xmx4g -jar /home/ueb/snpEff/snpEff.jar  -c /home/ueb/snpEff/snpEff.config hg19 /mnt/magatzem02/tmp/run_sara_207v05/G_B_I.sam.sorted.noDup.bam.samtools.var.filtered.vcf -a 0 -i vcf -o vcf -chr chr -stats /mnt/magatzem02/tmp/run_sara_207v05/G_B_I.f.snpEff_summary.html > /mnt/magatzem02/tmp/run_sara_207v05/G_B_I.f.snpEff.vcf
+# java  -Xmx4g -jar /home/ueb/snpEff/snpEff.jar  -c /home/ueb/snpEff/snpEff.config hg19 /mnt/magatzem02/tmp/run_sara_207v05/G_B_S.sam.sorted.noDup.bam.samtools.var.filtered.vcf -a 0 -i vcf -o vcf -chr chr -stats /mnt/magatzem02/tmp/run_sara_207v05/G_B_S.f.snpEff_summary.html > /mnt/magatzem02/tmp/run_sara_207v05/G_B_S.f.snpEff.vcf
+  
   #   ####### test in
 #   #   tmp_file_in = "/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a/s_4_m11_146b_merged12.f.vcf4"; 
 #      tmp_file_in = "/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a/s_4_m11_146b_merged12.sam.sorted.noDup.bam.samtools.var.filtered.vcf"; 
@@ -2611,7 +2269,7 @@ fun.variant.eff.report <- function(file2process.my2, step.my) {
 
 
 ##########################
-### FUNCTION fun.grep.post.snpeff.report
+### FUNCTION fun.grep.post.snpeff.variants
 ###
 ###   Select variants (based on grep calls) for the target genes
 ###   in the vcf file after the snpEff report is called 
@@ -2619,7 +2277,7 @@ fun.variant.eff.report <- function(file2process.my2, step.my) {
 ### XXX to be revised
 ##########################
 
-fun.grep.post.snpeff.report <- function(file2process.my2, step.my) {
+fun.grep.post.snpeff.variants <- function(file2process.my2, step.my) {
   # update step number
   step.my$tmp <- step.my$tmp + 1
   print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Select variants for the target genes based on grep calls after the snpEff report: ", file2process.my2, " ###\n", sep=""), file2process.my2);

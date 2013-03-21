@@ -322,9 +322,6 @@ runParam <- FALSE #######################
 p_variant.filtering		        <- runParam
 p_gatk.combine.vcfs           <- FALSE # runParam # Non-started work (place holder only)
 p_convert2vcf4		            <- runParam
-#####
-runParam <- FALSE #######################
-####
 p_variant.annotation.geneb	  <- runParam
 p_variant.annotation.regionb	<- FALSE # runParam # Non-started work (place holder only)
 p_variant.annotation.filterb	<- runParam
