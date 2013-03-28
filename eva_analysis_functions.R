@@ -1109,7 +1109,8 @@ fun.snpeff.count.reads <- function(file2process.my2, step.my) {
   file_out = paste(file_in, ".cr.txt", sep="");
   command00 = "java -Xmx4g -jar "; # next command.
 #  options00 = paste(params$path_snpEff, "snpEff.jar  -c ", params$path_snpEff, "snpEff.config countReads ", params$opt$genver," ", file_in, " > ", file_out, sep="");
-  options00 = paste(params$path_snpEff, "snpEff.jar  countReads ", params$opt$genver," ", file_in, " > ", file_out, sep="");
+#  options00 = paste(params$path_snpEff, "snpEff.jar  countReads ", params$opt$genver," ", file_in, " > ", file_out, sep="");
+  options00 = paste(params$path_snpEff, "snpEff.jar  countReads ", params$opt$se_db_rg," ", file_in, " > ", file_out, sep="");
   command = paste(command00, " ", options00, sep="");
   check2showcommand(params$opt$showc, command, file2process.my2);
   system(command);
@@ -1872,9 +1873,23 @@ fun.variant.annotation.filterb <- function(file2process.my2, step.my) {
 ### 	Variant Annotation with Annovar: summarize_annovar.pl
 ###     Given a list of variants from whole-exome or whole-genome sequencing, it will generate an Excel-compatible file with gene annotation, amino acid change annotation, SIFT scores, PolyPhen scores, LRT scores, MutationTaster scores, PhyloP conservation scores, GERP++ conservation scores, dbSNP identifiers, 1000 Genomes Project allele frequencies, NHLBI-ESP 5400 exome project allele frequencies and other information.
 ###     http://www.openbioinformatics.org/annovar/annovar_accessary.html#excel
+###     
 ##########################
 
 fun.variant.annotation.summarize <- function(file2process.my2, step.my) {
+  # These commands need to be run in advanced, to fetch all requried databases for annovar to work (some of them are only needed when the version that they refer to).
+  # perl ./annotate_variation.pl -buildver hg19 -downdb refgene humandb/
+  # perl ./annotate_variation.pl -buildver hg19 -downdb phastConsElements46way humandb/
+  # perl ./annotate_variation.pl -buildver hg19 -downdb genomicSuperDups humandb/
+  # perl ./annotate_variation.pl -buildver hg19 -downdb 1000g2010nov -webfrom annovar humandb/
+  # perl ./annotate_variation.pl -buildver hg19 -downdb 1000g2012apr -webfrom annovar humandb/
+  # perl ./annotate_variation.pl -buildver hg19 -downdb snp132 -webfrom annovar humandb/
+  # perl ./annotate_variation.pl -buildver hg19 -downdb snp135 -webfrom annovar humandb/
+  # perl ./annotate_variation.pl -buildver hg19 -downdb snp137 -webfrom annovar humandb/
+  # perl ./annotate_variation.pl -buildver hg19 -downdb avsift -webfrom annovar humandb/
+  # perl ./annotate_variation.pl -buildver hg19 -downdb ljb_all -webfrom annovar humandb/
+  # perl ./annotate_variation.pl -buildver hg19 -downdb esp6500_all -webfrom annovar humandb/
+    
   # update step number
   step.my$tmp <- step.my$tmp + 1
   print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Variant Annotation (summarize annotations in .csv): ", file2process.my2, " ###\n", sep=""), file2process.my2);
@@ -1885,8 +1900,15 @@ fun.variant.annotation.summarize <- function(file2process.my2, step.my) {
   command00 = "perl"; # next command.
   # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
   file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
-  options00 = paste(" ", params$path_summarize_annovar, " --buildver ", params$opt$genver,
-                    " --verdbsnp ", params$opt$dbsnp," ", file_in, " ", params$path_annotate_humandb, " --outfile ", file_out, " 2>> ", file_stderr, sep="");
+  options00 = paste(" ", params$path_summarize_annovar, " --buildver ", params$opt$genver, "  -remove -alltranscript ", 
+                    " --verdbsnp ", params$opt$dbsnp," -ver1000g 1000g2012apr -veresp 6500 ",
+                    file_in, " ", params$path_annotate_humandb, " --outfile ", file_out, " 2>> ", file_stderr, sep="");
+            # Example: summarize_annovar.pl -out myanno -buildver hg19 -verdbsnp 135 -ver1000g 1000g2012apr -veresp 6500 -remove -alltranscript example/ex1_hg19.human humandb/
+            # r99 (28/03/11 - 18:11h) Added  -alltranscript to print out all isoforms for exonic variants and to fix slight problems in variants_reduction.pl
+            # The final command run SUMMARIZE_ANNOVAR, using dbSNP version 137, 1000 Genomes Project 2012 April version, ESP6500 database,
+            # and remove all temporary files, and print out all transcriptional isoforms (rather than one isoform), 
+            # and generates two output files: myanno.exome_summary.csv and myanno.genome_summary.csv. 
+  
   command = paste(command00, " ", options00, sep="");
   check2showcommand(params$opt$showc, command, file2process.my2);
   system(command);
@@ -1894,7 +1916,7 @@ fun.variant.annotation.summarize <- function(file2process.my2, step.my) {
   print_done(file2process.my2);
   
   # a mà la instrucció al mainhead és:
-  # perl /home/ueb/annovar/summarize_annovar.pl --buildver hg19  --verdbsnp 132 /home/xavi/repo/peeva/dir_out/vhir_sample_a_sure_1e6.sam.sorted.noDup.bam.samtools.var.f.vcf4 /home/ueb/annovar/humandb/ --outfile sample_a_sure_sum
+  # perl /home/ueb/annovar/summarize_annovar.pl --buildver hg19  --verdbsnp 137 /home/xavi/repo/peeva/dir_out/vhir_sample_a_sure_1e6.sam.sorted.noDup.bam.samtools.var.f.vcf4 /home/ueb/annovar/humandb/ --outfile sample_a_sure_sum
   
   gc() # Let's clean ouR garbage if possible
   return(step.my) # return nothing, since results are saved on disk from the system command

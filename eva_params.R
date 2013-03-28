@@ -27,32 +27,15 @@
 # ----------------------
 # (See also http://ueb.vhir.org/PendentsEVA )
 ##
-## * SnpSift Filter: replace the basic filtering based on grep on the annotated results and filter after the vcf is created using SnpSift
-##   * extend fun.variant.filter.pre.snpeff to grep the vcf annotated file based on the target genes of interest
-##      See whether this is enough for a more specific snpEff report with only the target genes, 
-##      or if we need to keep searching for another way (SnpSift still???) to filter the results to keep only the target genes. 
-## Tip from Pablo Cingolani: 
-##    "I would annotate using SnpEff to get gene names. Then filter using SnpSift (use "set" operator). 
-##     Then you can re-annotate using SnpEff to obtain the summary output...(does it make sense?)"
-##  -> New fun.variant.fii.pre.snpeff to implement it, based on a bed file generated in a previous function, etc.
-##
-## * Runs with the test dataset
-##  1) Re-run samples with new default params for variant filtering [DONE]
-##  2) Consideri adding any of the new params indicated in the comments at the variant calling function of the pipeline
-## * INVESTIGATE ERRORS:
-##  #) Error while processing VCF entry (line 157) : 
-##   (in /home/ueb/repo/peeva2/test_out/log.130315.testset1.sample_a_merged12.txt)
-##      chr7  136939582	rs1162122	G	T,X	25.8	.	DP=2;VDB=0.0040;AF1=1;AC1=2;DP4=0,0,1,1;MQ=44;FQ=-33;RSPOS=136939582;RV;GMAF=0;dbSNPBuildID=87;SSR=0;SAO=0;VP=05010008000500011f000100;GENEINFO=LOC100287705:100287705|PTN:5764;WGT=1;VC=SNV;SLO;INT;ASP;GNO;KGPhase1;KGPilot123;KGPROD;OTHERKG;PH3	GT:PL:DP:SP:GQ	1/1:57,6,0,57,6,57:2:0:10
-##      java.lang.RuntimeException: WARNING: Unkown IUB code for SNP 'X'
-##
 ## * Performance Improvements Pending:
-##  #) add -t for snpEff eff [DONE]
 ##  #) split the bam files by chr, so that variant calling with samtools can be run in parallel for one patient (each chr to a differnt cpu, etc)
 ##
 ## * Count reads again from the results for the target genes with variants found, 
 ##    so that number of reads count can be split between 'Wild type' and 'Variant' (and therefore, '% or variant' can be computed).
 ##    as requested, like it's shown in Walsh et al. ( http://www.pnas.org/cgi/doi/10.1073/pnas.1007983107 )
 ##  a) Check the option to do it with vcftools: http://vcftools.sourceforge.net/options.html#stats 
+## * Annovar:
+##   Error: the required database file /home/ueb/annovar/humandb/hg19_phastConsElements46way.txt does not exist. Please download it via -downdb argument by annotate_variation.pl.
 ##
 ##   * add dbNSFP annotation
 ##   * add GWAS Catalog annotation
@@ -150,10 +133,12 @@ if (p_test==1) {
   p_in.ext    <- ".sam" #".fastq" # ".fa" ".sam" ".bam" # This is the .extension of all files used as input for the pipeline to process
   p_output   <- "test_out2" #"/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a3b" #"test_out2" # "../test_out2" # "test_out"
   p_f_my_rs  <- "file_my_rs.txt" # In p_input. Needed by SnpEff to filter for the target genes before the report (well, filter for the potential snp rs codes in those genes)
-  p_label    <- "test2_09" #"testrunGATK1" # "testsnpEffCountReads_a" "test-121002" # "test-foo"        # Run Label for output filenames
-  p_desc     <- "Testing the overall pipeline starting from scratch with samples testset1_sgs7a.sam & testset1_sgs7b.sam
-                        test2_09: As test2_08 but with new bed file (tab format) + chr for chromosomes.
-                                  + params$opt$p_se_db_rg instead of hg19 for snpeff. Multithread mode removed to snpEff in order to have stats html file generated again"
+  p_label    <- "test2_10" #"testrunGATK1" # "testsnpEffCountReads_a" "test-121002" # "test-foo"        # Run Label for output filenames
+  p_desc     <- "Testing annovar with new version and reference genome
+                        test2_10: OK. Same params as test2_09, but cheking now new annovar version ref files. 
+                                  Some db must be missing"
+  #                      test2_09: OK. As test2_08 but with new bed file (tab format) + chr for chromosomes.
+  #                                + params$opt$p_se_db_rg instead of hg19 for snpeff. Multithread mode removed to snpEff in order to have stats html file generated again"
   #                      test2_08: As test2_07 but with param a & d from samtools vcftools varFilter as 1 to get max number of candidate variants
   #                                Then, annotate with samtools, and also with SnpSift." 
   #                      test2_07: As test2_06 but with updated code (r92). Playing with Annovar new dbSNP updated files, 132 for the time being  (135, 137)." 
@@ -219,13 +204,26 @@ if (p_test==1) {
   #                                 of running the whole pipeline or just some steps, when using short reads paired end (sampe; p_bwa=2)
   } else {
   path_input_absolute <- "1" # Define whether the p_input is absolute or relative
-  p_input    <- "/mnt/magatzem02/tmp/run_sara_293a/dir_in_293a5" # "../dir_in" # "test_in"   # "dir_in"     
-  p_output   <- "/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a5" #../dir_out_293" # "../dir_out_293" # "test_out"	 # "dir_out_293"
-  p_f_my_rs  <- "file_my_rs.txt" # In p_input. Needed by SnpEff to filter for the target genes before the report (well, filter for the potential snp rs codes in those genes)
-  p_label    <-  "sg293a5_b6" # sg293a2b2.snpeff.greped" # "test-121002" # ".sg293_qa_sg3sg4"   # "test-121002" ".sara207_4s4cpu"        # Run Label for output filenames
-  p_desc     <- "Individuals 5 & 6.   Just Mapping multi-thread.
-                      sg293a5_b6: as in sg293a5_b5. After count reads done. Following with Variant calling and filtering"
-  #                    sg293a5_b5: as in sg293a5_b4 but count reads failed due to lack of enough RAM (other process aside of this one eat it all)"
+# PARAMS for dir_out_293a5 Individuals 5 & 6.
+# -----------------------------------------
+#   p_input    <- "/mnt/magatzem02/tmp/run_sara_293a/dir_in_293a5" # "../dir_in" # "test_in"   # "dir_in"     
+#   p_output   <- "/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a5" #../dir_out_293" # "../dir_out_293" # "test_out"	 # "dir_out_293"
+#   p_f_my_rs  <- "file_my_rs.txt" # In p_input. Needed by SnpEff to filter for the target genes before the report (well, filter for the potential snp rs codes in those genes)
+#   p_label    <-  "sg293a5_b07" # sg293a2b2.snpeff.greped" # "test-121002" # ".sg293_qa_sg3sg4"   # "test-121002" ".sara207_4s4cpu"        # Run Label for output filenames
+#   p_desc     <- "Individuals 5 & 6.   Just Mapping multi-thread.
+#                       sg293a5_b07: as in sg293a5_b6. SnpEff reports (for all and for target-genes only). Using bazaar revision98."
+#   #                    sg293a5_b6: as in sg293a5_b5. After count reads done. Following with Variant calling and filtering"
+#   #                    sg293a5_b5: as in sg293a5_b4 but count reads failed due to lack of enough RAM (other process aside of this one eat it all)"
+
+# PARAMS for dir_out_293a4b. Individuals 3 & 4.
+# -----------------------------------------
+  p_input    <- "/mnt/magatzem02/tmp/run_sara_293a/dir_in_293a4" # "../dir_in" # "test_in"   # "dir_in"     
+     p_output   <- "/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a4b" #../dir_out_293" # "../dir_out_293" # "test_out"   # "dir_out_293"
+     p_f_my_rs  <- "file_my_rs.txt" # In p_input. Needed by SnpEff to filter for the target genes before the report (well, filter for the potential snp rs codes in those genes)
+     p_label    <-  "sg293a4b_02" # sg293a2b2.snpeff.greped" # "test-121002" # ".sg293_qa_sg3sg4"   # "test-121002" ".sara207_4s4cpu"        # Run Label for output filenames
+     p_desc     <- "Individuals 3 & 4.
+                         sg293a4b_02: bed files ok, redoing var calling, var filtering, SnpEff reports (for all and for target-genes only). Using bazaar revision98."
+  
   #  p_input     <- "/backups_disk_03/tmp/bam_mv311" # "../dir_in" # "test_in"   # "dir_in"     
   p_in.suffix <- "_sequence" #  "_sequence" # "" # This is the suffix of all input filenames (without extension) used for the pipeline to process
   p_in.ext    <-  ".fastq" #".fastq" # ".fa" ".sam" ".bam" # This is the .extension of all files used as input for the pipeline to process
@@ -233,7 +231,7 @@ if (p_test==1) {
 #  p_label    <-   "mv311c3" #sg293a3_test_count_reads" # ".sg293a3_ind7_mc15g3seq" # mc=minimum cover; g3: 3rd filter version for the grep; "test-121002" # ".sg293_qa_sg3sg4"   # "test-121002" ".sara207_4s4cpu"        # Run Label for output filenames
                   # p_desc = Description in longer format of the run. DEscribe that for you to understand in the future what were the conditions and params of this run. 
 #  p_desc     <-   "c3: processat d'un fastq de prova fins a sam i bam amb el pipeline eva per a ratoli rn4."
-  p_keep     <- TRUE # Enable if run through editor and you want to keep temp files
+  p_keep     <- FALSE # Enable if run through editor and you want to keep temp files
   p_showc    <- TRUE #TRUE # Enable if you want to see the commands literally that are run in the command line
   p_st.vf.Q  <-      10 # Samtools vcftools.pl varFilter Q param: Minimum base quality for a base to be considered: 10 (same for small testing sets). 10 (90% accuracy)|20 (99.9%)|30 (99.99%)|40 (99.999%)|50 (99.9999%). See Wikipedia.".
   p_st.vf.d  <-      10 # Samtools vcftools.pl varFilter d param: Minimum read depth (coverage) to call a SNP: 10-15 (1-2 for small testing sets)".
@@ -252,7 +250,7 @@ if (p_test==1) {
 #  p_filter   <- "BRCA1|\\|BRCA2|\\|CHEK2|\\|PALB2|\\|BRIP1|\\|TP53|\\|PTEN|\\|STK11|\\|CDH1|\\|ATM|\\|BARD1|\\|APC|\\|MLH1|\\|MRE11A|\\|MSH2|\\|MSH6|\\|MUTYH|\\|NBN|\\|PMS1|\\|PMS2|\\|RAD50|\\|RAD51D|\\|RAD51C|\\|XRCC2|\\|UIMC1|\\|FAM175A|\\|ERCC4|\\|RAD51|\\|RAD51B|\\|XRCC3|\\|FANCA|\\|FANCB|\\|FANCC|\\|FANCD2|\\|FANCE|\\|FANCF|\\|FANCG|\\|FANCI|\\|FANCL|\\|FANCM|\\|SLX4|\\|CASP8|\\|FGFR2|\\|TOX3|\\|MAP3K1|\\|MRPS30|\\|SLC4A7|\\|NEK10|\\|COX11|\\|ESR1|\\|CDKN2A|\\|CDKN2B|\\|ANKRD16|\\|FBXO18|\\|ZNF365|\\|ZMIZ1|\\|BABAM1|\\|LSP1|\\|ANKLE1|\\|TOPBP1|\\|BCCIP|\\|TP53BP1|\\|BRCA1:\\|BRCA2:\\|CHEK2:\\|PALB2:\\|BRIP1:\\|TP53:\\|PTEN:\\|STK11:\\|CDH1:\\|ATM:\\|BARD1:\\|APC:\\|MLH1:\\|MRE11A:\\|MSH2:\\|MSH6:\\|MUTYH:\\|NBN:\\|PMS1:\\|PMS2:\\|RAD50:\\|RAD51D:\\|RAD51C:\\|XRCC2:\\|UIMC1:\\|FAM175A:\\|ERCC4:\\|RAD51:\\|RAD51B:\\|XRCC3:\\|FANCA:\\|FANCB:\\|FANCC:\\|FANCD2:\\|FANCE:\\|FANCF:\\|FANCG:\\|FANCI:\\|FANCL:\\|FANCM:\\|SLX4:\\|CASP8:\\|FGFR2:\\|TOX3:\\|MAP3K1:\\|MRPS30:\\|SLC4A7:\\|NEK10:\\|COX11:\\|ESR1:\\|CDKN2A:\\|CDKN2B:\\|ANKRD16:\\|FBXO18:\\|ZNF365:\\|ZMIZ1:\\|BABAM1:\\|LSP1:\\|ANKLE1:\\|TOPBP1:\\|BCCIP:\\|TP53BP1:\\|^BRCA1\t\\|^BRCA2\t\\|^CHEK2\t\\|^PALB2\t\\|^BRIP1\t\\|^TP53\t\\|^PTEN\t\\|^STK11\t\\|^CDH1\t\\|^ATM\t\\|^BARD1\t\\|^APC\t\\|^MLH1\t\\|^MRE11A\t\\|^MSH2\t\\|^MSH6\t\\|^MUTYH\t\\|^NBN\t\\|^PMS1\t\\|^PMS2\t\\|^RAD50\t\\|^RAD51D\t\\|^RAD51C\t\\|^XRCC2\t\\|^UIMC1\t\\|^FAM175A\t\\|^ERCC4\t\\|^RAD51\t\\|^RAD51B\t\\|^XRCC3\t\\|^FANCA\t\\|^FANCB\t\\|^FANCC\t\\|^FANCD2\t\\|^FANCE\t\\|^FANCF\t\\|^FANCG\t\\|^FANCI\t\\|^FANCL\t\\|^FANCM\t\\|^SLX4\t\\|^CASP8\t\\|^FGFR2\t\\|^TOX3\t\\|^MAP3K1\t\\|^MRPS30\t\\|^SLC4A7\t\\|^NEK10\t\\|^COX11\t\\|^ESR1\t\\|^CDKN2A\t\\|^CDKN2B\t\\|^ANKRD16\t\\|^FBXO18\t\\|^ZNF365\t\\|^ZMIZ1\t\\|^BABAM1\t\\|^LSP1\t\\|^ANKLE1\t\\|^TOPBP1\t\\|^BCCIP\t\\|^TP53BP1\t\\|\"BRCA1\"\\|\"BRCA2\"\\|\"CHEK2\"\\|\"PALB2\"\\|\"BRIP1\"\\|\"TP53\"\\|\"PTEN\"\\|\"STK11\"\\|\"CDH1\"\\|\"ATM\"\\|\"BARD1\"\\|\"APC\"\\|\"MLH1\"\\|\"MRE11A\"\\|\"MSH2\"\\|\"MSH6\"\\|\"MUTYH\"\\|\"NBN\"\\|\"PMS1\"\\|\"PMS2\"\\|\"RAD50\"\\|\"RAD51D\"\\|\"RAD51C\"\\|\"XRCC2\"\\|\"UIMC1\"\\|\"FAM175A\"\\|\"ERCC4\"\\|\"RAD51\"\\|\"RAD51B\"\\|\"XRCC3\"\\|\"FANCA\"\\|\"FANCB\"\\|\"FANCC\"\\|\"FANCD2\"\\|\"FANCE\"\\|\"FANCF\"\\|\"FANCG\"\\|\"FANCI\"\\|\"FANCL\"\\|\"FANCM\"\\|\"SLX4\"\\|\"CASP8\"\\|\"FGFR2\"\\|\"TOX3\"\\|\"MAP3K1\"\\|\"MRPS30\"\\|\"SLC4A7\"\\|\"NEK10\"\\|\"COX11\"\\|\"ESR1\"\\|\"CDKN2A\"\\|\"CDKN2B\"\\|\"ANKRD16\"\\|\"FBXO18\"\\|\"ZNF365\"\\|\"ZMIZ1\"\\|\"BABAM1\"\\|\"LSP1\"\\|\"ANKLE1\"\\|\"TOPBP1\"\\|\"BCCIP\"\\|\"TP53BP1\""
   p_filter    <- "BRCA1|\\|BRCA2|\\|CHEK2|\\|PALB2|\\|BRIP1|\\|TP53|\\|PTEN|\\|STK11|\\|CDH1|\\|ATM|\\|BARD1|\\|APC|\\|MLH1|\\|MRE11A|\\|MSH2|\\|MSH6|\\|MUTYH|\\|NBN|\\|PMS1|\\|PMS2|\\|RAD50|\\|RAD51D|\\|RAD51C|\\|XRCC2|\\|UIMC1|\\|FAM175A|\\|ERCC4|\\|RAD51|\\|RAD51B|\\|XRCC3|\\|FANCA|\\|FANCB|\\|FANCC|\\|FANCD2|\\|FANCE|\\|FANCF|\\|FANCG|\\|FANCI|\\|FANCL|\\|FANCM|\\|SLX4|\\|CASP8|\\|FGFR2|\\|TOX3|\\|MAP3K1|\\|MRPS30|\\|SLC4A7|\\|NEK10|\\|COX11|\\|ESR1|\\|CDKN2A|\\|CDKN2B|\\|ANKRD16|\\|FBXO18|\\|ZNF365|\\|ZMIZ1|\\|BABAM1|\\|LSP1|\\|ANKLE1|\\|TOPBP1|\\|BCCIP|\\|TP53BP1|\\|BRCA1:\\|BRCA2:\\|CHEK2:\\|PALB2:\\|BRIP1:\\|TP53:\\|PTEN:\\|STK11:\\|CDH1:\\|ATM:\\|BARD1:\\|APC:\\|MLH1:\\|MRE11A:\\|MSH2:\\|MSH6:\\|MUTYH:\\|NBN:\\|PMS1:\\|PMS2:\\|RAD50:\\|RAD51D:\\|RAD51C:\\|XRCC2:\\|UIMC1:\\|FAM175A:\\|ERCC4:\\|RAD51:\\|RAD51B:\\|XRCC3:\\|FANCA:\\|FANCB:\\|FANCC:\\|FANCD2:\\|FANCE:\\|FANCF:\\|FANCG:\\|FANCI:\\|FANCL:\\|FANCM:\\|SLX4:\\|CASP8:\\|FGFR2:\\|TOX3:\\|MAP3K1:\\|MRPS30:\\|SLC4A7:\\|NEK10:\\|COX11:\\|ESR1:\\|CDKN2A:\\|CDKN2B:\\|ANKRD16:\\|FBXO18:\\|ZNF365:\\|ZMIZ1:\\|BABAM1:\\|LSP1:\\|ANKLE1:\\|TOPBP1:\\|BCCIP:\\|TP53BP1:\\|^BRCA1\t\\|^BRCA2\t\\|^CHEK2\t\\|^PALB2\t\\|^BRIP1\t\\|^TP53\t\\|^PTEN\t\\|^STK11\t\\|^CDH1\t\\|^ATM\t\\|^BARD1\t\\|^APC\t\\|^MLH1\t\\|^MRE11A\t\\|^MSH2\t\\|^MSH6\t\\|^MUTYH\t\\|^NBN\t\\|^PMS1\t\\|^PMS2\t\\|^RAD50\t\\|^RAD51D\t\\|^RAD51C\t\\|^XRCC2\t\\|^UIMC1\t\\|^FAM175A\t\\|^ERCC4\t\\|^RAD51\t\\|^RAD51B\t\\|^XRCC3\t\\|^FANCA\t\\|^FANCB\t\\|^FANCC\t\\|^FANCD2\t\\|^FANCE\t\\|^FANCF\t\\|^FANCG\t\\|^FANCI\t\\|^FANCL\t\\|^FANCM\t\\|^SLX4\t\\|^CASP8\t\\|^FGFR2\t\\|^TOX3\t\\|^MAP3K1\t\\|^MRPS30\t\\|^SLC4A7\t\\|^NEK10\t\\|^COX11\t\\|^ESR1\t\\|^CDKN2A\t\\|^CDKN2B\t\\|^ANKRD16\t\\|^FBXO18\t\\|^ZNF365\t\\|^ZMIZ1\t\\|^BABAM1\t\\|^LSP1\t\\|^ANKLE1\t\\|^TOPBP1\t\\|^BCCIP\t\\|^TP53BP1\t\\|\"BRCA1\"\\|\"BRCA2\"\\|\"CHEK2\"\\|\"PALB2\"\\|\"BRIP1\"\\|\"TP53\"\\|\"PTEN\"\\|\"STK11\"\\|\"CDH1\"\\|\"ATM\"\\|\"BARD1\"\\|\"APC\"\\|\"MLH1\"\\|\"MRE11A\"\\|\"MSH2\"\\|\"MSH6\"\\|\"MUTYH\"\\|\"NBN\"\\|\"PMS1\"\\|\"PMS2\"\\|\"RAD50\"\\|\"RAD51D\"\\|\"RAD51C\"\\|\"XRCC2\"\\|\"UIMC1\"\\|\"FAM175A\"\\|\"ERCC4\"\\|\"RAD51\"\\|\"RAD51B\"\\|\"XRCC3\"\\|\"FANCA\"\\|\"FANCB\"\\|\"FANCC\"\\|\"FANCD2\"\\|\"FANCE\"\\|\"FANCF\"\\|\"FANCG\"\\|\"FANCI\"\\|\"FANCL\"\\|\"FANCM\"\\|\"SLX4\"\\|\"CASP8\"\\|\"FGFR2\"\\|\"TOX3\"\\|\"MAP3K1\"\\|\"MRPS30\"\\|\"SLC4A7\"\\|\"NEK10\"\\|\"COX11\"\\|\"ESR1\"\\|\"CDKN2A\"\\|\"CDKN2B\"\\|\"ANKRD16\"\\|\"FBXO18\"\\|\"ZNF365\"\\|\"ZMIZ1\"\\|\"BABAM1\"\\|\"LSP1\"\\|\"ANKLE1\"\\|\"TOPBP1\"\\|\"BCCIP\"\\|\"TP53BP1\"\\|BRCA1\t|BRCA2\t|CHEK2\t|PALB2\t|BRIP1\t|TP53\t|PTEN\t|STK11\t|CDH1\t|ATM\t|BARD1\t|APC\t|MLH1\t|MRE11A\t|MSH2\t|MSH6\t|MUTYH\t|NBN\t|PMS1\t|PMS2\t|RAD50\t|RAD51D\t|RAD51C\t|XRCC2\t|UIMC1\t|FAM175A\t|ERCC4\t|RAD51\t|RAD51B\t|XRCC3\t|FANCA\t|FANCB\t|FANCC\t|FANCD2\t|FANCE\t|FANCF\t|FANCG\t|FANCI\t|FANCL\t|FANCM\t|SLX4\t|CASP8\t|FGFR2\t|TOX3\t|MAP3K1\t|MRPS30\t|SLC4A7\t|NEK10\t|COX11\t|ESR1\t|CDKN2A\t|CDKN2B\t|ANKRD16\t|FBXO18\t|ZNF365\t|ZMIZ1\t|BABAM1\t|LSP1\t|ANKLE1\t|TOPBP1\t|BCCIP\t|TP53BP1  "
   p_filter.c  <- "BRCA1 BRCA2 CHEK2 PALB2 BRIP1 TP53 PTEN STK11 CDH1 ATM BARD1 APC MLH1 MRE11A MSH2 MSH6 MUTYH NBN PMS1 PMS2 RAD50 RAD51D RAD51C XRCC2 UIMC1 FAM175A ERCC4 RAD51 RAD51B XRCC3 FANCA FANCB FANCC FANCD2 FANCE FANCF FANCG FANCI FANCL FANCM SLX4 CASP8 FGFR2 TOX3 MAP3K1 MRPS30 SLC4A7 NEK10 COX11 ESR1 CDKN2A CDKN2B ANKRD16 FBXO18 ZNF365 ZMIZ1 BABAM1 LSP1 ANKLE1 TOPBP1 BCCIP TP53BP1"
-  p_tggbf     <- TRUE # TRUE=A bed file will be generated with the intersecting intervals for the target genes. Needed to filter vcf files for target genes before reunning custom snpEff Report 
+  p_tggbf     <- TRUE # TRUE # TRUE=A bed file will be generated with the intersecting intervals for the target genes (.ssfiitg.bed). Needed to filter vcf files for target genes before reunning custom snpEff Report 
   p_mail.send <- 1 # 0=FALSE, 1=TRUE ; Indicate whether we want an email sent when the run is finished
   p_only.m.r  <- 1 # Use only Mapped reads to created the corresponding bam files?
                       # 0/n: no, use mapped and unmapped reads; 
@@ -272,7 +270,7 @@ p_genver    <- "hg19" # hg19 is the only one supported throughout the whole pipe
 p_se_db_rg  <- "GRCh37.66" # GRCh37.66 is the only one supported for SnpEff v3.1 throughout the whole pipeline still, as of March 2013.
 p_index     <- FALSE #FALSE # TRUE         
 p_log       <- TRUE        
-p_dbsnp     <- "132" # 132 for dbsnp132 is the one supported throughout the whole pipeline still, regarding current annovar version, as of January 2013.
+p_dbsnp     <- "137" # e.g. 132 for dbsnp132. You need to download first the corresponding dbsnp files for annovar.
 p_summarize <- TRUE  
 p_snpeff.of <- "vcf" # Output format for snpEff. Possible values: txt, vcf, gatk, bed, bedAnn (txt will be deprecated, but it can be ocasionally useful still in the meantime)
 p_cpus      <- 4             
@@ -324,7 +322,7 @@ runParam <- FALSE #######################
 p_quality.control             <- runParam
 p_bowtie2sam                  <- runParam
 #####
-runParam <- FALSE #######################
+runParam <- TRUE #######################
 ####
 p_sam2bam.and.sort		        <- runParam
 p_remove.pcr.dup		          <- runParam
@@ -337,7 +335,7 @@ p_stats			                  <- runParam
 p_snpeff.count.reads          <- runParam 
 p_exon.coverage   	          <- FALSE # runParam # Unfinished work
 #####
-runParam <- FALSE #######################
+runParam <- TRUE #######################
 ####
 p_variant.calling		          <- runParam
 p_variant.filtering		        <- runParam
@@ -353,7 +351,7 @@ p_variant.annotation.summarize<- runParam
 p_grep.variants		            <- runParam
 p_visualize.variants		      <- FALSE # runParam # Non-started work (place holder only)
 #####
-runParam <- FALSE #######################
+runParam <- TRUE #######################
 ####
 p_variant.fii.pre.snpeff      <- runParam
 p_variant.filter.pre.snpeff   <- FALSE # runParam # Not running properly yet
@@ -447,7 +445,12 @@ if (p_server==1) { # MainHead server
       path_dbSNP2 = "/home/ueb/Data/Data_Genomes/hg19_Broad_Reference_Genome/dbsnp_135_human_9606_v4.0_00-All.vcf" # chromosome names without prefix "chr"
       path_dbSNP3 = "/home/ueb/Data/gatk-data-2.3/hg19/dbsnp_137.hg19.vcf"
       path_dbSNP4 = "/home/ueb/Data/Data_Genomes/forGATK/dbsnp_135.hg19.sort.vcf"
-      path_dbSNP5 = "/home/ueb/Data/dbSNP/dbSnp.vcf" # (v 18-JUN-2012) Taken and renamed from ftp://ftp.ncbi.nih.gov/snp/organisms/human_9606/VCF/00-All.vcf.gz
+      path_dbSNP5 = "/home/ueb/Data/dbSNP/dbSnp_137.vcf" # (v 18-JUN-2012, dbSnp137) Taken and renamed from ftp://ftp.ncbi.nih.gov/snp/organisms/human_9606/VCF/00-All.vcf.gz
+                      # $ wget -O - ftp://ftp.ncbi.nih.gov/snp/organisms/human_9606/VCF/00-All.vcf.gz | zcat | head
+                      ##fileDate=20120616
+                      ##source=dbSNP
+                      ##dbSNP_BUILD_ID=137
+                      ##reference=GRCh37.p5
     path_dbSNP = path_dbSNP5
     # A.iii) Exon Capture File (Intervals list)
       path_exon_capture_file1 = "/home/ueb/Data/BED/TruSeq_exome_targeted_regions.hg19.bed.chr"
