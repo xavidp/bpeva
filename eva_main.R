@@ -1,4 +1,7 @@
 #!/home/ueb/repo/peeva/eva_main.R
+# $Keyword: Revision-Id $
+# $Keyword: Date $
+# $Keyword: Commiter $
 #
 # SCRIPT: eva_main.R
 # SCOPE:  Main program that performs Exom Variant Analysis. 
@@ -279,7 +282,7 @@ if (path_input_absolute == 0) {
 
 # When input files contain paired end reads (_pe), a temporal (_tmp) file name will be used first until we combine the data from both strands
 if (p_bwa == 2) {
-	filename_list = paste(opt$output, "/", "log.",startdate, ".", opt$label, ".fastq_pe_tmp.txt", sep="")
+	filename_list = paste(opt$output, "/", "log.",startdate, ".", opt$label, ".input_fastq_pe.txt", sep="")
 	# Get the list of files in "input" directory through a system call to "ls *" and save the result to a file on disk
 	system(paste("ls ",abs_path_to_input_files,"*", p_in.suffix, p_in.ext, " > ", filename_list, sep=""), TRUE)
 	# Add a lock file to indicate that paired end sample data is to be processed. This lock file will be removed only after all couples of files from samples have been merged into one file per sample

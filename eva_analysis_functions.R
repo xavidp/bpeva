@@ -1,4 +1,7 @@
 #!/home/ueb/repo/peeva/eva_analysis_functions.R
+# $Keyword: Revision-Id $
+# $Keyword: Date $
+# $Keyword: Commiter $
 #
 # SCRIPT: eva_analysis_functions.R
 # SCOPE: to be called from other scripts, such as eva_main.R
@@ -624,7 +627,7 @@ fun.convert.file.list.pe <- function(file2process.my2, step.my) {
   print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Convert the file list regarding paired-end merged .sam files: ###\n", sep=""), file2process.my2);
   
   # When input files contain paired end reads (_pe), a temporal (_tmp) file name will be used first until we combine the data from both strands
-  params$filename_list <- paste(params$opt$output, "/", "log.",params$startdate, ".", params$opt$label, ".merged12_input_list.txt", sep="")
+  params$filename_list <- paste(params$opt$output, "/", "log.",params$startdate, ".", params$opt$label, ".input_merged12_pe.txt", sep="")
   # Name of the sam file to start with
   pattern_sam <- "merged12.sam"
   # Check if there is at least one merged12.sam file
@@ -1342,6 +1345,10 @@ fun.splitAnnot <- function(x, myNames) {
 ### FUNCTION fun.exon.coverage
 ###
 ###   Gene Exons Coverage
+###
+### March 2013: Unfinsihed implementation based on R packages
+### Alternatively, this could be performed with bedtools directly. 
+### See http://bedtools.readthedocs.org/en/latest/content/advanced-usage.html#computing-the-coverage-of-bam-alignments-on-exons
 ##########################
 
 fun.exon.coverage <- function(file2process.my2, step.my) {
@@ -1674,6 +1681,12 @@ fun.variant.filtering <- function(file2process.my2, step.my) {
   command = paste(command00, " ", options00, sep="");
   check2showcommand(params$opt$showc, command, file2process.my2);
   system(command);
+  
+  # Create also a symlink with a shorter file name that will be he base for the next processing
+  from  <- paste("../", params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam.samtools.var.filtered.vcf", sep="");
+  to    <- paste("", params$directory_out, "/", file2process.my2, ".f.vcf", sep="");
+  file.symlink(from, to) 
+  
   check2clean(file_in, file2process.my2);
   print_done(file2process.my2);
   
@@ -2023,7 +2036,7 @@ fun.tgenes.generate.bed.file <- function(step.my, file2process.my2, x) {
 
   # update step number
   #step.my$tmp <- step.my$tmp + 1
-  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Generate a bed file with the genomic regions for the target genes (...my_bed.txt) ###\n", sep=""), "run");
+  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Generate a bed file with the genomic regions for the target genes (...ssfiitg.bed) ###\n", sep=""), "run");
   
   # Get a list of the genetic intervals of those genes (in BED format): my_genes.bed
   # Using Bioconductor R package biomaRt
@@ -2086,7 +2099,7 @@ fun.tgenes.generate.bed.file <- function(step.my, file2process.my2, x) {
   # Get just the columns of interest to generate a valid BED file. 
   # See http://genome.ucsc.edu/FAQ/FAQformat.html#format1
   my_bed <- tg.nolrg.o[, c("chromosome_name", "start_position", "end_position", "hgnc_symbol", "score", "strand")]
-
+  
   # I sort by Chromosome first, and by Start position later. 
   # In addition, I remove warnings explicitly because I'm coercing chr names to integers, adn Chr X is not an integer.
   my_bed <- suppressWarnings(my_bed[order(as.integer(my_bed$chromosome_name), as.integer(my_bed$start_position)), ])
@@ -2132,7 +2145,7 @@ fun.tgenes.generate.bed.file <- function(step.my, file2process.my2, x) {
 
 fun.variant.fii.pre.snpeff <- function(file2process.my2, step.my) {
   
-# - Get a list of the genetic intervals of those genes (in BED format): my_genes.bed
+# - Get a list of the genetic intervals of those genes (in BED format): ...ssfiitg.bed
 # - Use "SnpSift intidx" to extract those regions: 
 #   java -jar SnpSift.jar intidx variants.vcf my_genes.bed > variants_intersecting_intervals.vcf
 # 
@@ -2147,7 +2160,7 @@ fun.variant.fii.pre.snpeff <- function(file2process.my2, step.my) {
   
   # update step number
   step.my$tmp <- step.my$tmp + 1
-  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Filter Intersecting Intervals in f.vcf from target genes (SnpSift using tg.bed): ", file2process.my2, " ###\n", sep=""), file2process.my2);
+  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Filter Intersecting Intervals in f.vcf from target genes (SnpSift using ...ssfiitg.bed): ", file2process.my2, " ###\n", sep=""), file2process.my2);
   
   # Example of process in the command line
   #   java -jar SnpSift.jar intidx variants.vcf my_genes.bed > variants_intersecting_intervals.vcf
@@ -2554,27 +2567,18 @@ fun.variant.eff.report <- function(file2process.my2, step.my) {
   #   -snp                    : Only SNPs (single nucleotide polymorphisms)
   
   # Substep 1
-  # Do the report with the whole list of variants, and not only the ones from the target genes
-  # ---------------------------
+  # Do the report with the variants in the target genes only
+  # ---------------------------------------------------------
     print_doc(paste("    Substep ", step.my$n, ".", step.my$tmp, "a). Report using snpEff with the target genes only: ", file2process.my2, " ###\n", sep=""), file2process.my2);
 
-  #  file_in  = paste(params$directory_out, "/", file2process.my2, ".f.ssann.eff.fss.vcf", sep=""); 
-  #  file_in  = paste(params$directory_out, "/", file2process.my2, ".f.ssann.eff.fg.vcf", sep=""); 
-  #  file_in  = paste(params$directory_out, "/", file2process.my2, ".f.fg.vcf", sep=""); 
   file_in  = paste(params$directory_out, "/", file2process.my2, ".f.ssfii.vcf", sep="");   
-  #  file_out = paste(params$directory_out, "/", file2process.my2, ".f.ssann.eff.fss.snpEff.", params$opt$snpeff.of, sep=""); 
-  #  file_out = paste(params$directory_out, "/", file2process.my2, ".f.ssann.eff.fg.", params$opt$snpeff.of, sep=""); 
-  #  file_out = paste(params$directory_out, "/", file2process.my2, ".f.fg.", params$opt$snpeff.of, sep=""); 
-  file_out = paste(params$directory_out, "/", file2process.my2, ".f.ssfii.", params$opt$snpeff.of, sep=""); 
-  #  file_out_base = paste(params$directory_out, "/", file2process.my2, ".f.ssann.eff.fss.snpEff", sep="");     
-  #  file_out_base = paste(params$directory_out, "/", file2process.my2, ".f.ssann.eff.fg", sep="");     
-  #  file_out_base = paste(params$directory_out, "/", file2process.my2, ".f.fg", sep="");     
-  file_out_base = paste(params$directory_out, "/", file2process.my2, ".f.ssfii", sep="");   
+  file_out = paste(params$directory_out, "/", file2process.my2, ".f.ssfii.snpEff.", params$opt$snpeff.of, sep=""); 
+  file_out_base = paste(params$directory_out, "/", file2process.my2, ".f.ssfii.snpEff", sep="");   
   
   command00 = "java -jar"; # next command.
   # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
   file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
-  options00 = paste(" ", params$path_snpEff, "snpEff.jar -t -c ", params$path_snpEff, "snpEff.config ", params$opt$genver," ", file_in, 
+  options00 = paste(" ", params$path_snpEff, "snpEff.jar -c ", params$path_snpEff, "snpEff.config -v ", params$opt$se_db_rg," ", file_in, 
                     " -a 0 -i vcf -o ", params$opt$snpeff.of," -chr chr -stats ", file_out_base,"_summary.html > ", file_out,
                     " 2>> ", file_stderr, sep="");
   
@@ -2603,6 +2607,7 @@ fun.variant.eff.report <- function(file2process.my2, step.my) {
   file_in  = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam.samtools.var.filtered.vcf", sep=""); 
   file_out = paste(params$directory_out, "/", file2process.my2, ".f.snpEff.", params$opt$snpeff.of, sep=""); 
   file_out_base = paste(params$directory_out, "/", file2process.my2, ".f.snpEff", sep="");     
+
   command00 = "java -jar"; # next command.
   # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
   file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");

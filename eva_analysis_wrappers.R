@@ -1,4 +1,7 @@
 #!/home/ueb/repo/peeva/eva_analysis_wrappers.R
+# $Keyword: Revision-Id $
+# $Keyword: Date $
+# $Keyword: Commiter $
 #
 # SCRIPT: eva_analysis_wrappers.R
 # SCOPE: to be called from other scripts, such as eva_main.R
@@ -208,7 +211,6 @@ wrapper2.parallelizable.per.sample <- function(datastep.my2) {
       } else {
         # No lock file from samples exist any more; clean the general lock file
         # clean the lock file
-        #	        system(paste("rm ", params$opt$output, "/", "log.",params$startdate, ".", params$opt$label, ".fastq_pe_tmp.txt.lock", sep=""), TRUE)
         print_mes(paste("\n ### Both single sam files found from this set of paired samples: Removing the general lock file in order to continue processing this paired sample###\n\n", sep=""), file2process.my1);
         if (file.exists(paste(params$filename_list, ".lock", sep=""))){
           system(paste("rm ", params$filename_list, ".lock", sep=""), TRUE)

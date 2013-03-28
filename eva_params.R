@@ -1,4 +1,7 @@
 #!/home/ueb/repo/peeva/eva_params.R
+# $Keyword: Revision-Id $
+# $Keyword: Date $
+# $Keyword: Commiter $
 #
 # SCRIPT: eva_params.R
 # SCOPE: to be called from eva_main.R
