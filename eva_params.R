@@ -18,10 +18,10 @@
 ##
 ## Acknowledgements: 
 ## * Michael Zeller, Harry Mangalam and Vinh Nguyen for http://blog.nguyenvq.com
-## * Alex Sánchez Pla, for comments and feedback.
-## * Aleix Ruiz de Villa, for comments and feedback.
-## * Josep Lluis Mosquera, for comments and feedback.
-## * Ferran Briansó Castilla, for comments and feedback.
+## * Alex Sánchez Pla, for comments and feedback
+## * Aleix Ruiz de Villa, for comments and feedback
+## * Josep Lluis Mosquera, for comments and feedback
+## * Ferran Briansó Castilla, for comments and feedback
 
 ##############################################################
 
