@@ -2091,6 +2091,16 @@ fun.tgenes.generate.bed.file <- function(step.my, file2process.my2, x) {
   # In addition, I remove warnings explicitly because I'm coercing chr names to integers, adn Chr X is not an integer.
   my_bed <- suppressWarnings(my_bed[order(as.integer(my_bed$chromosome_name), as.integer(my_bed$start_position)), ])
 
+  # Add chr prefix to the chromosome names for consistency with the other parts of the pipeline
+  my_bed$chromosome_name <- paste("chr", my_bed$chromosome_name, sep="")
+  
+  # Rename colname "chromosome_name" with "#chromosome_name"
+  colnames(my_bed) <- c("#chromosome_name", "start_position", "end_position", "hgnc_symbol", "score", "strand")
+    # ATTENTION: 
+    # I'm writing here a number sign (#) prepending "chromosome_name" in order to have titles added to the file, 
+    # (see below the function "write.table" with argument "col.names=T") but not breaking SnpSift.jar intidx command
+    # (which doesn't like to have column names in the first row but seems to accept comments starting with "#")
+  
   # Write the results to the file my_bed.txt
   # The params to define file_my_bed here are not preppended with params$ (startdate instead of params$startdate, etc)
   # because this function is called from the main program, not parallelized, so not in the nodes but the master computer/cpu.
@@ -2098,7 +2108,7 @@ fun.tgenes.generate.bed.file <- function(step.my, file2process.my2, x) {
   
   # I remove the warning messages from this call (below) because of the coercion type of message (harmless, afaik, but annoying and polluting output in log files)
   # Write all: data with column names in one go
-  suppressWarnings(write.table(my_bed, file=file_my_bed, append=T, quote=T, sep=",", row.names=F, col.names=T))
+  suppressWarnings(write.table(my_bed, file=file_my_bed, append=F, quote=F, sep="\t", row.names=F, col.names=T))
 
   # # We don't do check2clean here  since the output are results
   print_done("run");
@@ -2517,28 +2527,6 @@ fun.variant.eff.report <- function(file2process.my2, step.my) {
   step.my$tmp <- step.my$tmp + 1
   print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Variant Annotation & Effect prediction with snpEff: ", file2process.my2, " ###\n", sep=""), file2process.my2);
 
-#  file_in  = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam.samtools.var.filtered.vcf", sep=""); 
-#  file_in  = paste(params$directory_out, "/", file2process.my2, ".f.ssann.eff.fss.vcf", sep=""); 
-#  file_in  = paste(params$directory_out, "/", file2process.my2, ".f.ssann.eff.fg.vcf", sep=""); 
-#  file_in  = paste(params$directory_out, "/", file2process.my2, ".f.fg.vcf", sep=""); 
-  file_in  = paste(params$directory_out, "/", file2process.my2, ".f.ssfii.vcf", sep="");   
-#  file_out = paste(params$directory_out, "/", file2process.my2, ".f.snpEff.", params$opt$snpeff.of, sep=""); 
-#  file_out = paste(params$directory_out, "/", file2process.my2, ".f.ssann.eff.fss.snpEff.", params$opt$snpeff.of, sep=""); 
-#  file_out = paste(params$directory_out, "/", file2process.my2, ".f.ssann.eff.fg.", params$opt$snpeff.of, sep=""); 
-#  file_out = paste(params$directory_out, "/", file2process.my2, ".f.fg.", params$opt$snpeff.of, sep=""); 
-  file_out = paste(params$directory_out, "/", file2process.my2, ".f.ssfii.", params$opt$snpeff.of, sep=""); 
-  #  file_out_base = paste(params$directory_out, "/", file2process.my2, ".f.snpEff", sep="");     
-#  file_out_base = paste(params$directory_out, "/", file2process.my2, ".f.ssann.eff.fss.snpEff", sep="");     
-#  file_out_base = paste(params$directory_out, "/", file2process.my2, ".f.ssann.eff.fg", sep="");     
-#  file_out_base = paste(params$directory_out, "/", file2process.my2, ".f.fg", sep="");     
-  file_out_base = paste(params$directory_out, "/", file2process.my2, ".f.ssfii", sep="");     
-  command00 = "java -jar"; # next command.
-  # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
-  file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
-  options00 = paste(" ", params$path_snpEff, "snpEff.jar -t -c ", params$path_snpEff, "snpEff.config ", params$opt$genver," ", file_in, 
-                    " -a 0 -i vcf -o ", params$opt$snpeff.of," -chr chr -stats ", file_out_base,"_summary.html > ", file_out,
-                    " 2>> ", file_stderr, sep="");
-
   # Documentation from snpEff: "Calculate variant effects: snpEff [eff]" http://snpeff.sourceforge.net/manual.html 
   #
   #   Input file: Default is STDIN
@@ -2564,10 +2552,71 @@ fun.variant.eff.report <- function(file2process.my2, step.my) {
   #   -maxC X, -maxCoverage X : Filter out variants with coverage higher than X
   #   -nmp                    : Only MNPs (multiple nucleotide polymorphisms)
   #   -snp                    : Only SNPs (single nucleotide polymorphisms)
-     
+  
+  # Substep 1
+  # Do the report with the whole list of variants, and not only the ones from the target genes
+  # ---------------------------
+    print_doc(paste("    Substep ", step.my$n, ".", step.my$tmp, "a). Report using snpEff with the target genes only: ", file2process.my2, " ###\n", sep=""), file2process.my2);
+
+  #  file_in  = paste(params$directory_out, "/", file2process.my2, ".f.ssann.eff.fss.vcf", sep=""); 
+  #  file_in  = paste(params$directory_out, "/", file2process.my2, ".f.ssann.eff.fg.vcf", sep=""); 
+  #  file_in  = paste(params$directory_out, "/", file2process.my2, ".f.fg.vcf", sep=""); 
+  file_in  = paste(params$directory_out, "/", file2process.my2, ".f.ssfii.vcf", sep="");   
+  #  file_out = paste(params$directory_out, "/", file2process.my2, ".f.ssann.eff.fss.snpEff.", params$opt$snpeff.of, sep=""); 
+  #  file_out = paste(params$directory_out, "/", file2process.my2, ".f.ssann.eff.fg.", params$opt$snpeff.of, sep=""); 
+  #  file_out = paste(params$directory_out, "/", file2process.my2, ".f.fg.", params$opt$snpeff.of, sep=""); 
+  file_out = paste(params$directory_out, "/", file2process.my2, ".f.ssfii.", params$opt$snpeff.of, sep=""); 
+  #  file_out_base = paste(params$directory_out, "/", file2process.my2, ".f.ssann.eff.fss.snpEff", sep="");     
+  #  file_out_base = paste(params$directory_out, "/", file2process.my2, ".f.ssann.eff.fg", sep="");     
+  #  file_out_base = paste(params$directory_out, "/", file2process.my2, ".f.fg", sep="");     
+  file_out_base = paste(params$directory_out, "/", file2process.my2, ".f.ssfii", sep="");   
+  
+  command00 = "java -jar"; # next command.
+  # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
+  file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
+  options00 = paste(" ", params$path_snpEff, "snpEff.jar -t -c ", params$path_snpEff, "snpEff.config ", params$opt$genver," ", file_in, 
+                    " -a 0 -i vcf -o ", params$opt$snpeff.of," -chr chr -stats ", file_out_base,"_summary.html > ", file_out,
+                    " 2>> ", file_stderr, sep="");
+  
   command = paste(command00, " ", options00, sep="");
   check2showcommand(params$opt$showc, command, file2process.my2);
   system(command);
+  
+  # Show errors (if any)
+  # --------------------
+  obj.file_stderr <- read.delim(file_stderr, header = FALSE, sep=":")
+  obj.file_stderr <- unlist(obj.file_stderr, use.names = FALSE)[obj.file_stderr$V1=="Error"]
+  # If we found any error, print it.
+  if (length(obj.file_stderr) > 2) {
+    print_doc(obj.file_stderr[1:2],  file2process.my2);
+    # If this shows NA, then there was only 1 error message
+    print_doc(obj.file_stderr[3:4],  file2process.my2);  
+  } # Display the error message
+  
+  
+  
+ # Substep 2
+ # Do the report with the whole list of variants, and not only the ones from the target genes
+ # ---------------------------
+ print_doc(paste("    Substep ", step.my$n, ".", step.my$tmp, "b). Report using snpEff with the whole list of genes: ", file2process.my2, " ###\n", sep=""), file2process.my2);
+  
+  file_in  = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam.samtools.var.filtered.vcf", sep=""); 
+  file_out = paste(params$directory_out, "/", file2process.my2, ".f.snpEff.", params$opt$snpeff.of, sep=""); 
+  file_out_base = paste(params$directory_out, "/", file2process.my2, ".f.snpEff", sep="");     
+  command00 = "java -jar"; # next command.
+  # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
+  file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
+  #  options00 = paste(" ", params$path_snpEff, "snpEff.jar -t -c ", params$path_snpEff, "snpEff.config -v ", params$opt$se_db_rg," ", file_in, 
+  # Multithread (-t) needs to be disabled for the stats to be performed and html file produced.
+  options00 = paste(" ", params$path_snpEff, "snpEff.jar -c ", params$path_snpEff, "snpEff.config -v ", params$opt$se_db_rg," ", file_in, 
+                    " -a 0 -i vcf -o ", params$opt$snpeff.of," -chr chr -stats ", file_out_base,"_summary.html > ", file_out,
+                    " 2>> ", file_stderr, sep="");
+  
+  command = paste(command00, " ", options00, sep="");
+  check2showcommand(params$opt$showc, command, file2process.my2);
+  system(command);
+  
+  
   # Show errors (if any)
   obj.file_stderr <- read.delim(file_stderr, header = FALSE, sep=":")
   obj.file_stderr <- unlist(obj.file_stderr, use.names = FALSE)[obj.file_stderr$V1=="Error"]
@@ -2577,39 +2626,15 @@ fun.variant.eff.report <- function(file2process.my2, step.my) {
     # If this shows NA, then there was only 1 error message
     print_doc(obj.file_stderr[3:4],  file2process.my2);  
   } # Display the error message
-  # # We don't do check2clean here  since the output are results
+  
+  # ------------------------------ (end of the two substeps)
+  
+  # We don't do check2clean here  since the output are results
   print_done(file2process.my2);
   
-
-  #   ####### test in
-#   #   tmp_file_in = "/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a/s_4_m11_146b_merged12.f.vcf4"; 
-#      tmp_file_in = "/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a/s_4_m11_146b_merged12.sam.sorted.noDup.bam.samtools.var.filtered.vcf"; 
-#     tmp_file_out = "/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a/00snpeff_146b_merged12.vcf"; 
-#     tmp_command00 = "java -Xmx4g -jar"; # next command. -Xmx4g stands for indicating the computer to use at least 4Gb of RAM because the Human Genome Database is large
-# #   #tmp_file_stderr = "/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a/log.121207.sg293a.s_4_m11_146b_merged12.txt";
-#    tmp_file_stderr = "/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a/00snpeff_log.txt";
-#    tmp_options00 = paste("/home/ueb/snpEff/snpEff.jar -c /home/ueb/snpEff/snpEff.config hg19 ", tmp_file_in, 
-#                      " -a 0 -i vcf -o vcf -chr chr -stats /mnt/magatzem02/tmp/run_sara_293a/dir_out_293a/snpEff_summary.html > ", tmp_file_out, " 2>> ", tmp_file_stderr, sep="");
-#    tmp_command = paste(tmp_command00, " ", tmp_options00, sep="");
-#    system(tmp_command);
-####### test out
-
-  # Other stuff snpEff related
-  # v3.1 (2012-11): SnpEff 'countReads' count number of reads and bases (form a BAM file) on each gene, transcript, exon, intron, etc. 
-  # See https://ueb.vhir.org/PEEVA+4+Execuci%C3%B3+detalls&no_bl=y#Other_calculations_for_the_report
-  
-#   file.in.report2 <- paste(params$directory_out, "/", "s_7_m11_149b_merged12.f.snpEff.txt", sep=""); 
-#   r2_data <- read.delim(file.in.report2, skip="2", header=TRUE, comment.char="")
-#   table(r2_data$Exon_Rank, useNA="ifany")
-#   table(r2_data$Exon_Rank, addNA(r2_data$Quality))
-#   stem(r2_data$Exon_Rank)
-#   exon.max <- max(r2_data$Exon_Rank, na.rm=TRUE)
-#   hist(r2_data$Exon_Rank, breaks=exon.max, main="Exons holding variants", xlab="Exon Number", )
-#   
   gc() # Let's clean ouR garbage if possible
   return(step.my) # return nothing, since results are saved on disk from the system command
   
-  # TODO XXX
 }
 
 

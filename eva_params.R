@@ -121,8 +121,8 @@ if (p_test==1) {
   p_keep     <- TRUE # Enable if run through editor and you want to keep temp files
   p_showc    <- TRUE # Enable if you want to see the commands literally that are run in the command line
   p_st.vf.Q  <-      10 # Samtools vcftools.pl varFilter Q param: Minimum base quality for a base to be considered: 10 (same for small testing sets). 10 (90% accuracy)|20 (99.9%)|30 (99.99%)|40 (99.999%)|50 (99.9999%). See Wikipedia.".
-  p_st.vf.d  <-       2 # Samtools vcftools.pl varFilter d param: Minimum read depth (coverage) to call a SNP: 10-15 (1-2 for small testing sets)".
-  p_st.vf.a  <-       1 # Samtools vcftools.pl varFilter a param: Minimum number of alternate bases: 2-3 (1-2 for small testing sets)".
+  p_st.vf.d  <-       1 #(2) Samtools vcftools.pl varFilter d param: Minimum read depth (coverage) to call a SNP: 10-15 (1-2 for small testing sets)".
+  p_st.vf.a  <-       1 #(1) Samtools vcftools.pl varFilter a param: Minimum number of alternate bases: 2-3 (1-2 for small testing sets)".
   p_st.vf.D  <-10000000 # Samtools vcftools.pl varFilter D param: Maximum read depth (coverage) to call a SNP: 10000000 (same for small testing sets)".
   p_st.vf.S  <-    1000 # Samtools vcftools.pl varFilter S param: minimum SNP quality: 1000 (same for small testing sets). The smaller, the better (more precise, more quality in the SNP). High values are too permissive."
   #p_filter   <- ""   
@@ -149,9 +149,14 @@ if (p_test==1) {
   p_in.ext    <- ".sam" #".fastq" # ".fa" ".sam" ".bam" # This is the .extension of all files used as input for the pipeline to process
   p_output   <- "test_out2" #"/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a3b" #"test_out2" # "../test_out2" # "test_out"
   p_f_my_rs  <- "file_my_rs.txt" # In p_input. Needed by SnpEff to filter for the target genes before the report (well, filter for the potential snp rs codes in those genes)
-  p_label    <- "test2_06" #"testrunGATK1" # "testsnpEffCountReads_a" "test-121002" # "test-foo"        # Run Label for output filenames
+  p_label    <- "test2_09" #"testrunGATK1" # "testsnpEffCountReads_a" "test-121002" # "test-foo"        # Run Label for output filenames
   p_desc     <- "Testing the overall pipeline starting from scratch with samples testset1_sgs7a.sam & testset1_sgs7b.sam
-                        test2_06: As testset05 but playing with bed files to filter for intersecting intervals from target genes" 
+                        test2_09: As test2_08 but with new bed file (tab format) + chr for chromosomes.
+                                  + params$opt$p_se_db_rg instead of hg19 for snpeff. Multithread mode removed to snpEff in order to have stats html file generated again"
+  #                      test2_08: As test2_07 but with param a & d from samtools vcftools varFilter as 1 to get max number of candidate variants
+  #                                Then, annotate with samtools, and also with SnpSift." 
+  #                      test2_07: As test2_06 but with updated code (r92). Playing with Annovar new dbSNP updated files, 132 for the time being  (135, 137)." 
+  #                      test2_06: As testset05 but playing with bed files to filter for intersecting intervals from target genes" 
   #                      testset05: As testset4 but going back to test the variant filtering process with samtools, since we get zero results with current default settings
   #                               varFilter -Q10 -d2  -a1 -D10000000 -S1000 ->   72 records in filtered.vcf
   #                               varFilter -Q5  -d1  -a2 -D10000000 -S1000 ->   32 records in filtered.vcf
@@ -191,8 +196,8 @@ if (p_test==1) {
   p_keep     <- TRUE # Enable if run through editor and you want to keep temp files
   p_showc    <- TRUE # Enable if you want to see the commands literally that are run in the command line
   p_st.vf.Q  <-      10 # Samtools vcftools.pl varFilter Q param: Minimum base quality for a base to be considered: 10 (same for small testing sets). 10 (90% accuracy)|20 (99.9%)|30 (99.99%)|40 (99.999%)|50 (99.9999%). See Wikipedia.".
-  p_st.vf.d  <-       2 # Samtools vcftools.pl varFilter d param: Minimum read depth (coverage) to call a SNP: 10-15 (1-2 for small testing sets)".
-  p_st.vf.a  <-       1 # Samtools vcftools.pl varFilter a param: Minimum number of alternate bases: 2-3 (1-2 for small testing sets)".
+  p_st.vf.d  <-       1 #(2) Samtools vcftools.pl varFilter d param: Minimum read depth (coverage) to call a SNP: 10-15 (1-2 for small testing sets)".
+  p_st.vf.a  <-       1 #(1) Samtools vcftools.pl varFilter a param: Minimum number of alternate bases: 2-3 (1-2 for small testing sets)".
   p_st.vf.D  <-10000000 # Samtools vcftools.pl varFilter D param: Maximum read depth (coverage) to call a SNP: 10000000 (same for small testing sets)".
   p_st.vf.S  <-    1000 # Samtools vcftools.pl varFilter S param: minimum SNP quality: 1000 (same for small testing sets). The smaller, the better (more precise, more quality in the SNP). High values are too permissive."
   #p_filter   <- ""   
@@ -331,14 +336,14 @@ p_stats			                  <- runParam
 p_snpeff.count.reads          <- runParam 
 p_exon.coverage   	          <- FALSE # runParam # Unfinished work
 #####
-runParam <- TRUE #######################
+runParam <- FALSE #######################
 ####
 p_variant.calling		          <- runParam
 p_variant.filtering		        <- runParam
 p_gatk.combine.vcfs           <- FALSE # runParam # Non-started work (place holder only)
 p_convert2vcf4		            <- runParam
 #####
-runParam <- FALSE #######################
+runParam <- TRUE #######################
 ####
 p_variant.annotation.geneb	  <- runParam
 p_variant.annotation.regionb	<- FALSE # runParam # Non-started work (place holder only)
