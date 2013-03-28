@@ -1,7 +1,5 @@
 #!/home/ueb/repo/peeva/eva_main.R
-# $Keyword: Revision-Id $
-# $Keyword: Date $
-# $Keyword: Commiter $
+# revision %$Revision-Id: $% - %$Date: $% by %$Commiter: $%
 #
 # SCRIPT: eva_main.R
 # SCOPE:  Main program that performs Exom Variant Analysis. 

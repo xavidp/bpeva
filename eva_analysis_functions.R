@@ -1,7 +1,5 @@
 #!/home/ueb/repo/peeva/eva_analysis_functions.R
-# $Keyword: Revision-Id $
-# $Keyword: Date $
-# $Keyword: Commiter $
+# revision $Revision-Id: $ - $Date: $ by $Commiter: $
 #
 # SCRIPT: eva_analysis_functions.R
 # SCOPE: to be called from other scripts, such as eva_main.R
