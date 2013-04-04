@@ -48,7 +48,7 @@
 # ---------------------------------------------------------------------
 startdate <- paste(format(Sys.Date(), "%y%m%d"), sep="")
 
-p_test     = 0 # 0-1-2; ### Is this a test run? ###
+p_test     = 2 # 0-1-2; ### Is this a test run? ###
                 # 0 = normal run
                 # 1 = test run, so that use the predefined values for a test run, with samples: ; 
                 # 2 = test run, so that use the predefined values for a test run; 
@@ -133,10 +133,12 @@ if (p_test==1) {
   p_in.ext    <- ".sam" #".fastq" # ".fa" ".sam" ".bam" # This is the .extension of all files used as input for the pipeline to process
   p_output   <- "test_out2" #"/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a3b" #"test_out2" # "../test_out2" # "test_out"
   p_f_my_rs  <- "file_my_rs.txt" # In p_input. Needed by SnpEff to filter for the target genes before the report (well, filter for the potential snp rs codes in those genes)
-  p_label    <- "test2_10" #"testrunGATK1" # "testsnpEffCountReads_a" "test-121002" # "test-foo"        # Run Label for output filenames
+  p_label    <- "test2_11" #"testrunGATK1" # "testsnpEffCountReads_a" "test-121002" # "test-foo"        # Run Label for output filenames
   p_desc     <- "Testing annovar with new version and reference genome
-                        test2_10: OK. Same params as test2_09, but cheking now new annovar version ref files. 
-                                  Some db must be missing"
+                        test2_11: Minor typos in var filtering (symlinks) and grep calls post annovar annotations fixed. 
+                                  Same params as test2_09. apparently all db are in. And run in parallel again"
+  #                      test2_10: OK. Same params as test2_09, but checking now new annovar version ref files. 
+  #                                Some db must be missing"
   #                      test2_09: OK. As test2_08 but with new bed file (tab format) + chr for chromosomes.
   #                                + params$opt$p_se_db_rg instead of hg19 for snpeff. Multithread mode removed to snpEff in order to have stats html file generated again"
   #                      test2_08: As test2_07 but with param a & d from samtools vcftools varFilter as 1 to get max number of candidate variants
@@ -250,7 +252,7 @@ if (p_test==1) {
 #  p_filter   <- "BRCA1|\\|BRCA2|\\|CHEK2|\\|PALB2|\\|BRIP1|\\|TP53|\\|PTEN|\\|STK11|\\|CDH1|\\|ATM|\\|BARD1|\\|APC|\\|MLH1|\\|MRE11A|\\|MSH2|\\|MSH6|\\|MUTYH|\\|NBN|\\|PMS1|\\|PMS2|\\|RAD50|\\|RAD51D|\\|RAD51C|\\|XRCC2|\\|UIMC1|\\|FAM175A|\\|ERCC4|\\|RAD51|\\|RAD51B|\\|XRCC3|\\|FANCA|\\|FANCB|\\|FANCC|\\|FANCD2|\\|FANCE|\\|FANCF|\\|FANCG|\\|FANCI|\\|FANCL|\\|FANCM|\\|SLX4|\\|CASP8|\\|FGFR2|\\|TOX3|\\|MAP3K1|\\|MRPS30|\\|SLC4A7|\\|NEK10|\\|COX11|\\|ESR1|\\|CDKN2A|\\|CDKN2B|\\|ANKRD16|\\|FBXO18|\\|ZNF365|\\|ZMIZ1|\\|BABAM1|\\|LSP1|\\|ANKLE1|\\|TOPBP1|\\|BCCIP|\\|TP53BP1|\\|BRCA1:\\|BRCA2:\\|CHEK2:\\|PALB2:\\|BRIP1:\\|TP53:\\|PTEN:\\|STK11:\\|CDH1:\\|ATM:\\|BARD1:\\|APC:\\|MLH1:\\|MRE11A:\\|MSH2:\\|MSH6:\\|MUTYH:\\|NBN:\\|PMS1:\\|PMS2:\\|RAD50:\\|RAD51D:\\|RAD51C:\\|XRCC2:\\|UIMC1:\\|FAM175A:\\|ERCC4:\\|RAD51:\\|RAD51B:\\|XRCC3:\\|FANCA:\\|FANCB:\\|FANCC:\\|FANCD2:\\|FANCE:\\|FANCF:\\|FANCG:\\|FANCI:\\|FANCL:\\|FANCM:\\|SLX4:\\|CASP8:\\|FGFR2:\\|TOX3:\\|MAP3K1:\\|MRPS30:\\|SLC4A7:\\|NEK10:\\|COX11:\\|ESR1:\\|CDKN2A:\\|CDKN2B:\\|ANKRD16:\\|FBXO18:\\|ZNF365:\\|ZMIZ1:\\|BABAM1:\\|LSP1:\\|ANKLE1:\\|TOPBP1:\\|BCCIP:\\|TP53BP1:\\|^BRCA1\t\\|^BRCA2\t\\|^CHEK2\t\\|^PALB2\t\\|^BRIP1\t\\|^TP53\t\\|^PTEN\t\\|^STK11\t\\|^CDH1\t\\|^ATM\t\\|^BARD1\t\\|^APC\t\\|^MLH1\t\\|^MRE11A\t\\|^MSH2\t\\|^MSH6\t\\|^MUTYH\t\\|^NBN\t\\|^PMS1\t\\|^PMS2\t\\|^RAD50\t\\|^RAD51D\t\\|^RAD51C\t\\|^XRCC2\t\\|^UIMC1\t\\|^FAM175A\t\\|^ERCC4\t\\|^RAD51\t\\|^RAD51B\t\\|^XRCC3\t\\|^FANCA\t\\|^FANCB\t\\|^FANCC\t\\|^FANCD2\t\\|^FANCE\t\\|^FANCF\t\\|^FANCG\t\\|^FANCI\t\\|^FANCL\t\\|^FANCM\t\\|^SLX4\t\\|^CASP8\t\\|^FGFR2\t\\|^TOX3\t\\|^MAP3K1\t\\|^MRPS30\t\\|^SLC4A7\t\\|^NEK10\t\\|^COX11\t\\|^ESR1\t\\|^CDKN2A\t\\|^CDKN2B\t\\|^ANKRD16\t\\|^FBXO18\t\\|^ZNF365\t\\|^ZMIZ1\t\\|^BABAM1\t\\|^LSP1\t\\|^ANKLE1\t\\|^TOPBP1\t\\|^BCCIP\t\\|^TP53BP1\t\\|\"BRCA1\"\\|\"BRCA2\"\\|\"CHEK2\"\\|\"PALB2\"\\|\"BRIP1\"\\|\"TP53\"\\|\"PTEN\"\\|\"STK11\"\\|\"CDH1\"\\|\"ATM\"\\|\"BARD1\"\\|\"APC\"\\|\"MLH1\"\\|\"MRE11A\"\\|\"MSH2\"\\|\"MSH6\"\\|\"MUTYH\"\\|\"NBN\"\\|\"PMS1\"\\|\"PMS2\"\\|\"RAD50\"\\|\"RAD51D\"\\|\"RAD51C\"\\|\"XRCC2\"\\|\"UIMC1\"\\|\"FAM175A\"\\|\"ERCC4\"\\|\"RAD51\"\\|\"RAD51B\"\\|\"XRCC3\"\\|\"FANCA\"\\|\"FANCB\"\\|\"FANCC\"\\|\"FANCD2\"\\|\"FANCE\"\\|\"FANCF\"\\|\"FANCG\"\\|\"FANCI\"\\|\"FANCL\"\\|\"FANCM\"\\|\"SLX4\"\\|\"CASP8\"\\|\"FGFR2\"\\|\"TOX3\"\\|\"MAP3K1\"\\|\"MRPS30\"\\|\"SLC4A7\"\\|\"NEK10\"\\|\"COX11\"\\|\"ESR1\"\\|\"CDKN2A\"\\|\"CDKN2B\"\\|\"ANKRD16\"\\|\"FBXO18\"\\|\"ZNF365\"\\|\"ZMIZ1\"\\|\"BABAM1\"\\|\"LSP1\"\\|\"ANKLE1\"\\|\"TOPBP1\"\\|\"BCCIP\"\\|\"TP53BP1\""
   p_filter    <- "BRCA1|\\|BRCA2|\\|CHEK2|\\|PALB2|\\|BRIP1|\\|TP53|\\|PTEN|\\|STK11|\\|CDH1|\\|ATM|\\|BARD1|\\|APC|\\|MLH1|\\|MRE11A|\\|MSH2|\\|MSH6|\\|MUTYH|\\|NBN|\\|PMS1|\\|PMS2|\\|RAD50|\\|RAD51D|\\|RAD51C|\\|XRCC2|\\|UIMC1|\\|FAM175A|\\|ERCC4|\\|RAD51|\\|RAD51B|\\|XRCC3|\\|FANCA|\\|FANCB|\\|FANCC|\\|FANCD2|\\|FANCE|\\|FANCF|\\|FANCG|\\|FANCI|\\|FANCL|\\|FANCM|\\|SLX4|\\|CASP8|\\|FGFR2|\\|TOX3|\\|MAP3K1|\\|MRPS30|\\|SLC4A7|\\|NEK10|\\|COX11|\\|ESR1|\\|CDKN2A|\\|CDKN2B|\\|ANKRD16|\\|FBXO18|\\|ZNF365|\\|ZMIZ1|\\|BABAM1|\\|LSP1|\\|ANKLE1|\\|TOPBP1|\\|BCCIP|\\|TP53BP1|\\|BRCA1:\\|BRCA2:\\|CHEK2:\\|PALB2:\\|BRIP1:\\|TP53:\\|PTEN:\\|STK11:\\|CDH1:\\|ATM:\\|BARD1:\\|APC:\\|MLH1:\\|MRE11A:\\|MSH2:\\|MSH6:\\|MUTYH:\\|NBN:\\|PMS1:\\|PMS2:\\|RAD50:\\|RAD51D:\\|RAD51C:\\|XRCC2:\\|UIMC1:\\|FAM175A:\\|ERCC4:\\|RAD51:\\|RAD51B:\\|XRCC3:\\|FANCA:\\|FANCB:\\|FANCC:\\|FANCD2:\\|FANCE:\\|FANCF:\\|FANCG:\\|FANCI:\\|FANCL:\\|FANCM:\\|SLX4:\\|CASP8:\\|FGFR2:\\|TOX3:\\|MAP3K1:\\|MRPS30:\\|SLC4A7:\\|NEK10:\\|COX11:\\|ESR1:\\|CDKN2A:\\|CDKN2B:\\|ANKRD16:\\|FBXO18:\\|ZNF365:\\|ZMIZ1:\\|BABAM1:\\|LSP1:\\|ANKLE1:\\|TOPBP1:\\|BCCIP:\\|TP53BP1:\\|^BRCA1\t\\|^BRCA2\t\\|^CHEK2\t\\|^PALB2\t\\|^BRIP1\t\\|^TP53\t\\|^PTEN\t\\|^STK11\t\\|^CDH1\t\\|^ATM\t\\|^BARD1\t\\|^APC\t\\|^MLH1\t\\|^MRE11A\t\\|^MSH2\t\\|^MSH6\t\\|^MUTYH\t\\|^NBN\t\\|^PMS1\t\\|^PMS2\t\\|^RAD50\t\\|^RAD51D\t\\|^RAD51C\t\\|^XRCC2\t\\|^UIMC1\t\\|^FAM175A\t\\|^ERCC4\t\\|^RAD51\t\\|^RAD51B\t\\|^XRCC3\t\\|^FANCA\t\\|^FANCB\t\\|^FANCC\t\\|^FANCD2\t\\|^FANCE\t\\|^FANCF\t\\|^FANCG\t\\|^FANCI\t\\|^FANCL\t\\|^FANCM\t\\|^SLX4\t\\|^CASP8\t\\|^FGFR2\t\\|^TOX3\t\\|^MAP3K1\t\\|^MRPS30\t\\|^SLC4A7\t\\|^NEK10\t\\|^COX11\t\\|^ESR1\t\\|^CDKN2A\t\\|^CDKN2B\t\\|^ANKRD16\t\\|^FBXO18\t\\|^ZNF365\t\\|^ZMIZ1\t\\|^BABAM1\t\\|^LSP1\t\\|^ANKLE1\t\\|^TOPBP1\t\\|^BCCIP\t\\|^TP53BP1\t\\|\"BRCA1\"\\|\"BRCA2\"\\|\"CHEK2\"\\|\"PALB2\"\\|\"BRIP1\"\\|\"TP53\"\\|\"PTEN\"\\|\"STK11\"\\|\"CDH1\"\\|\"ATM\"\\|\"BARD1\"\\|\"APC\"\\|\"MLH1\"\\|\"MRE11A\"\\|\"MSH2\"\\|\"MSH6\"\\|\"MUTYH\"\\|\"NBN\"\\|\"PMS1\"\\|\"PMS2\"\\|\"RAD50\"\\|\"RAD51D\"\\|\"RAD51C\"\\|\"XRCC2\"\\|\"UIMC1\"\\|\"FAM175A\"\\|\"ERCC4\"\\|\"RAD51\"\\|\"RAD51B\"\\|\"XRCC3\"\\|\"FANCA\"\\|\"FANCB\"\\|\"FANCC\"\\|\"FANCD2\"\\|\"FANCE\"\\|\"FANCF\"\\|\"FANCG\"\\|\"FANCI\"\\|\"FANCL\"\\|\"FANCM\"\\|\"SLX4\"\\|\"CASP8\"\\|\"FGFR2\"\\|\"TOX3\"\\|\"MAP3K1\"\\|\"MRPS30\"\\|\"SLC4A7\"\\|\"NEK10\"\\|\"COX11\"\\|\"ESR1\"\\|\"CDKN2A\"\\|\"CDKN2B\"\\|\"ANKRD16\"\\|\"FBXO18\"\\|\"ZNF365\"\\|\"ZMIZ1\"\\|\"BABAM1\"\\|\"LSP1\"\\|\"ANKLE1\"\\|\"TOPBP1\"\\|\"BCCIP\"\\|\"TP53BP1\"\\|BRCA1\t|BRCA2\t|CHEK2\t|PALB2\t|BRIP1\t|TP53\t|PTEN\t|STK11\t|CDH1\t|ATM\t|BARD1\t|APC\t|MLH1\t|MRE11A\t|MSH2\t|MSH6\t|MUTYH\t|NBN\t|PMS1\t|PMS2\t|RAD50\t|RAD51D\t|RAD51C\t|XRCC2\t|UIMC1\t|FAM175A\t|ERCC4\t|RAD51\t|RAD51B\t|XRCC3\t|FANCA\t|FANCB\t|FANCC\t|FANCD2\t|FANCE\t|FANCF\t|FANCG\t|FANCI\t|FANCL\t|FANCM\t|SLX4\t|CASP8\t|FGFR2\t|TOX3\t|MAP3K1\t|MRPS30\t|SLC4A7\t|NEK10\t|COX11\t|ESR1\t|CDKN2A\t|CDKN2B\t|ANKRD16\t|FBXO18\t|ZNF365\t|ZMIZ1\t|BABAM1\t|LSP1\t|ANKLE1\t|TOPBP1\t|BCCIP\t|TP53BP1  "
   p_filter.c  <- "BRCA1 BRCA2 CHEK2 PALB2 BRIP1 TP53 PTEN STK11 CDH1 ATM BARD1 APC MLH1 MRE11A MSH2 MSH6 MUTYH NBN PMS1 PMS2 RAD50 RAD51D RAD51C XRCC2 UIMC1 FAM175A ERCC4 RAD51 RAD51B XRCC3 FANCA FANCB FANCC FANCD2 FANCE FANCF FANCG FANCI FANCL FANCM SLX4 CASP8 FGFR2 TOX3 MAP3K1 MRPS30 SLC4A7 NEK10 COX11 ESR1 CDKN2A CDKN2B ANKRD16 FBXO18 ZNF365 ZMIZ1 BABAM1 LSP1 ANKLE1 TOPBP1 BCCIP TP53BP1"
-  p_tggbf     <- TRUE # TRUE # TRUE=A bed file will be generated with the intersecting intervals for the target genes (.ssfiitg.bed). Needed to filter vcf files for target genes before reunning custom snpEff Report 
+  p_tggbf     <- TRUE # TRUE # TRUE=A bed file will be generated with the intersecting intervals for the target genes (.my_genes.bed). Needed to filter vcf files for target genes before reunning custom snpEff Report 
   p_mail.send <- 1 # 0=FALSE, 1=TRUE ; Indicate whether we want an email sent when the run is finished
   p_only.m.r  <- 1 # Use only Mapped reads to created the corresponding bam files?
                       # 0/n: no, use mapped and unmapped reads; 
@@ -266,6 +268,7 @@ if (p_test==1) {
 }
 ###########################
 # Common params for test runs and non-test runs 
+p_genedata  <- TRUE # TRUE # TRUE=A txt file will be generated with the data related to the target genes
 p_genver    <- "hg19" # hg19 is the only one supported throughout the whole pipeline still, as of January 2013.
 p_se_db_rg  <- "GRCh37.66" # GRCh37.66 is the only one supported for SnpEff v3.1 throughout the whole pipeline still, as of March 2013.
 p_index     <- FALSE #FALSE # TRUE         
@@ -322,7 +325,7 @@ runParam <- FALSE #######################
 p_quality.control             <- runParam
 p_bowtie2sam                  <- runParam
 #####
-runParam <- TRUE #######################
+runParam <- FALSE #######################
 ####
 p_sam2bam.and.sort		        <- runParam
 p_remove.pcr.dup		          <- runParam
@@ -333,25 +336,27 @@ p_gatk.local.realign.step3    <- FALSE # runParam # Unfinished work
 p_index.bam.file		          <- runParam
 p_stats			                  <- runParam
 p_snpeff.count.reads          <- runParam 
-p_exon.coverage   	          <- FALSE # runParam # Unfinished work
+p_variant.calling		          <- runParam
 #####
 runParam <- TRUE #######################
 ####
-p_variant.calling		          <- runParam
 p_variant.filtering		        <- runParam
+#####
+runParam <- FALSE #######################
+####
 p_gatk.combine.vcfs           <- FALSE # runParam # Non-started work (place holder only)
 p_convert2vcf4		            <- runParam
-#####
-runParam <- TRUE #######################
-####
 p_variant.annotation.geneb	  <- runParam
 p_variant.annotation.regionb	<- FALSE # runParam # Non-started work (place holder only)
 p_variant.annotation.filterb	<- runParam
 p_variant.annotation.summarize<- runParam
+#####
+runParam <- TRUE #######################
+####
 p_grep.variants		            <- runParam
 p_visualize.variants		      <- FALSE # runParam # Non-started work (place holder only)
 #####
-runParam <- TRUE #######################
+runParam <- FALSE #######################
 ####
 p_variant.fii.pre.snpeff      <- runParam
 p_variant.filter.pre.snpeff   <- FALSE # runParam # Not running properly yet
@@ -386,7 +391,6 @@ params_w2pps <- list(
   p_index.bam.file                    = p_index.bam.file,
   p_stats                             = p_stats,
   p_snpeff.count.reads                = p_snpeff.count.reads,
-  p_exon.coverage                     = p_exon.coverage,
   p_variant.calling                   = p_variant.calling,
   p_variant.filtering                 = p_variant.filtering,
   p_gatk.combine.vcfs                 = p_gatk.combine.vcfs,

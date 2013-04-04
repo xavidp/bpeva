@@ -245,7 +245,9 @@ w.unlock.sample.pe <- function(filename.my2)
   if (file.exists(paste(params$filename_list, ".lock", sep=""))){
     print_mes(paste(now(), "Removing lock: ", params$opt$output, "/", "log.",params$startdate, ".", params$opt$label, ".", filename.my2, ".lock \n", sep=""), filename.my2)
     file2remove <- paste(params$opt$output, "/", "log.",params$startdate, ".", params$opt$label, ".", filename.my2, ".lock", sep="")
-    system(paste("rm ", file2remove, sep=""), TRUE)
+    # I suppress warnings here since the file can be removed by one node, and the other nodes (when run in parallel)
+    # that the file to delete does not exist (any more).
+    suppressWarnings(system(paste("rm ", file2remove, sep=""), TRUE))
   }
 }
 
@@ -669,6 +671,336 @@ fun.convert.file.list.pe <- function(file2process.my2, step.my) {
   
 }
 
+
+##########################
+### FUNCTION fun.tgenes.generate.bed.file
+###
+###     Generate a bed file with the intersecting intervals (genomic regions) for the target genes
+###     Needed to filter vcf files with SnpSift.jar for target genes before reunning custom snpEff Report 
+
+##########################
+# x stands for the list of target genes to process. Separated by spaces
+
+fun.tgenes.generate.bed.file <- function(step.my, file2process.my2, x) {
+  
+  # Manual debugging
+  # file2process.my2 <- abs_routlogfile
+  # x <- "BRCA1 BRCA2 CHEK2 PALB2 BRIP1 TP53 PTEN STK11 CDH1 ATM BARD1 APC MLH1 MRE11A MSH2 MSH6 MUTYH NBN PMS1 PMS2 RAD50 RAD51D RAD51C XRCC2 UIMC1 FAM175A ERCC4 RAD51 RAD51B XRCC3 FANCA FANCB FANCC FANCD2 FANCE FANCF FANCG FANCI FANCL FANCM SLX4 CASP8 FGFR2 TOX3 MAP3K1 MRPS30 SLC4A7 NEK10 COX11 ESR1 CDKN2A CDKN2B ANKRD16 FBXO18 ZNF365 ZMIZ1 BABAM1 LSP1 ANKLE1 TOPBP1 BCCIP TP53BP1"
+  # step.my <- data.frame(0, 0)
+  # colnames(step.my) <- c("n","tmp")
+  
+  # update step number
+  #step.my$tmp <- step.my$tmp + 1
+  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "a. Generate a bed file with the genomic regions for the target genes (...my_genes.bed) ###\n", sep=""), "run");
+  
+  # Get a list of the genetic intervals of those genes (in BED format): my_genes.bed
+  # Using Bioconductor R package biomaRt
+  
+  # Install library if necessary
+  if(!require(biomaRt)){ biocLite("biomaRt") }
+  # Load libraries 
+  library(biomaRt, quietly = TRUE)
+  
+  # Load the mart for ensembl
+  mart <- useMart(biomart = "ensembl", dataset = "hsapiens_gene_ensembl")
+  
+  ## Manual debugging
+  #listMarts()
+  # g = getGene( id = "BRCA1", type = "hgnc_symbol", mart = mart)
+  # show(g)
+  #x <- "BRCA1 BRCA2 CHEK2 PALB2 BRIP1 TP53 PTEN STK11 CDH1 ATM BARD1 APC MLH1 MRE11A MSH2 MSH6 MUTYH NBN PMS1 PMS2 RAD50 RAD51D RAD51C XRCC2 UIMC1 FAM175A ERCC4 RAD51 RAD51B XRCC3 FANCA FANCB FANCC FANCD2 FANCE FANCF FANCG FANCI FANCL FANCM SLX4 CASP8 FGFR2 TOX3 MAP3K1 MRPS30 SLC4A7 NEK10 COX11 ESR1 CDKN2A CDKN2B ANKRD16 FBXO18 ZNF365 ZMIZ1 BABAM1 LSP1 ANKLE1 TOPBP1 BCCIP TP53BP1"
+  
+  tgenes <- unlist(strsplit(x, split=" ", fixed=TRUE))
+  #length(tgenes)
+  #head(tgenes)
+  tgenes.o <- tgenes[order(tgenes)]
+  #head(tgenes2)
+  
+  tg = getGene( id = tgenes, type = "hgnc_symbol", mart = mart)
+  #dim(tg)
+  #head(tg)
+  # tg$hgnc_symbol
+  # tg$ensembl_gene_id
+  
+  # Remove the LRG (Locus Reference Genome) names, since they show up as duplicated records to a differnt chromosome called LR_xxx, besides the other record for the normal chromosome. 
+  #   "LRG sequences provide a stable genomic DNA framework for reporting mutations with a permanent ID and core content that never changes."
+  #   See http://www.lrg-sequence.org/
+  tg.lrg.idx <- grep("LRG", tg$chromosome_name, fixed=T)
+  # Keep only the list of target genes without lrg 
+  tg.nolrg <- tg[-tg.lrg.idx,]
+  
+  # Sort results by gene name
+  tg.nolrg.o <- tg.nolrg[order(tg.nolrg$hgnc_symbol),]
+  #head(tg.nolrg.o)
+  #head(tg.nolrg.o$hgnc_symbol)
+  #str(tg2)
+  #?match
+  
+  # Get the indexes of genes from the ordered list of target genes which are not found in the results 
+  tg.nolrg.o.new.idx <- which(!tgenes.o %in% tg.nolrg.o$hgnc_symbol)
+  # If there are missmatches between target gene names, display a warning and display them
+  if ( length(tg.nolrg.o.new.idx) > 0) {
+    print("Warning: some missmatch found between target gene names and their corresponding matches through biomaRt")
+    # Display those gene names
+    tgenes.o[tg.nolrg.o.new.idx]
+  }
+  #dim(tg.nolrg.o)
+  #tg.nolrg.o
+  #row.names(tg.nolrg.o)
+  #dim(tg.nolrg.o)[1]
+  score <- rep(0, dim(tg.nolrg.o)[1])
+  #class(foo)
+  tg.nolrg.o <- cbind(tg.nolrg.o, score)
+  #str(tg.nolrg.o)
+  
+  # Substep 1. Generate the bed file
+  # --------------------------------
+  # Get just the columns of interest to generate a valid BED file. 
+  # See http://genome.ucsc.edu/FAQ/FAQformat.html#format1
+  my_bed <- tg.nolrg.o[, c("chromosome_name", "start_position", "end_position", "hgnc_symbol", "score", "strand")]
+  
+  # I sort by Chromosome first, and by Start position later. 
+  # In addition, I remove warnings explicitly because I'm coercing chr names to integers, adn Chr X is not an integer.
+  my_bed <- suppressWarnings(my_bed[order(as.integer(my_bed$chromosome_name), as.integer(my_bed$start_position)), ])
+  
+  # Add chr prefix to the chromosome names for consistency with the other parts of the pipeline
+  my_bed$chromosome_name <- paste("chr", my_bed$chromosome_name, sep="")
+  
+  # Rename colname "chromosome_name" with "#chromosome_name"
+  colnames(my_bed) <- c("#chromosome_name", "start_position", "end_position", "hgnc_symbol", "score", "strand")
+  # ATTENTION: 
+  # I'm writing here a number sign (#) prepending "chromosome_name" in order to have titles added to the file, 
+  # (see below the function "write.table" with argument "col.names=T") but not breaking SnpSift.jar intidx command
+  # (which doesn't like to have column names in the first row but seems to accept comments starting with "#")
+  
+  # Write the results to the file my_bed.txt
+  # The params to define file_my_bed here are not preppended with params$ (startdate instead of params$startdate, etc)
+  # because this function is called from the main program, not parallelized, so not in the nodes but the master computer/cpu.
+  file_my_bed = file=paste(params$log.folder,"/", startdate, ".", opt$label,".my_genes.bed", sep="")
+  
+  # I remove the warning messages from this call (below) because of the coercion type of message (harmless, afaik, but annoying and polluting output in log files)
+  # Write all: data with column names in one go
+  suppressWarnings(write.table(my_bed, file=file_my_bed, append=F, quote=F, sep="\t", row.names=F, col.names=T))
+  
+  # Substep 2. Generate a file with both gene names: hgnc_symbol and ensembl_gene_id, for later optional re-use at count reads
+  # ------------------------------------------------------------------------------------------------------------------------------
+  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "b. Generate a file with both GeneSymbols and Ensembl Gene Id (...my_genes.names.txt) ###\n", sep=""), "run");
+  
+  # Get just the columns of interest to generate a valid BED file. 
+  # See http://genome.ucsc.edu/FAQ/FAQformat.html#format1
+  my_genenames <- tg.nolrg.o[, c("chromosome_name", "start_position", "end_position", "hgnc_symbol", "score", "strand", "ensembl_gene_id")]
+  
+  # I sort by Chromosome first, and by Start position later. 
+  # In addition, I remove warnings explicitly because I'm coercing chr names to integers, adn Chr X is not an integer.
+  my_genenames <- suppressWarnings(my_genenames[order(as.integer(my_genenames$chromosome_name), as.integer(my_genenames$start_position)), ])
+  
+  # Add chr prefix to the chromosome names for consistency with the other parts of the pipeline
+  my_genenames$chromosome_name <- paste("chr", my_genenames$chromosome_name, sep="")
+  
+  # Write the results to the file my_genes.names.txt
+  # The params to define file_my_genes.names here are not preppended with params$ (startdate instead of params$startdate, etc)
+  # because this function is called from the main program, not parallelized, so not in the nodes but the master computer/cpu.
+  file_my_genenames = file=paste(params$log.folder,"/", startdate, ".", opt$label,".my_genes.names.txt", sep="")
+  
+  # I remove the warning messages from this call (below) because of the coercion type of message (harmless, afaik, but annoying and polluting output in log files)
+  # Write all: data with column names in one go
+  suppressWarnings(write.table(my_genenames, file=file_my_genenames, append=F, quote=F, sep="\t", row.names=F, col.names=T))
+  
+  # End substep 2
+  # ------------------
+  
+  # # We don't do check2clean here  since the output are results
+  print_done("run");
+  
+  
+  gc() # Let's clean ouR garbage if possible
+  return(step.my) # return nothing, since results are saved on disk from the system command
+  
+}
+
+
+##########################
+### FUNCTION fun.genedata
+###
+###   Gene Exons Coverage and other gene data
+###
+### April 2013: Unfinsihed implementation based on R packages.
+###   So far it only creates as reference file with all data for the target genes in the run
+### Alternatively, this could be performed with bedtools directly. 
+### See http://bedtools.readthedocs.org/en/latest/content/advanced-usage.html#computing-the-coverage-of-bam-alignments-on-exons
+##########################
+
+fun.genedata <- function(file2process.my2, step.my) {
+  # file2process.my2 <- abs_routlogfile
+  # step.my$tmp <- 1
+  # update step number
+  #step.my$tmp <- step.my$tmp + 1
+  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Gene Genedata for the target genes (.my_genes.data.csv): ", file2process.my2, " ###\n", sep=""), "run");
+  
+  if(!require(Rsamtools)){ biocLite("Rsamtools") }
+  library(Rsamtools, quietly = TRUE)
+  
+  if(!require(GenomicFeatures)){ biocLite("GenomicFeatures") }
+  library(GenomicFeatures, quietly = TRUE)
+  
+  # Check for the TxDb.Hsapiens.UCSC.hg19.knownGene or TxDb.Hsapiens.UCSC.hg18.knownGene dynamically 
+  # based on the contents of param opt$genver, where hg19 or hg18 is set. 
+  # See below after the opt$genver is defined
+  
+  if(!require(org.Hs.eg.db)){ biocLite("org.Hs.eg.db") }
+  library(org.Hs.eg.db, quietly = TRUE)
+  
+  # if(!require(annotate)){ biocLite("annotate") }
+  # library(annotate, quietly = TRUE)
+  
+  # From http://www.bioconductor.org/help/workflows/variants/
+  #   > ## get entrez ids from gene symbols
+  #     > library(org.Hs.eg.db)
+  #   > genesym <- c("TRPV1", "TRPV2", "TRPV3")
+  #   > geneid <- select(org.Hs.eg.db, keys=genesym, keytype="SYMBOL", cols="ENTREZID")
+  #   > geneid
+  #   SYMBOL ENTREZID
+  #   1  TRPV1     7442
+  #   2  TRPV2    51393
+  #   3  TRPV3   162514
+  #
+  #   > genesym <- c("BRCA1", "BRCA2", "KIAA1462")
+  #   > geneid <- select(org.Hs.eg.db, keys=genesym, keytype="SYMBOL", cols="ENTREZID")
+  #   > geneid
+  #   SYMBOL ENTREZID
+  #   1    BRCA1      672
+  #   2    BRCA2      675
+  #   3 KIAA1462    57608
+  
+  # Get the ENTREZIDs for the target genes (as gene symbols). Their Gene symbols are in a string in params$opt$filter.c 
+  genesym <- unlist(strsplit(params$opt$filter.c, split=" ", fixed=TRUE))
+  geneid <- select(org.Hs.eg.db, keys=genesym, keytype="SYMBOL", cols="ENTREZID")
+  # geneid$SYMBOL
+  # geneid$ENTREZID
+  # length(geneid$ENTREZID)
+  # length(unique(geneid$ENTREZID))
+  
+  # Load the other required packaage
+  txdbpackage <- paste("TxDb.Hsapiens.UCSC.", params$opt$genver, ".knownGene", sep="")
+  if(!require(txdbpackage, character.only=TRUE)) { biocLite(txdbpackage) }
+  library(txdbpackage, character.only=TRUE, quietly = TRUE)
+  
+  # Since the dynamic way of using txdb package doesn't work for me (cols(txdb) below complains with 
+  #   'Error in x$conn : $ operator is invalid for atomic vectors)'
+  #    #txdb <- substitute(pkg, list(pkg = as.character(txdbpackage)))
+  #    #txdb <- substitute(pkg, list(pkg = as.name(txdbpackage)))
+  #    #class(txdb) <- "TranscriptDb"
+  #    #attr(txdb,"package") <- "GenomicFeatures"
+  #    #get(txdbpackage)
+  #    #str(txdb)
+  #    #cols(txdb)
+  # I implement it with a if clause for each type of params$opt$genver
+  if (params$opt$genver == "hg19" ) {
+    txdb <- TxDb.Hsapiens.UCSC.hg19.knownGene
+  } else if (params$opt$genver == "hg18" ) {
+    txdb <- TxDb.Hsapiens.UCSC.hg18.knownGene
+  }
+  
+  # Testing
+  #exons(txdb)[1:10]
+  #head(exons(txdb))
+  #tail(exons(txdb))
+  
+  #str(txdb)
+  #   Reference class 'TranscriptDb' [package "GenomicFeatures"] with 5 fields
+  #   $ conn        :Formal class 'SQLiteConnection' [package "RSQLite"] with 1 slots
+  #   .. ..@ Id:<externalptr> 
+  #     $ packageName : chr "TxDb.Hsapiens.UCSC.hg19.knownGene"
+  #   $ .chrom      : chr [1:93] "chr1" "chr2" "chr3" "chr4" ...
+  #   $ isActiveSeq : logi [1:93] TRUE TRUE TRUE TRUE TRUE TRUE ...
+  #   $ seqnameStyle: chr(0) 
+  #   and 13 methods, of which 1 are possibly relevant:
+  #     initialize
+  #cols(txdb)
+  #   [1] "CDSID"      "CDSNAME"    "CDSCHROM"   "CDSSTRAND"  "CDSSTART"
+  #   [6] "CDSEND"     "EXONID"     "EXONNAME"   "EXONCHROM"  "EXONSTRAND"
+  #   [11] "EXONSTART"  "EXONEND"    "GENEID"     "TXID"       "EXONRANK"
+  #   [16] "TXNAME"     "TXCHROM"    "TXSTRAND"   "TXSTART"    "TXEND"
+  
+  # I use here the list of ENTREZIDs (for my target genes) that I obtained in the previous step
+  my.geneid.entrezid <- suppressWarnings(select(txdb, keys=geneid$ENTREZID, cols=cols(txdb) ,keytype="GENEID"))
+  print_mes_fullpath("\n[WARNING] This step in fun.genedata() seems to produce: 
+                     In .generateExtraRows(tab, keys, jointype) :
+                     'select' resulted in 1:many mapping between keys and return rows\n\n", abs_routlogfile)
+  
+  # Testing
+  #summary(my.geneid.entrezid)
+  #str(my.geneid.entrezid)
+  
+  # Add column with GeneSymbols (hgnc_symbol, which equals to = org.Hs.eg.db, keys=genesym, keytype="SYMBOL")
+  # corresponding to the equivalent EntrezID in my.geneid.entrezid
+  # ------------------------------------------------------------------------------------------------------------
+  # Command (in general)
+  # my_symbols <- df.a[ pmatch(df.b[,"GENEID"], df.a[,2]), 1 ]
+  
+  # load the data obtained previously with the correspondence between hgnc_symbol and entrezid
+  df.a <- geneid
+  #str(df.a)
+  
+  df.b <- my.geneid.entrezid
+  #str(df.b)
+  
+  a <- as.character(df.a[,"ENTREZID"])
+  b <- as.character(df.b[,"GENEID"])
+  # Example of match in the testset
+  # a: 672
+  # b: 672
+  #match.b.a <- pmatch(b, a, nomatch=0)
+  match.b.a <- pmatch(b, a, duplicates.ok=TRUE)
+  # Get the vector with the hgnc_symbols corresponding to those genes. There can be some gaps, like in the case of the KIAA1462 in the testset
+  SYMBOL <- df.a[ match.b.a, "SYMBOL" ]
+  # join the column to the right
+  my.geneid.entrezid <- cbind(my.geneid.entrezid, SYMBOL)
+  # --------------- end adding new column with Gene_symbols corresponding to the ENSG (ensembl_gene_id) found
+  
+  # Write the results at my.geneid.entrezid to the file my_genedata.csv
+  file_my_genedata = file=paste(params$log.folder,"/", params$startdate, ".", params$opt$label,".my_genes.data.csv", sep="")
+  
+  # I remove the warning messages from this call (below) because of the coercion type of message (harmless, afaik, but annoying and polluting output in log files)
+  # Write all: data with column names in one go
+  #suppressWarnings(write.table(my.geneid.entrezid, file=file_my_genedata, append=F, quote=F, sep="\t", row.names=F, col.names=T))
+  suppressWarnings(write.csv(my.geneid.entrezid, file=file_my_genedata, append=F, quote=F, row.names=F, col.names=T))
+  
+  # ---> Testing - ini-----------
+  # This (below) is the table with all values (including the wrong chromosome numbers as gene symbols by mistake)
+  # convert in a flat table sorting first by Gene Symbol, and then, by exon TXNAME.
+  #  my.geneid.entrezid.table <- ftable(my.geneid.entrezid[1:10000,], row.vars = c("SYMBOL", "TXNAME"), col.vars="EXONRANK")
+  #my.geneid.entrezid.table <- ftable(my.geneid.entrezid[1:1000,c("EXONRANK","SYMBOL","TXNAME")], row.vars = c("SYMBOL","TXNAME"))
+  #str(my.geneid.entrezid.table)
+  #?print.ftable
+  #
+  # Testing with melt and cast, from reshape package
+  #   library(reshape)
+  #   a <- array(1:24, c(2,3,4))
+  #   melt(a)
+  #   melt(a, varnames=c("X","Y","Z"))
+  #   dimnames(a) <- lapply(dim(a), function(x) LETTERS[1:x])
+  #   melt(a)
+  #   melt(a, varnames=c("X","Y","Z"))
+  #   dimnames(a)[1] <- list(NULL)
+  #   melt(a)
+  #   data <- my.geneid.entrezid
+  #   str(data)
+  #   mdata <- melt(data)
+  #   length(data)
+  #   length(mdata$SYMBOL)
+  #   length(mdata$TXNAME)
+  #   dim(mdata)
+  #melt.array(data, varnames = c("SYMBOL", "TXNAME", "EXONRANK"))
+  #cdata <- cast(mdata, SYMBOL ~ TXNAME, length)
+  # <--- Testing - end-----------
+  
+  # # We don't do check2clean here  since the output are results
+  print_done("run");
+  
+  gc() # Let's clean ouR garbage if possible
+  return(step.my) # return nothing, since results are saved on disk from the system command
+}
 
 
 ##########################
@@ -1103,23 +1435,30 @@ fun.addleading0.ids <- function(x, sep, nd)
 fun.snpeff.count.reads <- function(file2process.my2, step.my) {
   # update step number
   step.my$tmp <- step.my$tmp + 1
-  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Count Reads using snpEff [optional]: ", file2process.my2, " ###\n", sep=""), file2process.my2);
+  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "a. Count Reads using snpEff: ", file2process.my2, " ###\n", sep=""), file2process.my2);
   
   file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam", sep="");
   file_out = paste(file_in, ".cr.txt", sep="");
+  # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
+  file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
+  
   command00 = "java -Xmx4g -jar "; # next command.
 #  options00 = paste(params$path_snpEff, "snpEff.jar  -c ", params$path_snpEff, "snpEff.config countReads ", params$opt$genver," ", file_in, " > ", file_out, sep="");
 #  options00 = paste(params$path_snpEff, "snpEff.jar  countReads ", params$opt$genver," ", file_in, " > ", file_out, sep="");
-  options00 = paste(params$path_snpEff, "snpEff.jar  countReads ", params$opt$se_db_rg," ", file_in, " > ", file_out, sep="");
+  options00 = paste(params$path_snpEff, "snpEff.jar  countReads ", params$opt$se_db_rg," ", file_in, " > ", file_out, 
+                    " 2>> ", file_stderr, sep="");
   command = paste(command00, " ", options00, sep="");
   check2showcommand(params$opt$showc, command, file2process.my2);
   system(command);
   
   # Manual debugging XXX
-  # file_in <- "./test_out/testset1_sgs7.sam.sorted.noDup.bam"
-  # file_out <- "./test_out/testset1_sgs7.sam.sorted.noDup.bam.cr.txt"
+  # file2process.my2 <- "sgs7a_merged12"
+  # file_in <- "./test_out2/sgs7a_merged12.sam.sorted.noDup.bam"
+  # file_out <- "./test_out2/sgs7a_merged12.sam.sorted.noDup.bam.cr.txt"
   # file_in <- "./test_out/sample_a_merged12.sam.sorted.noDup.bam"
   # file_out <- "./test_out/sample_a_merged12.sam.sorted.noDup.bam.cr.txt"
+  
+  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "b0. Generate cr.table.csv using R: ", file2process.my2, " ###\n", sep=""), file2process.my2);
   
   # load the file created as file2process.countreads (aka: f2p.cr)
   f2p.cr <- read.table(file_out, header=T, sep="\t")
@@ -1130,14 +1469,47 @@ fun.snpeff.count.reads <- function(file2process.my2, step.my) {
   # dues to the issues with "MAPQ should be zero for unmmaped reads", etc. 
   if (length(x.my) > 0) {
     
-    # Split IDs by ; and create the new columns on the right with separated unitN, NM & GeneSymbol codes.
+    # Split IDs by ; and create the new columns on the right with separated unitN, ENST (ENSEMBL Transcript) & ENSG (ensembl_gene_id) codes.
     out.my <- fun.splitAnnot(x.my)
+    colnames(out.my) <- c("unitN", "ENST","ENSG")  # unitN stands for exonNumber or IntronNumber or similar
     f2p.cr <- cbind(f2p.cr, out.my)
     
     # convert column 8 into character vectors and apply the function to add leading zeros for correct ordering as text
     x <- as.character(f2p.cr[,8])
     # Add leading zeros whre needed to have up to 3 digits for all numbers (from exon_001 to exon_999)
     f2p.cr[,8] <- fun.addleading0.ids(x, "_", 3)
+    
+    print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "b1. Get hgnc_symbols for the corresponding ensembl_gene_id: ", file2process.my2, " ###\n", sep=""), file2process.my2);
+    
+    # Convert ENSG (ensembl_gene_id) to Gene_symbols (hgnc_symbol) and add it as new column to f2p.cr$Gene_Symbol
+    # ------------------------------------------------------------------------------------------------------------
+    file_my_genenames = file=paste(params$log.folder,"/", params$startdate, ".", params$opt$label,".my_genes.names.txt", sep="")
+    # Command (in general)
+    # my_symbols <- df.a[ pmatch(df.b[,"ensembl_gene_id"], df.a[,2]), 1 ]
+    
+    # load the file created previously with the correspondence between hgnc_symbol and ensembl_gene_id (while working with biomaRt to generate the bed file)
+    # f2p.my_genenames
+    df.a <- read.table(file_my_genenames, header=T, sep="\t")
+    #str(df.a)
+    
+    df.b <- f2p.cr
+    #str(df.b)
+    
+    b <- as.character(df.b[,"ENSG"])
+    a <- as.character(df.a[,"ensembl_gene_id"])
+    # Example of match in the testset
+    # a: ENSG00000012048
+    # b: ENSG00000012048
+    #match.b.a <- pmatch(b, a, nomatch=0)
+    match.b.a <- pmatch(b, a, duplicates.ok=TRUE)
+    # Get the vector with the hgnc_symbols corresponding to those genes. There can be some gaps, like in the case of the KIAA1462 in the testset
+    GeneSymbol <- df.a[ match.b.a, "hgnc_symbol" ]
+    # length(my_hgnc_symbols)
+    # dim(df.b)
+    # dim(f2p.cr)
+    f2p.cr <- cbind(f2p.cr, GeneSymbol)
+    #str(f2p.cr)
+    # --------------- end adding new column with Gene_symbols corresponding to the ENSG (ensembl_gene_id) found
     
     # Filter results by the genes of interest only
     #
@@ -1167,12 +1539,15 @@ fun.snpeff.count.reads <- function(file2process.my2, step.my) {
         tgenes <- gsub(pattern="\t", replacement="",  x=tgenes, fixed=TRUE)
         tgenes <- gsub(pattern="\\", replacement="",  x=tgenes, fixed=TRUE)
         tgenes <- gsub(pattern="\"", replacement="",  x=tgenes, fixed=TRUE)
-
-      # Remove duplicates of GeneSymbols
+        tgenes <- gsub(pattern=" ", replacement="",  x=tgenes, fixed=TRUE)
+    
+      # Remove duplicates of GeneSymbols or ENSEMBL GENES
       tgenes <- unique(tgenes)
       # Remove the case of an empty value
       tgenes <- tgenes[-match("", tgenes)]
     # --------------------------------------------------
+    print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "b2. Filter results by a subset with only target genes: ", file2process.my2, " ###\n", sep=""), file2process.my2);
+    
 
     ## Filter results by the genes of interest only WITH A SUBSET
       ## Works easily with one value
@@ -1187,7 +1562,7 @@ fun.snpeff.count.reads <- function(file2process.my2, step.my) {
     f2p.cr <- f2p.cr.tg
     
     # Get the last three columns as Gene symbols and exon and intron numbers
-    f2p.cr.genes <- f2p.cr[,c(8,9,10)]
+    f2p.cr.genes <- f2p.cr[,c(8,9,11)]
     #summary(f2p.cr.genes)
     
     ## Convert into true/false
@@ -1196,7 +1571,7 @@ fun.snpeff.count.reads <- function(file2process.my2, step.my) {
     # We want to apply the table function to the subset of values of the data frames (since it seems to be much more complicated
     # to create a subset of values once the object of type "table" is created)
     # We do the subset through getting the indexes of these GeneSymbol values (and not the numbers from chromosomes) 
-    f2p.cr.genes.idx <- which(suppressWarnings(is.na(as.numeric(as.character(unlist(f2p.cr.genes[2]))))) )
+    f2p.cr.genes.idx <- which(suppressWarnings(is.na(as.numeric(as.character(unlist(f2p.cr.genes["GeneSymbol"]))))) )
     
     # this is the list of values with gene symbols only, and not the values the chromosome number as gene symbol
     f2p.cr.genes2 <- f2p.cr.genes[f2p.cr.genes.idx,]
@@ -1209,11 +1584,15 @@ fun.snpeff.count.reads <- function(file2process.my2, step.my) {
     f2p.cr.genes2$GeneSymbol <- as.factor(as.character(f2p.cr.genes2$GeneSymbol))
     #str(f2p.cr.genes2)
     
+    print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "b3. Apply function ftable in R: ", file2process.my2, " ###\n", sep=""), file2process.my2);
+    
     # Therefore, this (below) is the table with all values (including the wrong chromosome numbers as gene symbols by mistake)
     # convert in a flat table sorting first by Gene Symbol, and then, by exon number.
     f2p.cr.table <- ftable(f2p.cr.genes2, row.vars = 2:1)
     #str(f2p.cr.table)
     #?print.ftable
+    
+    print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "b4. Re-order results in R: ", file2process.my2, " ###\n", sep=""), file2process.my2);
     
     # [SOLVED] as.data.frame.table or as.data.frame.matrix !!!!!!
     f2p.cr.dft <- as.data.frame.table(f2p.cr.table)
@@ -1222,12 +1601,14 @@ fun.snpeff.count.reads <- function(file2process.my2, step.my) {
     # And last, we remove all row with 0 in the column Counts
     f2p.cr.dft <- f2p.cr.dft[!f2p.cr.dft$Freq==0,]
     
+    print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "b5. Write the file  cr.table.csv using R: ", file2process.my2, " ###\n", sep=""), file2process.my2);
+    
     ## as.data.frame.matrix was useful when f2p.cr.table was another type of object, but not nowadays
     #f2p.cr.dfm <- as.data.frame.matrix(f2p.cr.table)
     
     file_out.table = paste(file_in, ".cr.table.csv", sep="");
     # Write the first line with the column names
-    write("\"RNA_NM\", \"unitN\", \"GeneSymbol\", \"Count\"", file=file_out.table, append = F, sep = "")
+    write("\"ENST\",\"unitN\",\"GeneSymbol\",\"Count\"", file=file_out.table, append = F, sep = "")
     #  write.table(f2p.cr.table, file=file_out.table, append=T, quote=T, sep=",", row.names=T, col.names=F)
     
     #tapply(as.numeric(colnames(f2p.cr.table)), 1:9, FUN=is.numeric)
@@ -1332,82 +1713,10 @@ fun.splitAnnot <- function(x, myNames) {
   #dim(out)
   #head(out)
   #dim(f2p.cr)
-  colnames(out) <- c("unitN", "NM","GeneSymbol")  # unitN stands for exonNumber
-                                                  # or IntronNumber or similar
   #summary(out2)
   #--------
  
   return(out)
-}
-
-##########################
-### FUNCTION fun.exon.coverage
-###
-###   Gene Exons Coverage
-###
-### March 2013: Unfinsihed implementation based on R packages
-### Alternatively, this could be performed with bedtools directly. 
-### See http://bedtools.readthedocs.org/en/latest/content/advanced-usage.html#computing-the-coverage-of-bam-alignments-on-exons
-##########################
-
-fun.exon.coverage <- function(file2process.my2, step.my) {
-  # update step number
-  step.my$tmp <- step.my$tmp + 1
-  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Gene Exons Coverage: ", file2process.my2, " ###\n", sep=""), file2process.my2);
-
-  if(!require(Rsamtools)){ biocLite("Rsamtools") }
-  library(Rsamtools, quietly = TRUE)
-  
-  if(!require(GenomicFeatures)){ biocLite("GenomicFeatures") }
-  library(GenomicFeatures, quietly = TRUE)
-  
-  # Check for the TxDb.Hsapiens.UCSC.hg19.knownGene or TxDb.Hsapiens.UCSC.hg18.knownGene dynamically 
-  # based on the contents of param opt$genver, where hg19 or hg18 is set. 
-  # See below after the opt$genver is defined
-  
-  if(!require(org.Hs.eg.db)){ biocLite("org.Hs.eg.db") }
-  library(org.Hs.eg.db, quietly = TRUE)
-  
-  # if(!require(annotate)){ biocLite("annotate") }
-  # library(annotate, quietly = TRUE)
-  
-  # From http://www.bioconductor.org/help/workflows/variants/
-  #   > ## get entrez ids from gene symbols
-  #     > library(org.Hs.eg.db)
-  #   > genesym <- c("TRPV1", "TRPV2", "TRPV3")
-  #   > geneid <- select(org.Hs.eg.db, keys=genesym, keytype="SYMBOL",
-  #                      +                  cols="ENTREZID")
-  #   > geneid
-  #   SYMBOL ENTREZID
-  #   1  TRPV1     7442
-  #   2  TRPV2    51393
-  #   3  TRPV3   162514
-
-  library(org.Hs.eg.db)
-  genesym <- c("BRCA1", "BRCA2", "MSH2")
-  geneid <- select(org.Hs.eg.db, keys=genesym, keytype="SYMBOL",
-                    cols="ENTREZID")
-  geneid
-  
-  library(paste("TxDb.Hsapiens.UCSC.", params$opt$genver, ".knownGene", sep="") )
-  txdb <- paste("TxDb.Hsapiens.UCSC.", params$opt$genver, ".knownGene", sep="") #shorthand (for convenience)
-  txdb
-  exons(txdb)[1:10]
-  head(exons(txdb))
-  tail(exons(txdb))
-  
-#   file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam", sep="");
-#   file_out = paste(file_in, ".samtools.var.raw.vcf", sep="");
-#   command00 = "samtools"; # next command.
-#   options00 = paste(" mpileup -uf ", params$path_genome, " ", file_in, " | bcftools view -vcg - >  ", file_out, sep="");
-#   command = paste(command00, " ", options00, sep="");
-#   check2showcommand(params$opt$showc, command, file2process.my2);  
-#   system(command);
-#   check2clean(file_in, file2process.my2);
-#   print_done(file2process.my2);
-  
-  gc() # Let's clean ouR garbage if possible
-  return(step.my) # return nothing, since results are saved on disk from the system command
 }
 
 ##########################
@@ -1635,7 +1944,7 @@ fun.variant.calling <- function(file2process.my2, step.my) {
 fun.variant.filtering <- function(file2process.my2, step.my) {
   # update step number
   step.my$tmp <- step.my$tmp + 1
-  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Variant Filtering with vcfutils.pl (Samtools): ", file2process.my2, " ###\n", sep=""), file2process.my2);
+  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "b. Variant Filtering with vcfutils.pl (Samtools): ", file2process.my2, " ###\n", sep=""), file2process.my2);
   
   file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam.samtools.var.raw.vcf", sep="");
   file_out = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam.samtools.var.filtered.vcf", sep="");
@@ -1680,11 +1989,22 @@ fun.variant.filtering <- function(file2process.my2, step.my) {
   command = paste(command00, " ", options00, sep="");
   check2showcommand(params$opt$showc, command, file2process.my2);
   system(command);
-  
-  # Create also a symlink with a shorter file name that will be he base for the next processing
-  from  <- paste("../", params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam.samtools.var.filtered.vcf", sep="");
+
+  # Report that the hard link is created
+  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "b. File alias (hardlink) .f.vcf created for .sam.sorted.noDup.bam.samtools.var.filtered.vcf: ", file2process.my2, " ###\n", sep=""), file2process.my2);
+
+  # Create also a hard link with a shorter file name that will be he base for the next processing
+  from  <- paste("./", params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam.samtools.var.filtered.vcf", sep="");
   to    <- paste("", params$directory_out, "/", file2process.my2, ".f.vcf", sep="");
-  file.symlink(from, to) 
+  # Check if hard link exists
+  if ( file.exists(to) ) {
+    # Remove it (so that we can get a new time stamp similar to the file linked to
+    # which has been very recently generated, etc)
+    file.remove(to)
+  }
+  # Create the hardlink link (it uses space only once for that file and it's hard linked file names - aliases)
+  file.link(from, to) 
+  
   
   check2clean(file_in, file2process.my2);
   print_done(file2process.my2);
@@ -1734,7 +2054,9 @@ fun.convert2vcf4 <- function(file2process.my2, step.my) {
   step.my$tmp <- step.my$tmp + 1
   print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Convert files to Annnovar vcf4 format: ", file2process.my2, " ###\n", sep=""), file2process.my2);
   
-  file_in =  paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam.samtools.var.filtered.vcf", sep="");
+#  file_in =  paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam.samtools.var.filtered.vcf", sep="");
+  # Since the hard link is created already, we can use the much shorter file name for input .f.vcf instead of .sam.sorted.noDup.bam.samtools.var.filtered.vcf
+  file_in =  paste(params$directory_out, "/", file2process.my2, ".f.vcf", sep="");
   file_out = paste(params$directory_out, "/", file2process.my2, ".f.vcf4", sep=""); # shorten the name a bit
   command00 = params$path_convert2annovar; # next command.
   # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
@@ -1937,7 +2259,7 @@ fun.grep.variants <- function(file2process.my2, step.my) {
   print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Select variants for the target genes based on grep calls: ", file2process.my2, " ###\n", sep=""), file2process.my2);
   
   if (!is.null(params$opt$filter) && (params$opt$filter != "")) {
-    file_in  = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.", params$opt$genver ,"_snp", params$opts$dbsnp, "_filtered", sep=""); 
+    file_in  = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.", params$opt$genver ,"_snp", params$opt$dbsnp, "_filtered", sep=""); 
     file_out = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.results.", params$startdate, ".", params$opt$label, ".txt", sep="");
     command00 = "grep"; # next command.
     options00 = paste(" '", params$opt$filter,"' ", file_in, " > ", file_out, sep="");
@@ -2038,121 +2360,6 @@ fun.visualize.variants <- function(file2process.my2, step.my) {
 }
 
 ##########################
-### FUNCTION fun.tgenes.generate.bed.file
-###
-###     Generate a bed file with the intersecting intervals (genomic regions) for the target genes
-###     Needed to filter vcf files with SnpSift.jar for target genes before reunning custom snpEff Report 
-
-##########################
-# x stands for the list of target genes to process. Separated by spaces
-
-fun.tgenes.generate.bed.file <- function(step.my, file2process.my2, x) {
-  
-  # Manual debugging
-  # file2process.my2 <- abs_routlogfile
-  # x <- "BRCA1 BRCA2 CHEK2 PALB2 BRIP1 TP53 PTEN STK11 CDH1 ATM BARD1 APC MLH1 MRE11A MSH2 MSH6 MUTYH NBN PMS1 PMS2 RAD50 RAD51D RAD51C XRCC2 UIMC1 FAM175A ERCC4 RAD51 RAD51B XRCC3 FANCA FANCB FANCC FANCD2 FANCE FANCF FANCG FANCI FANCL FANCM SLX4 CASP8 FGFR2 TOX3 MAP3K1 MRPS30 SLC4A7 NEK10 COX11 ESR1 CDKN2A CDKN2B ANKRD16 FBXO18 ZNF365 ZMIZ1 BABAM1 LSP1 ANKLE1 TOPBP1 BCCIP TP53BP1"
-  # step.my <- data.frame(0, 0)
-  # colnames(step.my) <- c("n","tmp")
-
-  # update step number
-  #step.my$tmp <- step.my$tmp + 1
-  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Generate a bed file with the genomic regions for the target genes (...ssfiitg.bed) ###\n", sep=""), "run");
-  
-  # Get a list of the genetic intervals of those genes (in BED format): my_genes.bed
-  # Using Bioconductor R package biomaRt
-
-  # Install library if necessary
-  if(!require(biomaRt)){ biocLite("biomaRt") }
-  # Load libraries 
-  library(biomaRt, quietly = TRUE)
-  
-  # Load the mart for ensembl
-  mart <- useMart(biomart = "ensembl", dataset = "hsapiens_gene_ensembl")
-
-  ## Manual debugging
-  #listMarts()
-  # g = getGene( id = "BRCA1", type = "hgnc_symbol", mart = mart)
-  # show(g)
-  #x <- "BRCA1 BRCA2 CHEK2 PALB2 BRIP1 TP53 PTEN STK11 CDH1 ATM BARD1 APC MLH1 MRE11A MSH2 MSH6 MUTYH NBN PMS1 PMS2 RAD50 RAD51D RAD51C XRCC2 UIMC1 FAM175A ERCC4 RAD51 RAD51B XRCC3 FANCA FANCB FANCC FANCD2 FANCE FANCF FANCG FANCI FANCL FANCM SLX4 CASP8 FGFR2 TOX3 MAP3K1 MRPS30 SLC4A7 NEK10 COX11 ESR1 CDKN2A CDKN2B ANKRD16 FBXO18 ZNF365 ZMIZ1 BABAM1 LSP1 ANKLE1 TOPBP1 BCCIP TP53BP1"
-
-  tgenes <- unlist(strsplit(x, split=" ", fixed=TRUE))
-  #length(tgenes)
-  #head(tgenes)
-  tgenes.o <- tgenes[order(tgenes)]
-  #head(tgenes2)
-  
-  tg = getGene( id = tgenes, type = "hgnc_symbol", mart = mart)
-  #dim(tg)
-  #head(tg)
-  
-  # Remove the LRG (Locus Reference Genome) names, since they show up as duplicated records to a differnt chromosome called LR_xxx, besides the other record for the normal chromosome. 
-  #   "LRG sequences provide a stable genomic DNA framework for reporting mutations with a permanent ID and core content that never changes."
-  #   See http://www.lrg-sequence.org/
-  tg.lrg.idx <- grep("LRG", tg$chromosome_name, fixed=T)
-  # Keep only the list of target genes without lrg 
-  tg.nolrg <- tg[-tg.lrg.idx,]
-  
-  # Sort results by gene name
-  tg.nolrg.o <- tg.nolrg[order(tg.nolrg$hgnc_symbol),]
-  #head(tg.nolrg.o)
-  #head(tg.nolrg.o$hgnc_symbol)
-  #str(tg2)
-  #?match
-  
-  # Get the indexes of genes from the ordered list of target genes which are not found in the results 
-  tg.nolrg.o.new.idx <- which(!tgenes.o %in% tg.nolrg.o$hgnc_symbol)
-  # If there are missmatches between target gene names, display a warning and display them
-  if ( length(tg.nolrg.o.new.idx) > 0) {
-    print("Warning: some missmatch found between target gene names and their corresponding matches through biomaRt")
-    # Display those gene names
-    tgenes.o[tg.nolrg.o.new.idx]
-  }
-  #dim(tg.nolrg.o)
-  #tg.nolrg.o
-  #row.names(tg.nolrg.o)
-  #dim(tg.nolrg.o)[1]
-  score <- rep(0, dim(tg.nolrg.o)[1])
-  #class(foo)
-  tg.nolrg.o <- cbind(tg.nolrg.o, score)
-  #str(tg.nolrg.o)
-  
-  # Get just the columns of interest to generate a valid BED file. 
-  # See http://genome.ucsc.edu/FAQ/FAQformat.html#format1
-  my_bed <- tg.nolrg.o[, c("chromosome_name", "start_position", "end_position", "hgnc_symbol", "score", "strand")]
-  
-  # I sort by Chromosome first, and by Start position later. 
-  # In addition, I remove warnings explicitly because I'm coercing chr names to integers, adn Chr X is not an integer.
-  my_bed <- suppressWarnings(my_bed[order(as.integer(my_bed$chromosome_name), as.integer(my_bed$start_position)), ])
-
-  # Add chr prefix to the chromosome names for consistency with the other parts of the pipeline
-  my_bed$chromosome_name <- paste("chr", my_bed$chromosome_name, sep="")
-  
-  # Rename colname "chromosome_name" with "#chromosome_name"
-  colnames(my_bed) <- c("#chromosome_name", "start_position", "end_position", "hgnc_symbol", "score", "strand")
-    # ATTENTION: 
-    # I'm writing here a number sign (#) prepending "chromosome_name" in order to have titles added to the file, 
-    # (see below the function "write.table" with argument "col.names=T") but not breaking SnpSift.jar intidx command
-    # (which doesn't like to have column names in the first row but seems to accept comments starting with "#")
-  
-  # Write the results to the file my_bed.txt
-  # The params to define file_my_bed here are not preppended with params$ (startdate instead of params$startdate, etc)
-  # because this function is called from the main program, not parallelized, so not in the nodes but the master computer/cpu.
-  file_my_bed = file=paste(params$log.folder,"/", startdate, ".", opt$label,".ssfiitg.bed", sep="")
-  
-  # I remove the warning messages from this call (below) because of the coercion type of message (harmless, afaik, but annoying and polluting output in log files)
-  # Write all: data with column names in one go
-  suppressWarnings(write.table(my_bed, file=file_my_bed, append=F, quote=F, sep="\t", row.names=F, col.names=T))
-
-  # # We don't do check2clean here  since the output are results
-  print_done("run");
-  
-  
-  gc() # Let's clean ouR garbage if possible
-  return(step.my) # return nothing, since results are saved on disk from the system command
-  
-}
-
-##########################
 ### FUNCTION fun.variant.fii.pre.snpeff
 ###
 ###     Filter Intersecting Intervals to get only values for the target genes in vcf files
@@ -2165,7 +2372,7 @@ fun.tgenes.generate.bed.file <- function(step.my, file2process.my2, x) {
 
 fun.variant.fii.pre.snpeff <- function(file2process.my2, step.my) {
   
-# - Get a list of the genetic intervals of those genes (in BED format): ...ssfiitg.bed
+# - Get a list of the genetic intervals of those genes (in BED format): ...my_genes.bed
 # - Use "SnpSift intidx" to extract those regions: 
 #   java -jar SnpSift.jar intidx variants.vcf my_genes.bed > variants_intersecting_intervals.vcf
 # 
@@ -2180,16 +2387,18 @@ fun.variant.fii.pre.snpeff <- function(file2process.my2, step.my) {
   
   # update step number
   step.my$tmp <- step.my$tmp + 1
-  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Filter Intersecting Intervals in f.vcf from target genes (SnpSift using ...ssfiitg.bed): ", file2process.my2, " ###\n", sep=""), file2process.my2);
+  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Filter Intersecting Intervals in f.vcf from target genes (SnpSift using ...my_genes.bed): ", file2process.my2, " ###\n", sep=""), file2process.my2);
   
   # Example of process in the command line
   #   java -jar SnpSift.jar intidx variants.vcf my_genes.bed > variants_intersecting_intervals.vcf
-  file_in  = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam.samtools.var.filtered.vcf", sep=""); 
+#  file_in  = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam.samtools.var.filtered.vcf", sep=""); 
+  # Since the hard link is created already, we can use the much shorter file name for input .f.vcf instead of .sam.sorted.noDup.bam.samtools.var.filtered.vcf
+  file_in =  paste(params$directory_out, "/", file2process.my2, ".f.vcf", sep="");
   file_out = paste(params$directory_out, "/", file2process.my2, ".f.ssfii.vcf", sep="");
   # "ssfii" stands for SnpSift Filtered Interseting Intervals
   
   # As defined in the previous step
-  file_my_bed = file=paste(params$log.folder,"/", params$startdate, ".", params$opt$label,".ssfiitg.bed", sep="")
+  file_my_bed = file=paste(params$log.folder,"/", params$startdate, ".", params$opt$label,".my_genes.bed", sep="")
   
   command00 = "java -jar"; # next command.
   # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
@@ -2298,7 +2507,9 @@ fun.variant.filter.pre.snpeff <- function(file2process.my2, step.my) {
 
   # Example of process in the command line
   #   java -jar SnpSift.jar annotate -v dbSnp.vcf.gz file.vcf > file.dbSnp.vcf
-  file_in  = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam.samtools.var.filtered.vcf", sep=""); 
+#  file_in  = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam.samtools.var.filtered.vcf", sep=""); 
+  # Since the hard link is created already, we can use the much shorter file name for input .f.vcf instead of .sam.sorted.noDup.bam.samtools.var.filtered.vcf
+  file_in =  paste(params$directory_out, "/", file2process.my2, ".f.vcf", sep="");
   file_out = paste(params$directory_out, "/", file2process.my2, ".f.ssann.vcf", sep=""); 
   # "ssann" in "...filtered.ssann.vcf" stands for annotated (ann) by SnpSift (ss)
   command00 = "java -jar"; # next command.
@@ -2495,7 +2706,10 @@ fun.grep.pre.snpeff.report <- function(file2process.my2, step.my) {
     #-------------------------------
 #    file_in  = paste(params$directory_out, "/", file2process.my2, ".f.ssann.eff.vcf", sep=""); 
 #    file_out = paste(params$directory_out, "/", file2process.my2, ".f.ssann.eff.fg.vcf", sep=""); 
-    file_in  = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam.samtools.var.filtered.vcf", sep=""); 
+
+#    file_in  = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam.samtools.var.filtered.vcf", sep=""); 
+    # Since the hard link is created already, we can use the much shorter file name for input .f.vcf instead of .sam.sorted.noDup.bam.samtools.var.filtered.vcf
+    file_in =  paste(params$directory_out, "/", file2process.my2, ".f.vcf", sep="");
     file_out = paste(params$directory_out, "/", file2process.my2, ".f.fg.vcf", sep=""); 
     command00 = "grep -P"; # next command.
     options00 = paste(" '", params$opt$filter,"' ", file_in, " > ", file_out, sep="");
@@ -2624,7 +2838,9 @@ fun.variant.eff.report <- function(file2process.my2, step.my) {
  # ---------------------------
  print_doc(paste("    Substep ", step.my$n, ".", step.my$tmp, "b). Report using snpEff with the whole list of genes: ", file2process.my2, " ###\n", sep=""), file2process.my2);
   
-  file_in  = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam.samtools.var.filtered.vcf", sep=""); 
+#  file_in  = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam.samtools.var.filtered.vcf", sep=""); 
+  # Since the hard link is created already, we can use the much shorter file name for input .f.vcf instead of .sam.sorted.noDup.bam.samtools.var.filtered.vcf
+  file_in =  paste(params$directory_out, "/", file2process.my2, ".f.vcf", sep="");
   file_out = paste(params$directory_out, "/", file2process.my2, ".f.snpEff.", params$opt$snpeff.of, sep=""); 
   file_out_base = paste(params$directory_out, "/", file2process.my2, ".f.snpEff", sep="");     
 

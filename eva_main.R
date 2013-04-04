@@ -332,6 +332,7 @@ params <- list(startdate = startdate,
                p_desc = p_desc,
                p_convert.file.list.pe1 = p_convert.file.list.pe1,
                p_convert.file.list.pe2 = p_convert.file.list.pe2,
+               p_genedata = p_genedata,
                path_fastq = path_fastq,
                path_genome = path_genome,
                path_vcfutils = path_vcfutils,
@@ -410,7 +411,7 @@ sfExport( "params",
           "fun.addleading0.ids",
           "fun.splitAnnot",
           "fun.snpeff.count.reads",
-          "fun.exon.coverage",
+          "fun.genedata",
           "fun.variant.calling",
 	        "fun.variant.filtering",
           "fun.gatk.combine.vcfs",
@@ -454,6 +455,7 @@ sfExport( "params",
     duration <- Sys.time()-start;
     cat("\n(Chunk 6a) Relative duration since last step: ")
     print(duration)
+    cat("\n")
   } else {
     step <- data.frame(0, 0)
     colnames(step) <- c("n","tmp")
@@ -469,9 +471,20 @@ if ( length(opt$filter.c) > 0 && opt$tggbf) {
   duration <- Sys.time()-start;
   cat("\n(Chunk 6b) Relative duration since last step: ")
   print(duration)
+  cat("\n")
 }
 
-
+# Generate the genedata file (with exon data) associated with the filters for target genes
+if ( length(opt$filter.c) > 0 && params$p_genedata) { 
+  # Next Step
+  step$tmp <- step$tmp + 1
+  start <- Sys.time(); 
+  step <- fun.genedata(abs_routlogfile, step.my  = step)
+  duration <- Sys.time()-start;
+  cat("\n(Chunk 6c) Relative duration since last step: ")
+  print(duration)
+  cat("\n")
+}
 ##############################################################
 
 # 7. Run Sequential processes for the each one of the samples

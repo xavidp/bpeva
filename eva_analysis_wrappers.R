@@ -105,7 +105,6 @@ wrapper2.parallelizable.per.sample <- function(datastep.my2) {
   index.bam.file		                <- params_w2pps$p_index.bam.file
   stats			                        <- params_w2pps$p_stats
   snpeff.count.reads                <- params_w2pps$p_snpeff.count.reads
-  exon.coverage    	                <- params_w2pps$p_exon.coverage
   variant.calling		                <- params_w2pps$p_variant.calling
   variant.filtering		              <- params_w2pps$p_variant.filtering
   gatk.combine.vcfs                 <- params_w2pps$p_gatk.combine.vcfs
@@ -213,7 +212,9 @@ wrapper2.parallelizable.per.sample <- function(datastep.my2) {
         # clean the lock file
         print_mes(paste("\n ### Both single sam files found from this set of paired samples: Removing the general lock file in order to continue processing this paired sample###\n\n", sep=""), file2process.my1);
         if (file.exists(paste(params$filename_list, ".lock", sep=""))){
-          system(paste("rm ", params$filename_list, ".lock", sep=""), TRUE)
+          # I suppress warnings here since the file can be removed by one node, and the other nodes (when run in parallel)
+          # that the file to delete does not exist (any more).
+          suppressWarnings(system(paste("rm ", params$filename_list, ".lock", sep=""), TRUE))
         }
       } # end of process to clean the general lock file 
       
@@ -323,12 +324,6 @@ wrapper2.parallelizable.per.sample <- function(datastep.my2) {
     # Next Step
     step <- fun.snpeff.count.reads(file2process.my2  = file2process.my1,
                                    step.my  = step)
-  }
-  
-  if (exon.coverage) {
-    # Next Step
-    step <- fun.exon.coverage(file2process.my2  = file2process.my1,
-                              step.my  = step)
   }
   
   if (variant.calling) {
