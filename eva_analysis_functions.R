@@ -2570,31 +2570,31 @@ fun.variant.filter.pre.snpeff <- function(file2process.my2, step.my) {
   ##################### Another potential approach, maybe? #############
   
   
-  # SubStep 4 # Filter using SnpSift for target genes (my_rs.txt) 
-  # ------------------------------------------
-  # Display substep name
-  print_doc(paste(" Step ", step.my$n, ".", step.my$tmp, "c) Filter using SnpSift for target genes (my_rs.txt): ", file2process.my2, " ###\n", sep=""), file2process.my2);
-  #     cat variants.vcf | java -jar SnpSift.jar filter --set my_rs.txt "ID in SET[0]" > filtered.vcf
-  file_in  = paste(params$directory_out, "/", file2process.my2, ".f.ssann.eff.vcf", sep=""); 
-  file_out = paste(params$directory_out, "/", file2process.my2, ".f.ssann.eff.fss.vcf", sep=""); # fss stands for Filtered by SnipSift
-  # "ssann" in "...f.ssann.vcf" stands for annotated (ann) by SnpSift (ss)
-  # "fss" in "....f.ssann.eff.fss.vcf" stands for Filtered by SnipSift
-  command00 = paste("cat ", file_in, " | java -jar", sep=""); # next command.
-  # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
-  file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
-  options00 = paste(" ", params$path_snpEff, "SnpSift.jar filter --set ", 
-                    paste(params$directory_in, "/", params$opt$f_my_rs, sep=""), 
-                    " \"ID in SET[0]\" ", " > ", file_out, " 2>> ", file_stderr, sep="");
-  
-  command = paste(command00, " ", options00, sep="");
-  check2showcommand(params$opt$showc, command, file2process.my2);
-  system(command);
+#   # SubStep 4 # Filter using SnpSift for target genes (my_rs.txt) 
+#   # ------------------------------------------
+#   # Display substep name
+#   print_doc(paste(" Step ", step.my$n, ".", step.my$tmp, "c) Filter using SnpSift for target genes (my_rs.txt): ", file2process.my2, " ###\n", sep=""), file2process.my2);
+#   #     cat variants.vcf | java -jar SnpSift.jar filter --set my_rs.txt "ID in SET[0]" > filtered.vcf
+#   file_in  = paste(params$directory_out, "/", file2process.my2, ".f.ssann.eff.vcf", sep=""); 
+#   file_out = paste(params$directory_out, "/", file2process.my2, ".f.ssann.eff.fss.vcf", sep=""); # fss stands for Filtered by SnipSift
+#   # "ssann" in "...f.ssann.vcf" stands for annotated (ann) by SnpSift (ss)
+#   # "fss" in "....f.ssann.eff.fss.vcf" stands for Filtered by SnipSift
+#   command00 = paste("cat ", file_in, " | java -jar", sep=""); # next command.
+#   # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
+#   file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
+#   options00 = paste(" ", params$path_snpEff, "SnpSift.jar filter --set ", 
+#                     paste(params$directory_in, "/", params$opt$f_my_rs, sep=""), 
+#                     " \"ID in SET[0]\" ", " > ", file_out, " 2>> ", file_stderr, sep="");
+#   
+#   command = paste(command00, " ", options00, sep="");
+#   check2showcommand(params$opt$showc, command, file2process.my2);
+#   system(command);
   
   
   # SubStep 5 # Filter ID field using SnpSift
   # ------------------------------------------
   # Display substep name
-  print_doc(paste(" Step ", step.my$n, ".", step.my$tmp, "e) Filter ID field using SnpSift: ", file2process.my2, " ###\n", sep=""), file2process.my2);
+  print_doc(paste(" Step ", step.my$n, ".", step.my$tmp, "c) Filter ID field using SnpSift: ", file2process.my2, " ###\n", sep=""), file2process.my2);
   # Filter out variants that have a non-empty ID field. These variants are the ones that are NOT in dbSnp, since we annotated the ID field using rs-numbers from dbSnp in step 1.
   # java -jar SnpSift.jar filter -f file.eff.vcf "! exists ID" > file.eff.not_in_dbSnp.vcf
   # 
