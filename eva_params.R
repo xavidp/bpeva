@@ -27,6 +27,17 @@
 # ----------------------
 # (See also http://ueb.vhir.org/PendentsEVA )
 ##
+## * Avoid errors at countreads:
+##  #) at "b4. Re-order results in R":
+## -----
+##  # [SOLVED] as.data.frame.table or as.data.frame.matrix !!!!!!
+##  f2p.cr.dft <- as.data.frame.table(f2p.cr.table)
+##  # We need to re-sort in a similar way to what the ftable was
+##  f2p.cr.dft <- f2p.cr.dft[order(f2p.cr.dft$GeneSymbol, f2p.cr.dft$unitN),]
+##  # And last, we remove all row with 0 in the column Counts
+##  f2p.cr.dft <- f2p.cr.dft[!f2p.cr.dft$Freq==0,]
+## -----
+
 ## * Performance Improvements Pending:
 ##  #) split the bam files by chr, so that variant calling with samtools can be run in parallel for one patient (each chr to a differnt cpu, etc)
 ##
@@ -34,8 +45,6 @@
 ##    so that number of reads count can be split between 'Wild type' and 'Variant' (and therefore, '% or variant' can be computed).
 ##    as requested, like it's shown in Walsh et al. ( http://www.pnas.org/cgi/doi/10.1073/pnas.1007983107 )
 ##  a) Check the option to do it with vcftools: http://vcftools.sourceforge.net/options.html#stats 
-## * Annovar:
-##   Error: the required database file /home/ueb/annovar/humandb/hg19_phastConsElements46way.txt does not exist. Please download it via -downdb argument by annotate_variation.pl.
 ##
 ##   * add dbNSFP annotation
 ##   * add GWAS Catalog annotation
@@ -48,7 +57,7 @@
 # ---------------------------------------------------------------------
 startdate <- paste(format(Sys.Date(), "%y%m%d"), sep="")
 
-p_test     = 2 # 0-1-2; ### Is this a test run? ###
+p_test     = 0 # 0-1-2; ### Is this a test run? ###
                 # 0 = normal run
                 # 1 = test run, so that use the predefined values for a test run, with samples: ; 
                 # 2 = test run, so that use the predefined values for a test run; 
@@ -208,25 +217,27 @@ if (p_test==1) {
   path_input_absolute <- "1" # Define whether the p_input is absolute or relative
 # PARAMS for dir_out_293a5 Individuals 5 & 6.
 # -----------------------------------------
-#   p_input    <- "/mnt/magatzem02/tmp/run_sara_293a/dir_in_293a5" # "../dir_in" # "test_in"   # "dir_in"     
-#   p_output   <- "/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a5" #../dir_out_293" # "../dir_out_293" # "test_out"	 # "dir_out_293"
-#   p_f_my_rs  <- "file_my_rs.txt" # In p_input. Needed by SnpEff to filter for the target genes before the report (well, filter for the potential snp rs codes in those genes)
-#   p_label    <-  "sg293a5_b07" # sg293a2b2.snpeff.greped" # "test-121002" # ".sg293_qa_sg3sg4"   # "test-121002" ".sara207_4s4cpu"        # Run Label for output filenames
-#   p_desc     <- "Individuals 5 & 6.   Just Mapping multi-thread.
-#                       sg293a5_b07: as in sg293a5_b6. SnpEff reports (for all and for target-genes only). Using bazaar revision98."
-#   #                    sg293a5_b6: as in sg293a5_b5. After count reads done. Following with Variant calling and filtering"
-#   #                    sg293a5_b5: as in sg293a5_b4 but count reads failed due to lack of enough RAM (other process aside of this one eat it all)"
+  p_input    <- "/mnt/magatzem02/tmp/run_sara_293a/dir_in_293a5" # "../dir_in" # "test_in"   # "dir_in"     
+  p_output   <- "/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a5" #../dir_out_293" # "../dir_out_293" # "test_out"	 # "dir_out_293"
+  p_f_my_rs  <- "file_my_rs.txt" # In p_input. Needed by SnpEff to filter for the target genes before the report (well, filter for the potential snp rs codes in those genes)
+  p_label    <-  "sg293a5_b09" # sg293a2b2.snpeff.greped" # "test-121002" # ".sg293_qa_sg3sg4"   # "test-121002" ".sara207_4s4cpu"        # Run Label for output filenames
+  p_desc     <- "Individuals 5 & 6.   
+                      sg293a5_b09: as in sg293a5_b08, but after hardlink to f.vcf is created, adn thus, var filtering not called again. Only Annotation with annovar"
+  #                    sg293a5_b08: as in sg293a5_b07, but focused on annotations with annovar. Using bazaar revision100."
+  #                    sg293a5_b07: as in sg293a5_b6. SnpEff reports (for all and for target-genes only). Using bazaar revision98."
+  #                    sg293a5_b6: as in sg293a5_b5. After count reads done. Following with Variant calling and filtering"
+  #                    sg293a5_b5: as in sg293a5_b4 but count reads failed due to lack of enough RAM (other process aside of this one eat it all)"
 
 # PARAMS for dir_out_293a4b. Individuals 3 & 4.
 # -----------------------------------------
-  p_input    <- "/mnt/magatzem02/tmp/run_sara_293a/dir_in_293a4" # "../dir_in" # "test_in"   # "dir_in"     
-     p_output   <- "/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a4b" #../dir_out_293" # "../dir_out_293" # "test_out"   # "dir_out_293"
-     p_f_my_rs  <- "file_my_rs.txt" # In p_input. Needed by SnpEff to filter for the target genes before the report (well, filter for the potential snp rs codes in those genes)
-     p_label    <-  "sg293a4b_02" # sg293a2b2.snpeff.greped" # "test-121002" # ".sg293_qa_sg3sg4"   # "test-121002" ".sara207_4s4cpu"        # Run Label for output filenames
-     p_desc     <- "Individuals 3 & 4.
-                         sg293a4b_02: bed files ok, redoing var calling, var filtering, SnpEff reports (for all and for target-genes only). Using bazaar revision98."
-  
-  #  p_input     <- "/backups_disk_03/tmp/bam_mv311" # "../dir_in" # "test_in"   # "dir_in"     
+#   p_input    <- "/mnt/magatzem02/tmp/run_sara_293a/dir_in_293a4" # "../dir_in" # "test_in"   # "dir_in"     
+#      p_output   <- "/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a4b" #../dir_out_293" # "../dir_out_293" # "test_out"   # "dir_out_293"
+#      p_f_my_rs  <- "file_my_rs.txt" # In p_input. Needed by SnpEff to filter for the target genes before the report (well, filter for the potential snp rs codes in those genes)
+#      p_label    <-  "sg293a4b_02" # sg293a2b2.snpeff.greped" # "test-121002" # ".sg293_qa_sg3sg4"   # "test-121002" ".sara207_4s4cpu"        # Run Label for output filenames
+#      p_desc     <- "Individuals 3 & 4.
+#                          sg293a4b_02: bed files ok, redoing var calling, var filtering, SnpEff reports (for all and for target-genes only). Using bazaar revision98."
+#   
+#   #  p_input     <- "/backups_disk_03/tmp/bam_mv311" # "../dir_in" # "test_in"   # "dir_in"     
   p_in.suffix <- "_sequence" #  "_sequence" # "" # This is the suffix of all input filenames (without extension) used for the pipeline to process
   p_in.ext    <-  ".fastq" #".fastq" # ".fa" ".sam" ".bam" # This is the .extension of all files used as input for the pipeline to process
 #  p_output   <- "/backups_disk_03/tmp/bam_mv311" #"/home/xavi/Estudis/eva_bowtie/dir_out" #../dir_out_293" # "../dir_out_293" # "test_out"   # "dir_out_293"
@@ -286,7 +297,7 @@ p_bwa       <- 2          # Algorythm for mapping with bwa - http://bio-bwa.sour
 # Reporting by email at the end of the run
 p_from <- "xavier.depdedro@vhir.org"
 p_to <- "xdpedro@ir.vhebron.net"
-p_subject <- paste("EVA Pipeline run finished - ", p_label, sep="")
+p_subject <- paste("EVA run at MAINHEAD finished - ", p_label, sep="")
 p_body <- paste(p_subject, " - from ", program_ueb," - See some log information attached", sep="")                   
 p_smtp="smtp.ir.vhebron.net"
 
@@ -337,12 +348,9 @@ p_index.bam.file		          <- runParam
 p_stats			                  <- runParam
 p_snpeff.count.reads          <- runParam 
 p_variant.calling		          <- runParam
-#####
-runParam <- TRUE #######################
-####
 p_variant.filtering		        <- runParam
 #####
-runParam <- FALSE #######################
+runParam <- TRUE #######################
 ####
 p_gatk.combine.vcfs           <- FALSE # runParam # Non-started work (place holder only)
 p_convert2vcf4		            <- runParam
@@ -350,9 +358,6 @@ p_variant.annotation.geneb	  <- runParam
 p_variant.annotation.regionb	<- FALSE # runParam # Non-started work (place holder only)
 p_variant.annotation.filterb	<- runParam
 p_variant.annotation.summarize<- runParam
-#####
-runParam <- TRUE #######################
-####
 p_grep.variants		            <- runParam
 p_visualize.variants		      <- FALSE # runParam # Non-started work (place holder only)
 #####
