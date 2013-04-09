@@ -1994,7 +1994,17 @@ fun.variant.filtering <- function(file2process.my2, step.my) {
   print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "b. File alias (hardlink) .f.vcf created for .sam.sorted.noDup.bam.samtools.var.filtered.vcf: ", file2process.my2, " ###\n", sep=""), file2process.my2);
 
   # Create also a hard link with a shorter file name that will be he base for the next processing
-  from  <- paste("./", params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam.samtools.var.filtered.vcf", sep="");
+  # The param "prefix_path" is needed because when running with relative directories (like when doing test-mode runs),
+  # we need to indicate that the path is relative. When using absolute paths (like when processing real data), 
+  # paths use to be absolute and no prefix is needed (that's why it's null in that case)  
+  if   (params$path_input_absolute == 1) {
+    prefix_path <- ""
+  } else { 
+    # path is relative
+    prefix_path <- "./"
+  }
+  # Set the params for the hardlink
+  from  <- paste(prefix_path, params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam.samtools.var.filtered.vcf", sep="");
   to    <- paste("", params$directory_out, "/", file2process.my2, ".f.vcf", sep="");
   # Check if hard link exists
   if ( file.exists(to) ) {
@@ -2395,7 +2405,7 @@ fun.variant.fii.pre.snpeff <- function(file2process.my2, step.my) {
   # Since the hard link is created already, we can use the much shorter file name for input .f.vcf instead of .sam.sorted.noDup.bam.samtools.var.filtered.vcf
   file_in =  paste(params$directory_out, "/", file2process.my2, ".f.vcf", sep="");
   file_out = paste(params$directory_out, "/", file2process.my2, ".f.my_genes.vcf", sep="");
-  # "ssfii" stands for SnpSift Filtered Interseting Intervals. But was lataer renamed to "my_genes"
+  # "ssfii" stands for SnpSift Filtered Interseting Intervals. But was later renamed to "my_genes"
   
   # As defined in the previous step
   file_my_bed = file=paste(params$log.folder,"/", params$startdate, ".", params$opt$label,".my_genes.bed", sep="")

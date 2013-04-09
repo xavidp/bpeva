@@ -71,7 +71,7 @@ if(!exists("biocLite")){
   source("http://bioconductor.org/biocLite.R")
 }
 
-# Command to run on Debian machines to install some of the requriements
+# Command to run on Debian machines to install some of the requirements
 # ---------------------------------------------------------------------
 # sudo apt-get install bwa samtools picard bedtools 
 #   bwa       needed for alignments
@@ -317,6 +317,7 @@ params <- list(startdate = startdate,
                n_files = n_files,
                wd = wd, # the working directory
                directory_in = opt$input,
+               path_input_absolute = path_input_absolute,
                p_in.suffix = opt$in.suffix,
                p_in.ext    = opt$in.ext,
                directory_out = opt$output,
