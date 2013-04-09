@@ -22,7 +22,7 @@
 ## * Josep Lluis Mosquera, for comments and feedback.
 ## * Ferran Briansó Castilla, for comments and feedback.
 
-# 0. Basic startup process (for the working direectory)
+# 0. Basic startup process (for the working directory)
 # ---------------------------------------------------------------------
 # Start clean
 rm(list=ls())
