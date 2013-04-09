@@ -27,6 +27,17 @@
 # ----------------------
 # (See also http://ueb.vhir.org/PendentsEVA )
 ##
+## * Avoid errors at countreads:
+##  #) at "b4. Re-order results in R":
+## -----
+##  # [SOLVED] as.data.frame.table or as.data.frame.matrix !!!!!!
+##  f2p.cr.dft <- as.data.frame.table(f2p.cr.table)
+##  # We need to re-sort in a similar way to what the ftable was
+##  f2p.cr.dft <- f2p.cr.dft[order(f2p.cr.dft$GeneSymbol, f2p.cr.dft$unitN),]
+##  # And last, we remove all row with 0 in the column Counts
+##  f2p.cr.dft <- f2p.cr.dft[!f2p.cr.dft$Freq==0,]
+## -----
+
 ## * Performance Improvements Pending:
 ##  #) split the bam files by chr, so that variant calling with samtools can be run in parallel for one patient (each chr to a differnt cpu, etc)
 ##
@@ -34,8 +45,6 @@
 ##    so that number of reads count can be split between 'Wild type' and 'Variant' (and therefore, '% or variant' can be computed).
 ##    as requested, like it's shown in Walsh et al. ( http://www.pnas.org/cgi/doi/10.1073/pnas.1007983107 )
 ##  a) Check the option to do it with vcftools: http://vcftools.sourceforge.net/options.html#stats 
-## * Annovar:
-##   Error: the required database file /home/ueb/annovar/humandb/hg19_phastConsElements46way.txt does not exist. Please download it via -downdb argument by annotate_variation.pl.
 ##
 ##   * add dbNSFP annotation
 ##   * add GWAS Catalog annotation
@@ -133,10 +142,11 @@ if (p_test==1) {
   p_in.ext    <- ".sam" #".fastq" # ".fa" ".sam" ".bam" # This is the .extension of all files used as input for the pipeline to process
   p_output   <- "test_out2" #"/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a3b" #"test_out2" # "../test_out2" # "test_out"
   p_f_my_rs  <- "file_my_rs.txt" # In p_input. Needed by SnpEff to filter for the target genes before the report (well, filter for the potential snp rs codes in those genes)
-  p_label    <- "test2_11" #"testrunGATK1" # "testsnpEffCountReads_a" "test-121002" # "test-foo"        # Run Label for output filenames
+  p_label    <- "test2_12" #"testrunGATK1" # "testsnpEffCountReads_a" "test-121002" # "test-foo"        # Run Label for output filenames
   p_desc     <- "Testing annovar with new version and reference genome
-                        test2_11: Minor typos in var filtering (symlinks) and grep calls post annovar annotations fixed. 
-                                  Same params as test2_09. apparently all db are in. And run in parallel again"
+                        test2_12: Testing everything at B52. Using r100, and latest version of annovar and snpEff"
+  #                      test2_11: Minor typos in var filtering (symlinks) and grep calls post annovar annotations fixed. 
+  #                                Same params as test2_09. apparently all db are in. And run in parallel again"
   #                      test2_10: OK. Same params as test2_09, but checking now new annovar version ref files. 
   #                                Some db must be missing"
   #                      test2_09: OK. As test2_08 but with new bed file (tab format) + chr for chromosomes.
@@ -193,7 +203,7 @@ if (p_test==1) {
   p_filter.c  <- "BRCA1 BRCA2 CHEK2 PALB2 BRIP1 TP53 PTEN STK11 CDH1 ATM BARD1 APC MLH1 MRE11A MSH2 MSH6 MUTYH NBN PMS1 PMS2 RAD50 RAD51D RAD51C XRCC2 UIMC1 FAM175A ERCC4 RAD51 RAD51B XRCC3 FANCA FANCB FANCC FANCD2 FANCE FANCF FANCG FANCI FANCL FANCM SLX4 CASP8 FGFR2 TOX3 MAP3K1 MRPS30 SLC4A7 NEK10 COX11 ESR1 CDKN2A CDKN2B ANKRD16 FBXO18 ZNF365 ZMIZ1 BABAM1 LSP1 ANKLE1 TOPBP1 BCCIP TP53BP1"
   p_tggbf     <- TRUE # TRUE=A bed file will be generated with the intersecting intervals for the target genes. Needed to filter vcf files for target genes before reunning custom snpEff Report 
   p_mail.send <- 1 # 0=FALSE, 1=TRUE ; Indicate whether we want an email sent when the run is finished
-  p_only.m.r  <- 0 # Use only Mapped reads to created the corresponding bam files?
+  p_only.m.r  <- 1 # Use only Mapped reads to created the corresponding bam files?
   #                 0/n: no, use mapped and unmapped reads; 
   #                 1/y: yes, use only mapped reads; 
   #                -1/u: the opposite, use only unmapped reads.
@@ -208,25 +218,28 @@ if (p_test==1) {
   path_input_absolute <- "1" # Define whether the p_input is absolute or relative
 # PARAMS for dir_out_293a5 Individuals 5 & 6.
 # -----------------------------------------
-#   p_input    <- "/mnt/magatzem02/tmp/run_sara_293a/dir_in_293a5" # "../dir_in" # "test_in"   # "dir_in"     
-#   p_output   <- "/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a5" #../dir_out_293" # "../dir_out_293" # "test_out"	 # "dir_out_293"
-#   p_f_my_rs  <- "file_my_rs.txt" # In p_input. Needed by SnpEff to filter for the target genes before the report (well, filter for the potential snp rs codes in those genes)
-#   p_label    <-  "sg293a5_b07" # sg293a2b2.snpeff.greped" # "test-121002" # ".sg293_qa_sg3sg4"   # "test-121002" ".sara207_4s4cpu"        # Run Label for output filenames
-#   p_desc     <- "Individuals 5 & 6.   Just Mapping multi-thread.
-#                       sg293a5_b07: as in sg293a5_b6. SnpEff reports (for all and for target-genes only). Using bazaar revision98."
-#   #                    sg293a5_b6: as in sg293a5_b5. After count reads done. Following with Variant calling and filtering"
-#   #                    sg293a5_b5: as in sg293a5_b4 but count reads failed due to lack of enough RAM (other process aside of this one eat it all)"
+  p_input    <- "/mnt/magatzem02/tmp/run_sara_293a/dir_in_293a5" # "../dir_in" # "test_in"   # "dir_in"     
+  p_output   <- "/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a5" #../dir_out_293" # "../dir_out_293" # "test_out"	 # "dir_out_293"
+  p_f_my_rs  <- "file_my_rs.txt" # In p_input. Needed by SnpEff to filter for the target genes before the report (well, filter for the potential snp rs codes in those genes)
+  p_label    <-  "sg293a5_b10" # sg293a2b2.snpeff.greped" # "test-121002" # ".sg293_qa_sg3sg4"   # "test-121002" ".sara207_4s4cpu"        # Run Label for output filenames
+  p_desc     <- "Individuals 5 & 6.   
+                      sg293a5_b10: as in sg293a5_b09, but running only grep post snpEff report (with r101)"
+  #                    sg293a5_b09: as in sg293a5_b08, but after hardlink to f.vcf is created, adn thus, var filtering not called again. Only Annotation with annovar"
+  #                    sg293a5_b08: as in sg293a5_b07, but focused on annotations with annovar. Using bazaar revision100."
+  #                    sg293a5_b07: as in sg293a5_b6. SnpEff reports (for all and for target-genes only). Using bazaar revision98."
+  #                    sg293a5_b6: as in sg293a5_b5. After count reads done. Following with Variant calling and filtering"
+  #                    sg293a5_b5: as in sg293a5_b4 but count reads failed due to lack of enough RAM (other process aside of this one eat it all)"
 
 # PARAMS for dir_out_293a4b. Individuals 3 & 4.
 # -----------------------------------------
-  p_input    <- "/mnt/magatzem02/tmp/run_sara_293a/dir_in_293a4" # "../dir_in" # "test_in"   # "dir_in"     
-     p_output   <- "/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a4b" #../dir_out_293" # "../dir_out_293" # "test_out"   # "dir_out_293"
-     p_f_my_rs  <- "file_my_rs.txt" # In p_input. Needed by SnpEff to filter for the target genes before the report (well, filter for the potential snp rs codes in those genes)
-     p_label    <-  "sg293a4b_02" # sg293a2b2.snpeff.greped" # "test-121002" # ".sg293_qa_sg3sg4"   # "test-121002" ".sara207_4s4cpu"        # Run Label for output filenames
-     p_desc     <- "Individuals 3 & 4.
-                         sg293a4b_02: bed files ok, redoing var calling, var filtering, SnpEff reports (for all and for target-genes only). Using bazaar revision98."
-  
-  #  p_input     <- "/backups_disk_03/tmp/bam_mv311" # "../dir_in" # "test_in"   # "dir_in"     
+#   p_input    <- "/mnt/magatzem02/tmp/run_sara_293a/dir_in_293a4" # "../dir_in" # "test_in"   # "dir_in"     
+#      p_output   <- "/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a4b" #../dir_out_293" # "../dir_out_293" # "test_out"   # "dir_out_293"
+#      p_f_my_rs  <- "file_my_rs.txt" # In p_input. Needed by SnpEff to filter for the target genes before the report (well, filter for the potential snp rs codes in those genes)
+#      p_label    <-  "sg293a4b_02" # sg293a2b2.snpeff.greped" # "test-121002" # ".sg293_qa_sg3sg4"   # "test-121002" ".sara207_4s4cpu"        # Run Label for output filenames
+#      p_desc     <- "Individuals 3 & 4.
+#                          sg293a4b_02: bed files ok, redoing var calling, var filtering, SnpEff reports (for all and for target-genes only). Using bazaar revision98."
+#   
+#   #  p_input     <- "/backups_disk_03/tmp/bam_mv311" # "../dir_in" # "test_in"   # "dir_in"     
   p_in.suffix <- "_sequence" #  "_sequence" # "" # This is the suffix of all input filenames (without extension) used for the pipeline to process
   p_in.ext    <-  ".fastq" #".fastq" # ".fa" ".sam" ".bam" # This is the .extension of all files used as input for the pipeline to process
 #  p_output   <- "/backups_disk_03/tmp/bam_mv311" #"/home/xavi/Estudis/eva_bowtie/dir_out" #../dir_out_293" # "../dir_out_293" # "test_out"   # "dir_out_293"
@@ -286,7 +299,7 @@ p_bwa       <- 2          # Algorythm for mapping with bwa - http://bio-bwa.sour
 # Reporting by email at the end of the run
 p_from <- "xavier.depdedro@vhir.org"
 p_to <- "xdpedro@ir.vhebron.net"
-p_subject <- paste("EVA Pipeline run finished - ", p_label, sep="")
+p_subject <- paste("EVA run at B52 finished - ", p_label, sep="")
 p_body <- paste(p_subject, " - from ", program_ueb," - See some log information attached", sep="")                   
 p_smtp="smtp.ir.vhebron.net"
 
@@ -325,7 +338,7 @@ runParam <- FALSE #######################
 p_quality.control             <- runParam
 p_bowtie2sam                  <- runParam
 #####
-runParam <- FALSE #######################
+runParam <- TRUE #######################
 ####
 p_sam2bam.and.sort		        <- runParam
 p_remove.pcr.dup		          <- runParam
@@ -342,7 +355,7 @@ runParam <- TRUE #######################
 ####
 p_variant.filtering		        <- runParam
 #####
-runParam <- FALSE #######################
+runParam <- TRUE #######################
 ####
 p_gatk.combine.vcfs           <- FALSE # runParam # Non-started work (place holder only)
 p_convert2vcf4		            <- runParam
@@ -356,7 +369,7 @@ runParam <- TRUE #######################
 p_grep.variants		            <- runParam
 p_visualize.variants		      <- FALSE # runParam # Non-started work (place holder only)
 #####
-runParam <- FALSE #######################
+runParam <- TRUE #######################
 ####
 p_variant.fii.pre.snpeff      <- runParam
 p_variant.filter.pre.snpeff   <- FALSE # runParam # Not running properly yet
@@ -432,7 +445,7 @@ params_w2pf <- list(
 # p_server = Choose machine where to get the paths for
 # 1 for MainHead,
 # 2 for B52,
-p_server <- 1 # Set the server number (see codes above)
+p_server <- 2 # Set the server number (see codes above)
 
 if (p_server==1) { # MainHead server
   # A. Reference Data file paths
@@ -480,15 +493,21 @@ if (p_server==1) { # MainHead server
   path_genome = "/home/ueb/Data/Data_Genomes/hg19.fa" 
   #path_genome = "/home/ueb/Data/Data_Genomes/rn4/rn4.fa"
   path_vcfutils = "/usr/share/samtools/vcfutils.pl"
-  path_convert2annovar = "/home/ueb/software/annovar/convert2annovar.pl"
-  path_annotate_variation = "/home/ueb/software/annovar/annotate_variation.pl"
-  path_annotate_humandb = "/home/ueb/software/annovar/humandb/"
-  path_summarize_annovar = "/home/ueb/software/annovar/summarize_annovar.pl"           
+  path_convert2annovar = "/home/ueb/annovar/convert2annovar.pl"
+  path_annotate_variation = "/home/ueb/annovar/annotate_variation.pl"
+  path_annotate_humandb = "/home/ueb/annovar/humandb/"
+  path_summarize_annovar = "/home/ueb/annovar/summarize_annovar.pl"           
   path_snpEff = "/home/ueb/snpEff/" # end with trailing slash but no script, since the same folder is used for several files           
   path_gatk = "/home/ueb/GenomeAnalysisTKLite-2.3-4-gb8f1308/GenomeAnalysisTKLite.jar" # end with the jar file since it can be lite or not
   path_gatk_key = "/home/ueb/GenomeAnalysisTKLite-2.3-4-gb8f1308/ueb_vhir.org.key" # key to avoid gatk 'calling home' (to gatk authors) on each run. See http://gatkforums.broadinstitute.org/discussion/1250/what-is-phone-home-and-how-does-it-affect-me
   path_dbSNP1 = "/home/ueb/Data/dbSNP/dbsnp132_20101103.vcf"
-  path_dbSNP = path_dbSNP1
+  path_dbSNP5 = "/home/ueb/Data/dbSNP/dbSnp_137.vcf" # (v 18-JUN-2012, dbSnp137) Taken and renamed from ftp://ftp.ncbi.nih.gov/snp/organisms/human_9606/VCF/00-All.vcf.gz
+  # $ wget -O - ftp://ftp.ncbi.nih.gov/snp/organisms/human_9606/VCF/00-All.vcf.gz | zcat | head
+  ##fileDate=20120616
+  ##source=dbSNP
+  ##dbSNP_BUILD_ID=137
+  ##reference=GRCh37.p5
+  path_dbSNP = path_dbSNP5
   path_exon_capture_file1 = "/home/ueb/Data/BED/TruSeq_exome_targeted_regions.hg19.bed.chr"
   path_exon_capture_file2 = "/home/ueb/Data/BED/all_captured_exomes_from_ucsc_hg19.bed"  
   path_exon_capture_file = path_exon_capture_file2

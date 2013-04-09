@@ -2394,8 +2394,8 @@ fun.variant.fii.pre.snpeff <- function(file2process.my2, step.my) {
 #  file_in  = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam.samtools.var.filtered.vcf", sep=""); 
   # Since the hard link is created already, we can use the much shorter file name for input .f.vcf instead of .sam.sorted.noDup.bam.samtools.var.filtered.vcf
   file_in =  paste(params$directory_out, "/", file2process.my2, ".f.vcf", sep="");
-  file_out = paste(params$directory_out, "/", file2process.my2, ".f.ssfii.vcf", sep="");
-  # "ssfii" stands for SnpSift Filtered Interseting Intervals
+  file_out = paste(params$directory_out, "/", file2process.my2, ".f.my_genes.vcf", sep="");
+  # "ssfii" stands for SnpSift Filtered Interseting Intervals. But was lataer renamed to "my_genes"
   
   # As defined in the previous step
   file_my_bed = file=paste(params$log.folder,"/", params$startdate, ".", params$opt$label,".my_genes.bed", sep="")
@@ -2570,31 +2570,31 @@ fun.variant.filter.pre.snpeff <- function(file2process.my2, step.my) {
   ##################### Another potential approach, maybe? #############
   
   
-  # SubStep 4 # Filter using SnpSift for target genes (my_rs.txt) 
-  # ------------------------------------------
-  # Display substep name
-  print_doc(paste(" Step ", step.my$n, ".", step.my$tmp, "c) Filter using SnpSift for target genes (my_rs.txt): ", file2process.my2, " ###\n", sep=""), file2process.my2);
-  #     cat variants.vcf | java -jar SnpSift.jar filter --set my_rs.txt "ID in SET[0]" > filtered.vcf
-  file_in  = paste(params$directory_out, "/", file2process.my2, ".f.ssann.eff.vcf", sep=""); 
-  file_out = paste(params$directory_out, "/", file2process.my2, ".f.ssann.eff.fss.vcf", sep=""); # fss stands for Filtered by SnipSift
-  # "ssann" in "...f.ssann.vcf" stands for annotated (ann) by SnpSift (ss)
-  # "fss" in "....f.ssann.eff.fss.vcf" stands for Filtered by SnipSift
-  command00 = paste("cat ", file_in, " | java -jar", sep=""); # next command.
-  # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
-  file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
-  options00 = paste(" ", params$path_snpEff, "SnpSift.jar filter --set ", 
-                    paste(params$directory_in, "/", params$opt$f_my_rs, sep=""), 
-                    " \"ID in SET[0]\" ", " > ", file_out, " 2>> ", file_stderr, sep="");
-  
-  command = paste(command00, " ", options00, sep="");
-  check2showcommand(params$opt$showc, command, file2process.my2);
-  system(command);
+#   # SubStep 4 # Filter using SnpSift for target genes (my_rs.txt) 
+#   # ------------------------------------------
+#   # Display substep name
+#   print_doc(paste(" Step ", step.my$n, ".", step.my$tmp, "c) Filter using SnpSift for target genes (my_rs.txt): ", file2process.my2, " ###\n", sep=""), file2process.my2);
+#   #     cat variants.vcf | java -jar SnpSift.jar filter --set my_rs.txt "ID in SET[0]" > filtered.vcf
+#   file_in  = paste(params$directory_out, "/", file2process.my2, ".f.ssann.eff.vcf", sep=""); 
+#   file_out = paste(params$directory_out, "/", file2process.my2, ".f.ssann.eff.fss.vcf", sep=""); # fss stands for Filtered by SnipSift
+#   # "ssann" in "...f.ssann.vcf" stands for annotated (ann) by SnpSift (ss)
+#   # "fss" in "....f.ssann.eff.fss.vcf" stands for Filtered by SnipSift
+#   command00 = paste("cat ", file_in, " | java -jar", sep=""); # next command.
+#   # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
+#   file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
+#   options00 = paste(" ", params$path_snpEff, "SnpSift.jar filter --set ", 
+#                     paste(params$directory_in, "/", params$opt$f_my_rs, sep=""), 
+#                     " \"ID in SET[0]\" ", " > ", file_out, " 2>> ", file_stderr, sep="");
+#   
+#   command = paste(command00, " ", options00, sep="");
+#   check2showcommand(params$opt$showc, command, file2process.my2);
+#   system(command);
   
   
   # SubStep 5 # Filter ID field using SnpSift
   # ------------------------------------------
   # Display substep name
-  print_doc(paste(" Step ", step.my$n, ".", step.my$tmp, "e) Filter ID field using SnpSift: ", file2process.my2, " ###\n", sep=""), file2process.my2);
+  print_doc(paste(" Step ", step.my$n, ".", step.my$tmp, "c) Filter ID field using SnpSift: ", file2process.my2, " ###\n", sep=""), file2process.my2);
   # Filter out variants that have a non-empty ID field. These variants are the ones that are NOT in dbSnp, since we annotated the ID field using rs-numbers from dbSnp in step 1.
   # java -jar SnpSift.jar filter -f file.eff.vcf "! exists ID" > file.eff.not_in_dbSnp.vcf
   # 
@@ -2805,9 +2805,9 @@ fun.variant.eff.report <- function(file2process.my2, step.my) {
   # ---------------------------------------------------------
     print_doc(paste("    Substep ", step.my$n, ".", step.my$tmp, "a). Report using snpEff with the target genes only: ", file2process.my2, " ###\n", sep=""), file2process.my2);
 
-  file_in  = paste(params$directory_out, "/", file2process.my2, ".f.ssfii.vcf", sep="");   
-  file_out = paste(params$directory_out, "/", file2process.my2, ".f.ssfii.snpEff.", params$opt$snpeff.of, sep=""); 
-  file_out_base = paste(params$directory_out, "/", file2process.my2, ".f.ssfii.snpEff", sep="");   
+  file_in  = paste(params$directory_out, "/", file2process.my2, ".f.my_genes.vcf", sep="");   
+  file_out = paste(params$directory_out, "/", file2process.my2, ".f.my_genes.snpEff.", params$opt$snpeff.of, sep=""); 
+  file_out_base = paste(params$directory_out, "/", file2process.my2, ".f.my_genes.snpEff", sep="");   
   
   command00 = "java -jar"; # next command.
   # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
@@ -2922,15 +2922,17 @@ fun.grep.post.snpeff.report <- function(file2process.my2, step.my) {
     #-------------------------------
     file_in  = paste(params$directory_out, "/", file2process.my2, ".f.snpEff_summary.genes.txt", sep=""); 
     file_out = paste(params$directory_out, "/", file2process.my2, ".f.snpEff_summary.genes.fg.txt", sep=""); 
-    command00 = "grep"; # next command.
-    options00 = paste(" '", params$opt$filter,"' ", file_in, " > ", file_out, sep="");
+    # Redo the filter from the clean list of genes, and splitted with "\|" when in the command line
+    # therefore, they need to be splitted with '\\|' here in R.
+    filter.c2 <- gsub(" ", "\\|", params$opt$filter.c, fixed=TRUE)
     # Remember that the values in the previous opt$filter variable needs to be like: 'BRCA1\|BRCA2' 
     # in order to end up performing a command like:
     # grep 'BRCA1\|BRCA2' dir_out/Gutierrez_A_*.exonic* 
+    
     command01 = "grep ^\\#";
-    command02 = command00;
+    command02 = "grep -w "; # next command. With -w we indicate it to match only the whole word. BRCA1 would not be matched against BRCA, for instance.
     options01 = paste(" ", file_in, " > ", file_out, sep="");
-    options02 = paste(" '", params$opt$filter,"' ", file_in, " >> ", file_out, sep="");
+    options02 = paste(" '", filter.c2,"' ", file_in, " >> ", file_out, sep="");
     
     command = paste(command01, " ", options01, sep="");
     check2showcommand(params$opt$showc, command, file2process.my2);
