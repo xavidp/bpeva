@@ -31,7 +31,6 @@ program_ueb <- "eva_main.R";
 
 # Set the working directory from either one of the two options (a and b) listed below
 ## a) the hardcoded way
-#wd <- "/home/ueb/repo/peeva2/"
 wd <- "/home/ueb/repo/peeva/"
 setwd(wd)
 

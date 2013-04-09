@@ -299,8 +299,8 @@ mail.send <- function(attachmentPath, attachmentName)
 
   # Testing another way to send the email through a direct system call.
   # To check whether this also works in parallel-run mode.
-  params$p_subject <- paste("EVA Pipeline run finished: ", params$p_label, sep="")
-  params$p_body <- paste(params$p_subject, " _ See some log information attached", sep="")                   
+  #params$p_subject <- paste("EVA Pipeline run finished: ", params$p_label, sep="")
+  #params$p_body <- paste(params$p_subject, " _ See some log information attached", sep="")                   
   command <- paste("sendEmail -f ", params$p_from, " -t ", params$p_to, " -u ", params$p_subject,
                " -m ", params$p_body, " -s ", params$p_smtp, " -a ", attachmentPath,
                " >> ", attachmentPath, sep="");

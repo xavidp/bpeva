@@ -220,9 +220,11 @@ if (p_test==1) {
   p_input    <- "/mnt/magatzem02/tmp/run_sara_293a/dir_in_293a5" # "../dir_in" # "test_in"   # "dir_in"     
   p_output   <- "/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a5" #../dir_out_293" # "../dir_out_293" # "test_out"	 # "dir_out_293"
   p_f_my_rs  <- "file_my_rs.txt" # In p_input. Needed by SnpEff to filter for the target genes before the report (well, filter for the potential snp rs codes in those genes)
-  p_label    <-  "sg293a5_b10" # sg293a2b2.snpeff.greped" # "test-121002" # ".sg293_qa_sg3sg4"   # "test-121002" ".sara207_4s4cpu"        # Run Label for output filenames
-  p_desc     <- "Individuals 5 & 6.   
-                      sg293a5_b10: as in sg293a5_b09, but running only grep post snpEff report (with r101)"
+  p_label    <-  "sg293a5_b12" # sg293a2b2.snpeff.greped" # "test-121002" # ".sg293_qa_sg3sg4"   # "test-121002" ".sara207_4s4cpu"        # Run Label for output filenames
+  p_desc     <- "Individuals 5 & 6.
+                      sg293a5_b12: as in sg293a5_b10, but re-run quality control, as it was missing for some reason for individual 6"
+  #                    sg293a5_b11: as in sg293a5_b10, As in sg293a4b_06 but testing functions in snpEff and snpSift related with dbSnp"
+  #                    sg293a5_b10: as in sg293a5_b09, but running only grep post snpEff report (with r101)"
   #                    sg293a5_b09: as in sg293a5_b08, but after hardlink to f.vcf is created, adn thus, var filtering not called again. Only Annotation with annovar"
   #                    sg293a5_b08: as in sg293a5_b07, but focused on annotations with annovar. Using bazaar revision100."
   #                    sg293a5_b07: as in sg293a5_b6. SnpEff reports (for all and for target-genes only). Using bazaar revision98."
@@ -332,13 +334,13 @@ params_wseq <- list(
 #----------------------------------
 # p_map.on.reference.genome.parallel  is not defined here but in the previous chunk
 #####
-runParam <- FALSE #######################
+runParam <- TRUE #######################
 ####
 p_quality.control             <- runParam
-p_bowtie2sam                  <- runParam
 #####
 runParam <- FALSE #######################
 ####
+p_bowtie2sam                  <- runParam
 p_sam2bam.and.sort		        <- runParam
 p_remove.pcr.dup		          <- runParam
 p_gatk.sortbyref              <- FALSE # runParam # Not working properly yet. Error message: Can not open temporary file 1080: Too many open files at /home/ueb/Data/gatk-data-2.3/SortByRef.pl line 95, <$INPUT> line 50737751.
@@ -369,9 +371,6 @@ p_variant.filter.pre.snpeff   <- runParam
 p_variant.dbsnp.pre.snpeff    <- FALSE # runParam # Non-started work (place holder only)
 p_grep.pre.snpeff.report      <- FALSE # runParam # Not running properly yet
 p_variant.eff.report          <- runParam
-#####
-runParam <- TRUE #######################
-####
 p_grep.post.snpeff.report     <- runParam
 #####
 runParam <- FALSE #######################
