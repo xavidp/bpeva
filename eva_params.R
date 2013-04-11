@@ -202,7 +202,7 @@ if (p_test==1) {
   p_filter.c  <- "BRCA1 BRCA2 CHEK2 PALB2 BRIP1 TP53 PTEN STK11 CDH1 ATM BARD1 APC MLH1 MRE11A MSH2 MSH6 MUTYH NBN PMS1 PMS2 RAD50 RAD51D RAD51C XRCC2 UIMC1 FAM175A ERCC4 RAD51 RAD51B XRCC3 FANCA FANCB FANCC FANCD2 FANCE FANCF FANCG FANCI FANCL FANCM SLX4 CASP8 FGFR2 TOX3 MAP3K1 MRPS30 SLC4A7 NEK10 COX11 ESR1 CDKN2A CDKN2B ANKRD16 FBXO18 ZNF365 ZMIZ1 BABAM1 LSP1 ANKLE1 TOPBP1 BCCIP TP53BP1"
   p_tggbf     <- TRUE # TRUE=A bed file will be generated with the intersecting intervals for the target genes. Needed to filter vcf files for target genes before reunning custom snpEff Report 
   p_mail.send <- 1 # 0=FALSE, 1=TRUE ; Indicate whether we want an email sent when the run is finished
-  p_only.m.r  <- 0 # Use only Mapped reads to created the corresponding bam files?
+  p_only.m.r  <- 1 # Use only Mapped reads to created the corresponding bam files?
   #                 0/n: no, use mapped and unmapped reads; 
   #                 1/y: yes, use only mapped reads; 
   #                -1/u: the opposite, use only unmapped reads.
@@ -220,9 +220,10 @@ if (p_test==1) {
   p_input    <- "/mnt/magatzem02/tmp/run_sara_293a/dir_in_293a5" # "../dir_in" # "test_in"   # "dir_in"     
   p_output   <- "/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a5" #../dir_out_293" # "../dir_out_293" # "test_out"	 # "dir_out_293"
   p_f_my_rs  <- "file_my_rs.txt" # In p_input. Needed by SnpEff to filter for the target genes before the report (well, filter for the potential snp rs codes in those genes)
-  p_label    <-  "sg293a5_b12" # sg293a2b2.snpeff.greped" # "test-121002" # ".sg293_qa_sg3sg4"   # "test-121002" ".sara207_4s4cpu"        # Run Label for output filenames
+  p_label    <-  "sg293a5_b13" # sg293a2b2.snpeff.greped" # "test-121002" # ".sg293_qa_sg3sg4"   # "test-121002" ".sara207_4s4cpu"        # Run Label for output filenames
   p_desc     <- "Individuals 5 & 6.
-                      sg293a5_b12: as in sg293a5_b10, but re-run quality control, as it was missing for some reason for individual 6"
+                      sg293a5_b13: as in previous, but re-running ssfii (filter intersecting intervals) to generate the my_genes snpEff reports, etc"
+  #                    sg293a5_b12: as in sg293a5_b10, but re-run quality control, as it was missing for some reason for individual 6"
   #                    sg293a5_b11: as in sg293a5_b10, As in sg293a4b_06 but testing functions in snpEff and snpSift related with dbSnp"
   #                    sg293a5_b10: as in sg293a5_b09, but running only grep post snpEff report (with r101)"
   #                    sg293a5_b09: as in sg293a5_b08, but after hardlink to f.vcf is created, adn thus, var filtering not called again. Only Annotation with annovar"
@@ -334,7 +335,7 @@ params_wseq <- list(
 #----------------------------------
 # p_map.on.reference.genome.parallel  is not defined here but in the previous chunk
 #####
-runParam <- TRUE #######################
+runParam <- FALSE #######################
 ####
 p_quality.control             <- runParam
 #####
@@ -364,7 +365,7 @@ p_variant.annotation.summarize<- runParam
 p_grep.variants		            <- runParam
 p_visualize.variants		      <- FALSE # runParam # Non-started work (place holder only)
 #####
-runParam <- FALSE #######################
+runParam <- TRUE #######################
 ####
 p_variant.fii.pre.snpeff      <- runParam
 p_variant.filter.pre.snpeff   <- runParam 
