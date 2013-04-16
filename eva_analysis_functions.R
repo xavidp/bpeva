@@ -301,9 +301,9 @@ mail.send <- function(attachmentPath, attachmentName)
   # To check whether this also works in parallel-run mode.
   #params$p_subject <- paste("EVA Pipeline run finished: ", params$p_label, sep="")
   #params$p_body <- paste(params$p_subject, " _ See some log information attached", sep="")                   
-  command <- paste("sendEmail -f ", params$p_from, " -t ", params$p_to, " -u ", params$p_subject,
-               " -m ", params$p_body, " -s ", params$p_smtp, " -a ", attachmentPath,
-               " >> ", attachmentPath, sep="");
+  command <- paste("sendEmail -f ", params$p_from, " -t ", params$p_to, " -u \"", params$p_subject,
+               "\" -m \"", params$p_body, "\" -s ", params$p_smtp, " -a \"", attachmentPath,
+               "\" >> \"", attachmentPath, "\" ", sep="");
   check2showcommand(params$opt$showc, command, routlogfile);
   system(command);
 #  return() # return nothing
@@ -2005,7 +2005,8 @@ fun.variant.calling <- function(file2process.my2, step.my) {
   # Those params needed to be called after the file_in!!!
 #  options00 = paste(" mpileup -uf ", params$path_genome, " ", file_in, " -C50 -EDS -q50 -d10000 | bcftools view -Avcg - >  ", file_out, sep="");
 ## March 18th: Removing the -A from bcftools to see whether the weird X letters in alternative nucleotide go away from vcf files. 
-  options00 = paste(" mpileup -uf ", params$path_genome, " ", file_in, " -C50 -EDS -q50 -d10000 | bcftools view -vcg - >  ", file_out, sep="");
+  options00 = paste(" mpileup -uf ", params$path_genome, " ", file_in, " -C50 -EDS -q50 -d10000 -Q", params$opt$st.vf.Q, 
+                   " | bcftools view -vcg - >  ", file_out, sep="");
   
   # Jan 9th, 2013: 
   ## added params in samtools mpileup: 
@@ -2436,6 +2437,7 @@ fun.grep.variants <- function(file2process.my2, step.my) {
   gc() # Let's clean ouR garbage if possible
   return(step.my) # return nothing, since results are saved on disk from the system command
 }
+
 
 ##########################
 ### FUNCTION fun.build.html.report
