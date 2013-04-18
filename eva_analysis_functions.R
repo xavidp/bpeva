@@ -301,9 +301,9 @@ mail.send <- function(attachmentPath, attachmentName)
   # To check whether this also works in parallel-run mode.
   #params$p_subject <- paste("EVA Pipeline run finished: ", params$p_label, sep="")
   #params$p_body <- paste(params$p_subject, " _ See some log information attached", sep="")                   
-  command <- paste("sendEmail -f ", params$p_from, " -t ", params$p_to, " -u ", params$p_subject,
-               " -m ", params$p_body, " -s ", params$p_smtp, " -a ", attachmentPath,
-               " >> ", attachmentPath, sep="");
+  command <- paste("sendEmail -f ", params$p_from, " -t ", params$p_to, " -u \"", params$p_subject,
+               "\" -m \"", params$p_body, "\" -s ", params$p_smtp, " -a \"", attachmentPath,
+               "\" >> \"", attachmentPath, "\" ", sep="");
   check2showcommand(params$opt$showc, command, routlogfile);
   system(command);
 #  return() # return nothing
@@ -726,9 +726,14 @@ fun.tgenes.generate.bed.file <- function(step.my, file2process.my2, x) {
   #   "LRG sequences provide a stable genomic DNA framework for reporting mutations with a permanent ID and core content that never changes."
   #   See http://www.lrg-sequence.org/
   tg.lrg.idx <- grep("LRG", tg$chromosome_name, fixed=T)
-  # Keep only the list of target genes without lrg 
-  tg.nolrg <- tg[-tg.lrg.idx,]
-  
+  # Remove those records only if someting is found
+  if (length(tg.lrg.idx) > 0) {
+    # Keep only the list of target genes without lrg 
+    tg.nolrg <- tg[-tg.lrg.idx,]
+  } else {
+    tg.nolrg <- tg
+  }
+
   # Sort results by gene name
   tg.nolrg.o <- tg.nolrg[order(tg.nolrg$hgnc_symbol),]
   #head(tg.nolrg.o)
@@ -1632,6 +1637,110 @@ fun.snpeff.count.reads <- function(file2process.my2, step.my) {
   return(step.my) # return nothing, since results are saved on disk from the system command
 }
 
+
+############################################################################
+### FUNCTION fun.variants.locate.r
+###
+###   Locate variants using R [optional]. Unused notes as of April 2013
+###   Stub, in case we need to follow this track in the future
+############################################################################
+
+fun.variants.locate.r <- function(file2process.my2, step.my) {
+  # update step number
+  step.my$tmp <- step.my$tmp + 1
+  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "Locate Variants using R: ", file2process.my2, " ###\n", sep=""), file2process.my2);
+  
+  # Load the required packages  (after installing them if necessary)
+  if(!require(Homo.sapiens)){ biocLite("Homo.sapiens") }
+  library(Homo.sapiens, quietly = TRUE)
+
+  if(!require(VariantAnnotation)){ biocLite("VariantAnnotation") }
+  library(VariantAnnotation)
+  
+  if(!require(SNPlocs.Hsapiens.dbSNP.20120608)){ biocLite("SNPlocs.Hsapiens.dbSNP.20120608") }
+  library("SNPlocs.Hsapiens.dbSNP.20120608")
+  
+  
+  file_in = paste(params$directory_out, "/", file2process.my2, ".f.vcf", sep="");
+  file_out = paste(file_in, ".f.locations.txt", sep="");
+  # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
+  file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
+  
+  command00 = " "; # next command.
+  options00 = paste(params$path_snpEff, " foo "," ", file_in, " > ", file_out, 
+                    " 2>> ", file_stderr, sep="");
+  command = paste(command00, " ", options00, sep="");
+  check2showcommand(params$opt$showc, command, file2process.my2);
+  system(command);
+  
+  # Manual debugging XXX
+  # file2process.my2 <- "sgs7a_merged12"
+  # file_in <- "./test_out2/sgs7a_merged12.f.vcf"
+  # file_out <- "./test_out2/sgs7a_merged12.f.locations.txt"
+  
+  # <-----------------------------------
+  # Code snippets taken from bioconductor list
+  rsID <- c("rs1929842", "rs10448261", "rs16942913", "rs9530156",
+            "rs9543238", "rs3757718", "rs17564689","rs10167958", 
+            "rs10777752", "rs10072700", "rs10842099","rs11024171", "rs797516",
+            "rs2046545", "rs12996997", "rs6135128","rs2143072", "rs12585354"
+            ,"rs797515",  "rs17073211", "rs10496454","rs17197639", "rs4704128",
+            "rs2143071", "rs3748997", "rs2292100")
+  library(Homo.sapiens)
+  library(VariantAnnotation)
+  library("SNPlocs.Hsapiens.dbSNP.20120608")
+  SNPs.gr  <- rsidsToGRanges(rsID)
+  seqlevels(SNPs.gr)
+  SNPs.gr@seqnames
+  str(SNPs.gr@seqnames)
+  SNPs.gr@seqnames@values
+  # renameSeqlevels(SNPs.gr, ????)
+  seqlevels()
+  
+  length(SNPs.gr@seqnames@values)
+  vars <- locateVariants(SNPs.gr, TxDb.Hsapiens.UCSC.hg19.knownGene,
+                         AllVariants())
+  
+#  Error in .mk_isActiveSeqReplacementValue(x, value) :
+#    the names of the supplied 'isActiveSeq' must match the names of the
+#  current 'isActiveSeq'
+  
+  # Solution tips: from Valerie (VariantAnnotation maintainer)
+  #   The seqlevels (chromosome names) in the txdb and SNPlocs packages don't match.
+  # 
+  # > rsID <- c("rs1929842", "rs10448261", "rs16942913", "rs9530156")
+  # > SNPs.gr  <- rsidsToGRanges(rsID)
+  # > seqlevels(SNPs.gr)
+  #  [1] "ch1"  "ch2"  "ch3"  "ch4"  "ch5"  "ch6"  "ch7"  "ch8"  "ch9"
+  # ...
+  # 
+  # >   library(TxDb.Hsapiens.UCSC.hg19.knownGene)
+  # >   txdb <- TxDb.Hsapiens.UCSC.hg19.knownGene
+  # > seqlevels(txdb)
+  #  [1] "chr1"                  "chr2"                 "chr3"
+  #
+  
+  # str(seqlevels(txdb))
+  # str(seqlevels(SNPs.gr))
+  # ...
+  # 
+  # You can rename seqlevels in your GRanges using renameSeqlevels(), 
+  # paste(), or seqlevels()<-. 
+  # See any of ?locateVariants, ?renameSeqlevels, ?seqlevels for examples and details.
+  
+  unlist(mget(vars$GENEID, org.Hs.egSYMBOL))
+  
+  # ----------------------------------->
+  
+  # Don't check for check2clean("$file_in") since we still need it for the variant calling
+  print_done(file2process.my2);
+  
+  gc() # Let's clean ouR garbage if possible
+  return(step.my) # return nothing, since results are saved on disk from the system command
+}
+
+########################################################################
+
 ##
 ## fun.splitAnnot
 ##
@@ -1896,7 +2005,8 @@ fun.variant.calling <- function(file2process.my2, step.my) {
   # Those params needed to be called after the file_in!!!
 #  options00 = paste(" mpileup -uf ", params$path_genome, " ", file_in, " -C50 -EDS -q50 -d10000 | bcftools view -Avcg - >  ", file_out, sep="");
 ## March 18th: Removing the -A from bcftools to see whether the weird X letters in alternative nucleotide go away from vcf files. 
-  options00 = paste(" mpileup -uf ", params$path_genome, " ", file_in, " -C50 -EDS -q50 -d10000 | bcftools view -vcg - >  ", file_out, sep="");
+  options00 = paste(" mpileup -uf ", params$path_genome, " ", file_in, " -C50 -EDS -q50 -d10000 -Q", params$opt$st.vf.Q, 
+                   " | bcftools view -vcg - >  ", file_out, sep="");
   
   # Jan 9th, 2013: 
   ## added params in samtools mpileup: 
@@ -2327,6 +2437,7 @@ fun.grep.variants <- function(file2process.my2, step.my) {
   gc() # Let's clean ouR garbage if possible
   return(step.my) # return nothing, since results are saved on disk from the system command
 }
+
 
 ##########################
 ### FUNCTION fun.build.html.report

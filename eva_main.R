@@ -290,7 +290,7 @@ if (p_bwa == 2) {
 	# When input files contained single end short reads, or long reads, the definitive file list will be created here in this step already 
 	filename_list = paste(opt$output, "/", "log.",startdate, ".", opt$label, ".fastq_input_list.txt", sep="")
 	# Get the list of files in "input" directory through a system call to "ls *" and save the result to a file on disk
-	system(paste("ls ",abs_path_to_input_files,"*", params$opt$in.ext," > ", filename_list, sep=""), TRUE)
+	system(paste("ls ",abs_path_to_input_files,"*", p_in.ext," > ", filename_list, sep=""), TRUE)
 }
 
 # Read the file with the list of files to be processed
