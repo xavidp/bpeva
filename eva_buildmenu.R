@@ -1,27 +1,22 @@
-##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+##-----------------------------------------------------
 ##
-## Funcions per a escriure construir l'arxiu ResultsFiles.html
-##
-##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-##
-## addToLinksFile
+## fun.addToLinksFile
 ##
 ## Description
 ##
-##    Add new entry to the text file that contains description of each file to be included in ResulstsFiles
+##    Add new record with description of the file to be included in ResultsFiles
 ##
 ## Usage
 ##
-##   addToLinksFile(linksFile, aFName, categ, desc, subcateg)
+##   fun.addToLinksFile(linksFile, aFName, categ, desc, subcateg)
 ##
 ## Argument(s)
 ##
-##    linksFile : file name where to write the information associated with the file to link
-##       aFName : file name to describe
+##    linksFile : file name where the information (associated with the linked file) will be written to
+##       aFName : file name to be described
 ##        categ : section where to place the file name (aFName) associated with
 ##         desc : brief description associated with the file name (aFName)
-##     subcateg : subsection  where to place the file name (aFName) associated with. Currently, doesn't work.
+##     subcateg : subsection where the file name (aFName) associated with will be placed. Currently, it doesn't work.
 ##
 ##
 ## Example
@@ -32,20 +27,19 @@
 ##      rawData <- data.frame(patientID, gender, age)
 ##    write.csv(rawData, "myRawData.csv")
 ##
-##    addToLinksFile(linksFile = "myLinksFile.txt",
+##    fun.addToLinksFile(linksFile = "myLinksFile.txt",
 ##                   aFName = "myRawData.csv",
 ##                   categ = "DATA",
 ##                   desc = "Raw data for the analysis"))
 
-addToLinksFile <- function(linksFile, aFName, categ = "", desc = "", subcateg = "")
-{
+fun.addToLinksFile <- function(linksFile, aFName, categ = "", desc = "", subcateg = "") {
   if (!is.null(linksFile))
   {
     write(paste(aFName, categ, subcateg, desc, sep = "\t"), file = linksFile, append = TRUE)
   }
 }
 
-## printHeader: Crea la capçalera del fitxer html de resultats
+## fun.printHeader: Crea la capçalera del fitxer html de resultats
 ##                 
 ##
 ## Parametres:
@@ -56,7 +50,7 @@ addToLinksFile <- function(linksFile, aFName, categ = "", desc = "", subcateg = 
 ##
 ##   
 
-printHeader <- function(FileName = "ResultFiles")
+fun.printHeader <- function(FileName = "ResultFiles")
 {
   outfile <- file(paste(FileName, ".html", sep = ""), open = "wt")
   
@@ -77,7 +71,7 @@ printHeader <- function(FileName = "ResultFiles")
 }
 
 
-## printGroupHeader: Construeix la capçalera de presentacio que es veura a la pagina
+## fun.printGroupHeader: Construeix la capçalera de presentacio que es veura a la pagina
 ##                 
 ##
 ## Parametres:
@@ -89,7 +83,7 @@ printHeader <- function(FileName = "ResultFiles")
 ##
 ##   
 
-printGroupHeader <- function(FileName = "ResultFiles", UEB = TRUE)
+fun.printGroupHeader <- function(FileName = "ResultFiles", UEB = TRUE)
 {
   outfile <- file(paste(FileName, ".html", sep = ""), open = "at")
 
@@ -141,7 +135,7 @@ printGroupHeader <- function(FileName = "ResultFiles", UEB = TRUE)
 }
 
 
-## printAnalysisDetails: Construeix la taula que conte la informacio general de l'estudi, com dades de contacte, 
+## fun.printAnalysisDetails: Construeix la taula que conte la informacio general de l'estudi, com dades de contacte, 
 ##                       titol de l'analisi
 ##
 ## Parametres
@@ -155,7 +149,7 @@ printGroupHeader <- function(FileName = "ResultFiles", UEB = TRUE)
 ##                       Description = "Diferentially expressed genes associated with...",
 ##                       Analysts = "Nom del primer analista and Alex Sanchez",
 ##                       Contact = "Alex Sanchez (alesanchez@ir.vhebron.net)")
-##    printAnalysisDetails(FileName = "ResultFiles", Info.list =  myInfoList)
+##    fun.printAnalysisDetails(FileName = "ResultFiles", Info.list =  myInfoList)
 ##
 ##    # Aixo creara un fitxer que contindra una taula de l'estil
 ##    <table width="100%" border="0"> 
@@ -181,7 +175,7 @@ printGroupHeader <- function(FileName = "ResultFiles", UEB = TRUE)
 ##    </table> 
 ##    <hr> 
 
-printAnalysisDetails <- function(FileName = "ResultFiles", Info.list)
+fun.printAnalysisDetails <- function(FileName = "ResultFiles", Info.list)
 {
   outfile <- file(paste(FileName, ".html", sep = ""), open = "at")
 
@@ -224,7 +218,7 @@ printAnalysisDetails <- function(FileName = "ResultFiles", Info.list)
 ##
 ##
 
-write.section <- function(my.info,
+fun.write.section <- function(my.info,
                           filename,
                           my.id = "",
                           sectionTitle = "Files",
@@ -273,7 +267,7 @@ write.section <- function(my.info,
 }
 
 
-## printVHIRfooter: Inserta la imatge amb logo del VHIR al peu de la pagina de resultats
+## fun.printVHIRfooter: Inserta la imatge amb logo del VHIR al peu de la pagina de resultats
 ##                 
 ##
 ## Parametres:
@@ -284,7 +278,7 @@ write.section <- function(my.info,
 ##   Si UEB es FALSE no hauria d'entrar a fer aixo
 ##   
 
-printVHIRfooter <- function(FileName = "ResultFiles")
+fun.printVHIRfooter <- function(FileName = "ResultFiles")
 {
   outfile <- file(paste(FileName, ".html", sep = ""), open = "at")
 
@@ -301,7 +295,7 @@ printVHIRfooter <- function(FileName = "ResultFiles")
   close(outfile)
 }
 
-## printAnalysisDetails: 
+## fun.printAnalysisDetails: 
 ##                 
 ##
 ## Parametres:
@@ -312,7 +306,7 @@ printVHIRfooter <- function(FileName = "ResultFiles")
 ##
 ##
 
-closeHtml <- function(FileName = "ResultFiles")
+fun.closeHtml <- function(FileName = "ResultFiles")
 {
   outfile <- file(paste(FileName, ".html", sep = ""), open = "at")
   
@@ -322,7 +316,7 @@ closeHtml <- function(FileName = "ResultFiles")
 }
 
 
-## LinksFile2Html 
+## fun.linksFile2Html 
 ##
 ## Argument(s)
 ##
@@ -351,7 +345,7 @@ closeHtml <- function(FileName = "ResultFiles")
 ##                    IndexDir = "ResultFiles/",
 ##                    UEB = TRUE)                
 
-LinksFile2Html <- function(lFile, outputDir, info.list, IndexDir = "", UEB = TRUE)
+fun.linksFile2Html <- function(lFile, outputDir, info.list, IndexDir = "", UEB = TRUE)
 {
   FixLinksFile(lFile)
   
@@ -374,24 +368,24 @@ LinksFile2Html <- function(lFile, outputDir, info.list, IndexDir = "", UEB = TRU
   
   resFile <- file.path(outputDir, "ResultFiles")
   
-  printHeader(resFile)
-  printGroupHeader(resFile, UEB = UEB)
-  printAnalysisDetails(resFile, info.list)
+  fun.printHeader(resFile)
+  fun.printGroupHeader(resFile, UEB = UEB)
+  fun.printAnalysisDetails(resFile, info.list)
   
   i <- 0  # Per generar el numero de categoria en el fitxer resultFiles.html de forma dinamica
   for(categ in names(my.names)[names(my.names) %in% my.cats])
   {
     i <- i+1
     my.ind <- which(my.LnkFile[, 2] == categ)
-    write.section(my.info = my.LnkFile[my.ind, c(1,4)],  
+    fun.write.section(my.info = my.LnkFile[my.ind, c(1,4)],  
                   filename = resFile,
                   my.id = categ,                  
                   sectionTitle = paste(i, ". ", my.names[categ], " Files", sep = ""),
                   IndexDir = IndexDir)
   }
 
-  if (UEB) printVHIRfooter(resFile)
+  if (UEB) fun.printVHIRfooter(resFile)
 
-  closeHtml(resFile)
+  fun.closeHtml(resFile)
 }
 

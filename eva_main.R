@@ -50,6 +50,9 @@ source("eva_analysis_functions.R")
 # Import UEB Function Wrappers for the EVA analysis 
 source("eva_analysis_wrappers.R")
 
+# Import the file with functions to build the html report
+source("eva_buildmenu.R")
+
 ##############################################################################
 ##############################################################################
 ### Main Program #############################################################
@@ -401,6 +404,7 @@ sfExport( "params",
           "fun.convert.file.list.pe",
           "fun.bowtie2sam",
           "fun.sam2bam.and.sort",
+          "fun.samtools.fixmate",
 	        "fun.remove.pcr.dup",
           "fun.gatk.sortbyref",
           "fun.gatk.local.realign.step1",
@@ -420,6 +424,10 @@ sfExport( "params",
 	        "fun.variant.annotation.regionb",
 	        "fun.variant.annotation.filterb",
 	        "fun.variant.annotation.summarize",
+          "fun.split.csv.info.varN.fields",
+          "fun.split.csv.info.fields",
+          "fun.variant.annotation.summary.call.fixcolumns",
+          "fun.variant.annotation.summary.fixcolumns",
 	        "fun.grep.variants",
 	        "fun.visualize.variants",
           "fun.tgenes.generate.bed.file",

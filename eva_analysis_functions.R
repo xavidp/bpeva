@@ -1114,11 +1114,44 @@ fun.sam2bam.and.sort <- function(file2process.my2, step.my) {
   return(step.my) # return nothing, since results are saved on disk from the system command
 }
 
+##########################
+### FUNCTION fun.samtools.fixmate
+###
+###   Fill in mate coordinates, ISIZE and mate related flags from a name-sorted alignment.
+###
+###   These is needed later by samtools rmdup to remove potential PCR duplicates: 
+###   if multiple read pairs have identical external coordinates, only retain the pair with highest mapping quality. 
+###   This command ONLY works with FR orientation and requires ISIZE is correctly set.
+##########################
+
+fun.samtools.fixmate <- function(file2process.my2, step.my) {
+  # update step number
+  step.my$tmp <- step.my$tmp + 1
+  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Fixmate info and Isize in .bam to allow removing PCR duplicates later on: ", file2process.my2, " ###\n", sep=""), file2process.my2);
+  
+  file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.bam", sep="");
+  file_out = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.fixmate.bam", sep="");
+  command00 = "samtools "; # next command.
+  # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
+  file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
+  options00 = paste(" fixmate ", file_in, " ", file_out,  " 2>> ", file_stderr, sep="");
+  command = paste(command00, " ", options00, sep="");
+  check2showcommand(params$opt$showc, command, file2process.my2);
+  system(command);
+  check2clean(file_in, file2process.my2);
+  print_done(file2process.my2);
+  
+
+  gc() # Let's clean ouR garbage if possible
+  return(step.my) # return nothing, since results are saved on disk from the system command
+}
 
 ##########################
 ### FUNCTION fun.remove.pcr.dup
 ###
 ### 	Remove possible PCR duplicates
+###   if multiple read pairs have identical external coordinates, only retain the pair with highest mapping quality. 
+###   This command ONLY works with FR orientation and requires ISIZE is correctly set.
 ##########################
 
 fun.remove.pcr.dup <- function(file2process.my2, step.my) {
@@ -1126,12 +1159,23 @@ fun.remove.pcr.dup <- function(file2process.my2, step.my) {
   step.my$tmp <- step.my$tmp + 1
   print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Remove possible PCR duplicates: ", file2process.my2, " ###\n", sep=""), file2process.my2);
   
-  file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.bam", sep="");
-  file_out = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam", sep="");
+  file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.fixmate.bam", sep="");
+  file_out = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.fixmate.noDup.bam", sep="");
   command00 = "samtools"; # next command.
+  ###   -s   Remove duplicate for single-end reads. By default, the command works for paired-end reads only.
+  ###   -S   Treat paired-end reads as single-end reads.
   # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
   file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
-  options00 = paste("rmdup -s ", file_in, " ", file_out,  " 2>> ", file_stderr, sep="");
+  if ( (params$opt$bwa == 1) || (params$opt$bwa == 3) ) {
+    rmdup.param <- " -s " # Case for single end
+  } else if (params$opt$bwa == 2) {
+        rmdup.param <- " -S " # Case for paired end, treating reads as single end. Otherwise, it doesn't work with samtools rmdup
+    # rmdup.param <- " " # Case for paired end, in theory, to remove dups as paired end. But it doesn't work.
+  } else {
+    cat("\n\nn[ERROR] Wrong value in param opt$bwa or p_bwa. Only values 1, 2 or 3 are allowed\n\n")
+  }
+
+  options00 = paste(" rmdup ", rmdup.param, " ", file_in, " ", file_out,  " 2>> ", file_stderr, sep="");
   command = paste(command00, " ", options00, sep="");
   check2showcommand(params$opt$showc, command, file2process.my2);
   system(command);
@@ -1139,7 +1183,7 @@ fun.remove.pcr.dup <- function(file2process.my2, step.my) {
   print_done(file2process.my2);
 
   # direct command line call for testing other things:
-  # samtools  rmdup -s file_in.sam.sorted.bam file_in.sam.sorted.noDup.bam
+  # samtools  rmdup -s file_in.sam.sorted.bam file_in.sam.sorted.fixmate.noDup.bam
   
   
   gc() # Let's clean ouR garbage if possible
@@ -1208,8 +1252,8 @@ fun.gatk.local.realign.step1 <- function(file2process.my2, step.my) {
   step.my$tmp <- step.my$tmp + 1
   print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Local Realignment with GATK - Step 1: Generating interval file: ", file2process.my2, " ###\n", sep=""), file2process.my2);
 
-  file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam", sep="");
-  file_out = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam.intervals", sep="");
+  file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.fixmate.noDup.bam", sep="");
+  file_out = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.fixmate.noDup.bam.intervals", sep="");
   command00 = "java -jar "; # next command.
   # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
   file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
@@ -1223,7 +1267,7 @@ fun.gatk.local.realign.step1 <- function(file2process.my2, step.my) {
     # Former option -B:dbsnp,vcf has been converted into -known:dbsnp,vcf. See http://seqanswers.com/forums/showthread.php?t=14013  
 
   # For manual debugging, see this example to be run in the command line:
-  # java -Xmx4G -jar /path_gatk/GenomeAnalysisTKLite.jar -T RealignerTargetCreator -R /path_refgenome/hg19.fa -I /pathtest_out/sample.sam.sorted.noDup.bam --known:dbsnp,vcf /path_dbSNP/dbsnp132_20101103_gatk.vcf -o /pathtest_out/sample.sam.sorted.noDup.bam.intervals -et NO_ET -K /pathkey/ueb_vhir.org.key  2>&1 | tee -a /pathtest_out/foo.txt
+  # java -Xmx4G -jar /path_gatk/GenomeAnalysisTKLite.jar -T RealignerTargetCreator -R /path_refgenome/hg19.fa -I /pathtest_out/sample.sam.sorted.fixmate.noDup.bam --known:dbsnp,vcf /path_dbSNP/dbsnp132_20101103_gatk.vcf -o /pathtest_out/sample.sam.sorted.fixmate.noDup.bam.intervals -et NO_ET -K /pathkey/ueb_vhir.org.key  2>&1 | tee -a /pathtest_out/foo.txt
   
   # As a refence, see also this pipeline from Alberta Children's Hospital Research Institue
   # http://achri-bioinformatics.appspot.com/Alignment_Post-processing
@@ -1264,8 +1308,8 @@ fun.gatk.local.realign.step2 <- function(file2process.my2, step.my) {
   step.my$tmp <- step.my$tmp + 1
   print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Local Realignment with GATK - Step 1: Generating interval file: ", file2process.my2, " ###\n", sep=""), file2process.my2);
   
-  file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam", sep="");
-  file_out = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.intervals", sep="");
+  file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.fixmate.noDup.bam", sep="");
+  file_out = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.fixmate.noDup.intervals", sep="");
   command00 = "java -jar "; # next command.
   # options00 = ...
   
@@ -1290,8 +1334,8 @@ fun.gatk.local.realign.step3 <- function(file2process.my2, step.my) {
   step.my$tmp <- step.my$tmp + 1
   print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Local Realignment with GATK - Step 1: Generating interval file: ", file2process.my2, " ###\n", sep=""), file2process.my2);
   
-  file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam", sep="");
-  file_out = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.intervals", sep="");
+  file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.fixmate.noDup.bam", sep="");
+  file_out = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.fixmate.noDup.intervals", sep="");
   command00 = "java -jar "; # next command.
   # options00 = ...
   
@@ -1316,7 +1360,7 @@ fun.index.bam.file <- function(file2process.my2, step.my) {
   step.my$tmp <- step.my$tmp + 1
   print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Index the bam file: ", file2process.my2, " ###\n", sep=""), file2process.my2);
   
-  file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam", sep="");
+  file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.fixmate.noDup.bam", sep="");
   #  file_out = paste(file_in, ".foo", sep="");
   command00 = "samtools"; # next command.
   options00 = paste(" index ", file_in, sep="");
@@ -1327,7 +1371,7 @@ fun.index.bam.file <- function(file2process.my2, step.my) {
   print_done(file2process.my2);
   
   # direct command line call for testing other things:
-  # samtools  index file_in.sam.sorted.noDup.bam
+  # samtools  index file_in.sam.sorted.fixmate.noDup.bam
   
   
   gc() # Let's clean ouR garbage if possible
@@ -1345,7 +1389,7 @@ fun.stats <- function(file2process.my2, step.my) {
   step.my$tmp <- step.my$tmp + 1
   print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Get some stats using the samtools [optional]: ", file2process.my2, " ###\n", sep=""), file2process.my2);
   
-  file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam", sep="");
+  file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.fixmate.noDup.bam", sep="");
   #  file_out = paste(file_in, ".foo", sep="");
   command00 = "samtools"; # next command.
   # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
@@ -1442,7 +1486,7 @@ fun.snpeff.count.reads <- function(file2process.my2, step.my) {
   step.my$tmp <- step.my$tmp + 1
   print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "a. Count Reads using snpEff: ", file2process.my2, " ###\n", sep=""), file2process.my2);
   
-  file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam", sep="");
+  file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.fixmate.noDup.bam", sep="");
   file_out = paste(file_in, ".cr.txt", sep="");
   # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
   file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
@@ -1458,10 +1502,10 @@ fun.snpeff.count.reads <- function(file2process.my2, step.my) {
   
   # Manual debugging XXX
   # file2process.my2 <- "sgs7a_merged12"
-  # file_in <- "./test_out2/sgs7a_merged12.sam.sorted.noDup.bam"
-  # file_out <- "./test_out2/sgs7a_merged12.sam.sorted.noDup.bam.cr.txt"
-  # file_in <- "./test_out/sample_a_merged12.sam.sorted.noDup.bam"
-  # file_out <- "./test_out/sample_a_merged12.sam.sorted.noDup.bam.cr.txt"
+  # file_in <- "./test_out2/sgs7a_merged12.sam.sorted.fixmate.noDup.bam"
+  # file_out <- "./test_out2/sgs7a_merged12.sam.sorted.fixmate.noDup.bam.cr.txt"
+  # file_in <- "./test_out/sample_a_merged12.sam.sorted.fixmate.noDup.bam"
+  # file_out <- "./test_out/sample_a_merged12.sam.sorted.fixmate.noDup.bam.cr.txt"
   
   print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "b0. Generate cr.table.csv using R: ", file2process.my2, " ###\n", sep=""), file2process.my2);
   
@@ -1631,7 +1675,7 @@ fun.snpeff.count.reads <- function(file2process.my2, step.my) {
   print_done(file2process.my2);
   
   # direct command line call for testing other things:
-  # java -Xmx4g -jar /home/ueb/snpEff/snpEff.jar countReads hg19 file_in.sam.sorted.noDup.bam > file_in.sam.sorted.noDup.bam.cr.txt
+  # java -Xmx4g -jar /home/ueb/snpEff/snpEff.jar countReads hg19 file_in.sam.sorted.fixmate.noDup.bam > file_in.sam.sorted.fixmate.noDup.bam.cr.txt
 
   gc() # Let's clean ouR garbage if possible
   return(step.my) # return nothing, since results are saved on disk from the system command
@@ -1839,7 +1883,7 @@ fun.variant.calling <- function(file2process.my2, step.my) {
   step.my$tmp <- step.my$tmp + 1
   print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Variant calling: ", file2process.my2, " ###\n", sep=""), file2process.my2);
   
-  file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam", sep="");
+  file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.fixmate.noDup.bam", sep="");
   file_out = paste(file_in, ".samtools.var.raw.vcf", sep="");
   command00 = "samtools"; # next command.
   
@@ -2056,8 +2100,8 @@ fun.variant.filtering <- function(file2process.my2, step.my) {
   step.my$tmp <- step.my$tmp + 1
   print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "b. Variant Filtering with vcfutils.pl (Samtools): ", file2process.my2, " ###\n", sep=""), file2process.my2);
   
-  file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam.samtools.var.raw.vcf", sep="");
-  file_out = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam.samtools.var.filtered.vcf", sep="");
+  file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.fixmate.noDup.bam.samtools.var.raw.vcf", sep="");
+  file_out = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.fixmate.noDup.bam.samtools.var.filtered.vcf", sep="");
   command00 = params$path_vcfutils ; # next command.
 
   ## This line below contain the new params set as default for the EVA pipeline, as of March 13th, 2013.
@@ -2101,7 +2145,7 @@ fun.variant.filtering <- function(file2process.my2, step.my) {
   system(command);
 
   # Report that the hard link is created
-  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "b. File alias (hardlink) .f.vcf created for .sam.sorted.noDup.bam.samtools.var.filtered.vcf: ", file2process.my2, " ###\n", sep=""), file2process.my2);
+  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "b. File alias (hardlink) .f.vcf created for .sam.sorted.fixmate.noDup.bam.samtools.var.filtered.vcf: ", file2process.my2, " ###\n", sep=""), file2process.my2);
 
   # Create also a hard link with a shorter file name that will be he base for the next processing
   # The param "prefix_path" is needed because when running with relative directories (like when doing test-mode runs),
@@ -2114,7 +2158,7 @@ fun.variant.filtering <- function(file2process.my2, step.my) {
     prefix_path <- "./"
   }
   # Set the params for the hardlink
-  from  <- paste(prefix_path, params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam.samtools.var.filtered.vcf", sep="");
+  from  <- paste(prefix_path, params$directory_out, "/", file2process.my2, ".sam.sorted.fixmate.noDup.bam.samtools.var.filtered.vcf", sep="");
   to    <- paste("", params$directory_out, "/", file2process.my2, ".f.vcf", sep="");
   # Check if hard link exists
   if ( file.exists(to) ) {
@@ -2174,8 +2218,8 @@ fun.convert2vcf4 <- function(file2process.my2, step.my) {
   step.my$tmp <- step.my$tmp + 1
   print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Convert files to Annnovar vcf4 format: ", file2process.my2, " ###\n", sep=""), file2process.my2);
   
-#  file_in =  paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam.samtools.var.filtered.vcf", sep="");
-  # Since the hard link is created already, we can use the much shorter file name for input .f.vcf instead of .sam.sorted.noDup.bam.samtools.var.filtered.vcf
+#  file_in =  paste(params$directory_out, "/", file2process.my2, ".sam.sorted.fixmate.noDup.bam.samtools.var.filtered.vcf", sep="");
+  # Since the hard link is created already, we can use the much shorter file name for input .f.vcf instead of .sam.sorted.fixmate.noDup.bam.samtools.var.filtered.vcf
   file_in =  paste(params$directory_out, "/", file2process.my2, ".f.vcf", sep="");
   file_out = paste(params$directory_out, "/", file2process.my2, ".f.vcf4", sep=""); # shorten the name a bit
   command00 = params$path_convert2annovar; # next command.
@@ -2249,8 +2293,8 @@ fun.variant.annotation.geneb <- function(file2process.my2, step.my) {
   print_done(file2process.my2);
   
   # a mà la instrucció al mainhead és:
-  # perl /home/ueb/annovar/annotate_variation.pl -geneanno --buildver hg19 /home/xavi/repo/peeva/dir_out/Gutierrez_B_Sure.sequence_m50.sam.sorted.noDup.bam.samtools.var.f.vcf4 /home/ueb/annovar/humandb/
-  # perl /home/ueb/annovar/annotate_variation.pl -geneanno --buildver hg19 /home/ueb/estudis/ngs/2011-08-SGutierrez-VHIO-207/111224_peeva_dir_out/Gutierrez_B_Sure.sequence.sam.sorted.noDup.bam.samtools.var.f.vcf4 /home/ueb/annovar/humandb/
+  # perl /home/ueb/annovar/annotate_variation.pl -geneanno --buildver hg19 /home/xavi/repo/peeva/dir_out/Gutierrez_B_Sure.sequence_m50.sam.sorted.fixmate.noDup.bam.samtools.var.f.vcf4 /home/ueb/annovar/humandb/
+  # perl /home/ueb/annovar/annotate_variation.pl -geneanno --buildver hg19 /home/ueb/estudis/ngs/2011-08-SGutierrez-VHIO-207/111224_peeva_dir_out/Gutierrez_B_Sure.sequence.sam.sorted.fixmate.noDup.bam.samtools.var.f.vcf4 /home/ueb/annovar/humandb/
   
   gc() # Let's clean ouR garbage if possible
   return(step.my) # return nothing, since results are saved on disk from the system command
@@ -2302,7 +2346,7 @@ fun.variant.annotation.filterb <- function(file2process.my2, step.my) {
   print_done(file2process.my2);
   
   # a mà la instrucció al mainhead és:
-  # perl /home/ueb/annovar/annotate_variation.pl -filter --buildver hg19 -dbtype snp132 /home/xavi/repo/peeva/dir_out/vhir_sample_a_sure_1e6.sam.sorted.noDup.bam.samtools.var.f.vcf4 /home/ueb/annovar/humandb/
+  # perl /home/ueb/annovar/annotate_variation.pl -filter --buildver hg19 -dbtype snp132 /home/xavi/repo/peeva/dir_out/vhir_sample_a_sure_1e6.sam.sorted.fixmate.noDup.bam.samtools.var.f.vcf4 /home/ueb/annovar/humandb/
   
   gc() # Let's clean ouR garbage if possible
   return(step.my) # return nothing, since results are saved on disk from the system command
@@ -2357,13 +2401,290 @@ fun.variant.annotation.summarize <- function(file2process.my2, step.my) {
   # # We don't do check2clean here  either since we will still use the .vcf.annovar file in the next steps (filtering)
   print_done(file2process.my2);
   
+  # Call to the function to fix INFO fields in columns from the csv generated by annovar
+  fun.variant.annotation.summary.call.fixcolumns( file2process.my2, step.my)
+  
   # a mà la instrucció al mainhead és:
-  # perl /home/ueb/annovar/summarize_annovar.pl --buildver hg19  --verdbsnp 137 /home/xavi/repo/peeva/dir_out/vhir_sample_a_sure_1e6.sam.sorted.noDup.bam.samtools.var.f.vcf4 /home/ueb/annovar/humandb/ --outfile sample_a_sure_sum
+  # perl /home/ueb/annovar/summarize_annovar.pl --buildver hg19  --verdbsnp 137 /home/xavi/repo/peeva/dir_out/vhir_sample_a_sure_1e6.sam.sorted.fixmate.noDup.bam.samtools.var.f.vcf4 /home/ueb/annovar/humandb/ --outfile sample_a_sure_sum
   
   gc() # Let's clean ouR garbage if possible
   return(step.my) # return nothing, since results are saved on disk from the system command
 }
 
+
+##########################
+### FUNCTION fun.split.csv.info.varN.fields
+###
+###   Edit one variable with n (e.g. 4) values into n (four) variables with one value each
+###   Arguments:
+###     string.my: variable such as DP4 or VP4 with 4 values to be splited, or others with less
+###     tmp.my: vector with the contents where DP4, VP4, etc can be found
+###     nfields.my: number of values inside the contents (usually either 2, 3 or 4)
+###     
+##########################
+
+fun.split.csv.info.varN.fields <- function(string.my, tmp.my, nfields.my) { 
+  
+  # Manual debugging
+  # tmp.my <- as.character(unlist(strsplit(raw.df[1], ";")))
+  # string.my <- "PV4"
+  # string.my <- "PC2"
+  # tmp.my <- tmp
+  # nfields.my <- "2"
+  # ensure that nfields.my is treated as number
+  nfields.my <- as.numeric(nfields.my)
+  
+  # Split DP4 and VP4 into four columns to allow fine grained filtering on the spreadsheet by the researcher
+  # Get their indexes if found
+  varN.tmp.idx <- grep(string.my, tmp.my) # for instance, string.my <- "DP4"
+  
+  #  Check if the variable is found. Otherwise, skip.
+  if ( length(varN.tmp.idx) > 0) {
+    
+    # Split content in two (left of =, and right of =)
+    varN.tmp <- as.character(unlist(strsplit(tmp.my[varN.tmp.idx], "=")))
+    # SPlit value in as many as the value of the param nfields.my
+    varN.tmp.values <- unlist(strsplit(as.character(varN.tmp[2]), ","))
+    varN.tmp.labels <- paste(string.my, ".", 1:nfields.my, "=", sep="")
+  
+    #cat("\nvarN.tmp.idx: ")
+    #cat(varN.tmp.idx)
+    #cat("\n")
+    
+    # prepare the 3 pieces to be joined later
+    if (varN.tmp.idx > 1) {
+      varN.tmp.a <- tmp.my[1:(varN.tmp.idx-1)]
+      } else if (varN.tmp.idx == 1) { # The first value
+      varN.tmp.a <- tmp.my[1]
+      }
+    
+      varN.tmp.b <- paste(varN.tmp.labels, varN.tmp.values, sep="" )
+    
+      if (length(tmp.my) != as.numeric(varN.tmp.idx)) {
+        # It was not the last value, add the remaining columns at the end
+        varN.tmp.c <- tmp.my[as.numeric(varN.tmp.idx+1) : as.numeric(length(tmp.my))]
+      } else {
+        # It was the last value; don't add anything at the end
+        varN.tmp.c <- NULL
+      }
+  
+    # Assign the new content (splitted by columns) to tmp again for further processing 
+    tmp.my <- c(varN.tmp.a, varN.tmp.b, varN.tmp.c)
+  }
+  
+
+  # Return results
+  return(tmp.my)
+  
+}
+
+##########################
+### FUNCTION fun.split.csv.info.fields
+###
+###   Split the contents in the INFO field of the csv files produced by samtools 
+###   so that each variable is splitted into one column and the value of the variable its value in that cell
+###
+###   Arguments:
+###     s.my: character to split strings by (usually, "=")
+###     v.my: vector (from the source data frame) to be converted into values
+###     x.my: data frame with all values to be saved to, once splitted by variables
+###     n.my: number of elements in the dataframe to be processed one by one (vector by vector) 
+###     m.my: number of variables=value in the string to split by semicolon
+###     
+##########################
+
+fun.split.csv.info.fields <- function(raw.df, s.my, n.my, x.my, m.my) { 
+  
+  # Manual debugging
+  # raw.df <- f2p.se$V35
+  # s.my <- "="
+  # n.my <- n
+  # m.my <- m
+  # x.my <- x
+  # i<- 1
+  
+  # Convert the contents of the data frame from factors into text
+  raw.df <- as.character(raw.df)
+  
+  # If there are indels ("INDEL;"), replace with "INDEL=1".
+  raw.df <- gsub("INDEL;", "INDEL=1;", raw.df, ignore.case = FALSE, fixed=TRUE)
+  
+  # Loop to process the whole data frame
+  for (i in 1:n.my) {
+    
+    # Manual debugging 
+    # raw.df <- as.character(f2p.se$V35)
+    #cat("\nn.my: ")
+    #cat(n.my)
+    #cat("\n")
+    # s.my <- "="
+    # i<- 1
+    # i <- i +1
+    
+    # First, split by semicolon
+    tmp <- as.character(unlist(strsplit(raw.df[i], ";")))
+    
+    #length(tmp)
+    tmp <- fun.split.csv.info.varN.fields("DP4", tmp, nfields=4)
+    tmp <- fun.split.csv.info.varN.fields("PV4", tmp, nfields=4)
+    tmp <- fun.split.csv.info.varN.fields("G3", tmp, nfields=3)
+    tmp <- fun.split.csv.info.varN.fields("PC2", tmp, nfields=2)
+    
+    
+    # Then, split by the character which divides the variable and the value (usually var=value, therefore s.my: "=")
+    tmp <- strsplit(tmp, s.my)
+    
+    ## Four ways to convert a list into a data frame
+    # http://stackoverflow.com/questions/4227223/r-list-to-data-frame
+    ## (1) Convert the list into a data frame. Titles are weird
+    #do.call(rbind.data.frame, tmp)
+    ## (2) This doesn't work as expected. http://stackoverflow.com/questions/4227223/r-list-to-data-frame
+    #library(plyr)
+    #tmp <- ldply(tmp, data.frame)
+    # (3) This works fine, even if will be difficult to remember, maybe
+    #tmp <- data.frame(matrix(unlist(tmp), nrow=m.my, byrow=T))
+    # (4) This also works fine (c seems to be a function to display the contents???)
+    # and maybe is the most intuitive or easy to remember (If I succeed to remember the "c" function)
+    tmp <- data.frame(t(sapply(tmp, c)))
+    
+    etiq <- tmp[1]
+    valor <- tmp[2]
+    #length(tmp)
+    #Manual debugging
+    # m.my <- m
+    # i <- 1 # Rows
+    # j # Columns
+    for (j in 1:nrow(etiq)) {
+      #Manual debugging
+      # j <-1
+      #j <- j+1
+      #x.my["DP"][i,1]
+      x.my[as.character(etiq[j,1])][i,1] <- as.numeric(as.character(valor[j,1]))
+      #x.my
+    }
+  } # end of for loop
+  return  (x.my) 
+}  # end fo function
+
+##########################
+### FUNCTION fun.variant.annotation.summary.call.fixcolumns
+###
+###   Call the function to fix INFO Field colums, from the csv files produced by Annovar (summarize_annovar.pl) in a previous step, 
+###     so that OTHER INFO is split in columns filterable from simple spreadsheets by the researcher
+###     
+##########################
+
+fun.variant.annotation.summary.call.fixcolumns <- function(file2process.my2, step.my) {
+  
+  # update step number
+  step.my$tmp <- step.my$tmp + 1
+  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Call the fixing of INFO columns for both genome and exome csv files from annovar: ", file2process.my2, " ###\n", sep=""), file2process.my2);
+  
+  # Fix INFO cols for exome_summary csv file
+  file_in1 = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.sum.exome_summary.csv", sep=""); 
+  file_out1 = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.sum.colsfixed.exome_summary.csv", sep="");
+  fun.variant.annotation.summary.fixcolumns(file2process.my2, step.my, file_in1, file_out1)
+  
+  # Fix INFO cols for genome_summary csv file
+  file_in2 = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.sum.genome_summary.csv", sep=""); 
+  file_out2 = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.sum.colsfixed.genome_summary.csv", sep="");
+  fun.variant.annotation.summary.fixcolumns(file2process.my2, step.my, file_in2, file_out2)
+  
+  # # We don't do check2clean here  either since we will still use the .vcf.annovar file in the next steps (filtering)
+  print_done(file2process.my2);
+  
+  gc() # Let's clean ouR garbage if possible
+  return(step.my) # return nothing, since results are saved on disk from the system command
+}
+
+
+##########################
+### FUNCTION fun.variant.annotation.summary.fixcolumns
+###
+###   Edit the csv files produced by Annovar (summarize_annovar.pl) in a previous step, 
+###     so that OTHER INFO is split in columns filterable from simple spreadsheets by the researcher
+###     
+##########################
+
+fun.variant.annotation.summary.fixcolumns <- function(file2process.my2, step.my, file_in.my, file_out.my) {
+  
+  ## Manual debugging
+  # params$directory_out <- "/home/ueb/repo/peeva/test_out2"
+  # file2process.my2 <- "sgs7a_merged12"
+  # step.my <- step
+  # step.my$tmp <- "2"
+  # params$log.folder <- params$directory_out
+  # params$startdate <- "130417"
+  # params$opt$label <- "foo"
+  
+  # update step number
+  step.my$tmp <- step.my$tmp + 1
+  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Generate the annovar csv file with INFO columns fixed): ", file2process.my2, " ###\n", sep=""), file2process.my2);
+  
+  # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
+  file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
+
+  # load the file created as file2process.sum.edition (aka: f2p.sr)
+  f2p.se <- read.csv(file_in.my, header=F, skip=1)
+
+  # Do all the processing only if there is some data to process. To avoid the program to break when snpEff fails to count reads
+  # dues to the issues with "MAPQ should be zero for unmmaped reads", etc. 
+  if (length(f2p.se) > 0) {
+    
+    # Load the header, add missing column names with default names so far, and assign them as column names
+    f2p.se.header.ini <- readLines(file(file_in.my), 1); close(file(file_in.my))
+    f2p.se.header.ini <- unlist(strsplit(f2p.se.header.ini, ","))
+    f2p.se.header.end <- paste("V", (length(f2p.se.header.ini)+1):length(f2p.se), sep="")
+    f2p.se.header <- c(f2p.se.header.ini, f2p.se.header.end)
+    colnames(f2p.se) <- f2p.se.header
+    
+    #f2p.se$V35
+    #length(f2p.se$V35)
+    V38 <- strsplit(as.character(f2p.se$V35), ";")
+    n <- length(V38)
+    
+    # Calculate the number "m" of columns in the specific vector to process right now
+    m <- max(sapply(V38, length))
+
+    # Create the data.frame as place holder of results, for the 18 potential columns in the vcf generated by samtools.
+    x <- as.data.frame(matrix(0, n, ncol=27))   
+    
+    # ToDo: extend the list of potential column names
+    colnames(x) <- c("DP", "DP4.1", "DP4.2", "DP4.3", "DP4.4",
+                     "MQ", "FQ", "AF1", "AC1", "G3.1", "G3.2", "G3.3", 
+                     "HWE", "CLR", "UGT", "CGT", 
+                     "PV4.1","PV4.2","PV4.3","PV4.4",
+                     "INDEL", "PC2.1", "PC2.2", "PCHI2", "QCHI2", "PR", "VDB")
+    
+    x <- fun.split.csv.info.fields(f2p.se$V35, "=", n, x, m)
+    
+    # Replace column 35 by its contents splitted in one column per variable
+    f2p.se.a <- f2p.se[,1:34] # First part
+    f2p.se.b <- x # Second part
+    f2p.se.c <- f2p.se[,36: ncol(f2p.se)] # Third part
+    # Re-assign everything to the file to process
+    f2p.se <- cbind(f2p.se.a, f2p.se.b, f2p.se.c)
+    
+    colnames(f2p.se)[28:34] <- c("CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER")
+    
+    # I remove the warning messages from this call (below) because of the coercion type of message (harmless, afaik, but annoying and polluting output in log files)
+    # Write the rest: all data without column names
+    write.table(f2p.se, file=file_out.my, append=F, quote=T, sep=",", row.names=F, col.names=T)
+    #write.ftable(f2p.cr.table, file=file_out.table, append=T, quote=T)
+    
+  } else {
+    print_mes("XXX Reading the csv file failed.", file2process.my2)
+  }
+  
+  # # We don't do check2clean here  either since we will still use the .vcf.annovar file in the next steps (filtering)
+  print_done(file2process.my2);
+  
+  # a mà la instrucció al mainhead és:
+  # perl /home/ueb/annovar/summarize_annovar.pl --buildver hg19  --verdbsnp 137 /home/xavi/repo/peeva/dir_out/vhir_sample_a_sure_1e6.sam.sorted.fixmate.noDup.bam.samtools.var.f.vcf4 /home/ueb/annovar/humandb/ --outfile sample_a_sure_sum
+  
+  gc() # Let's clean ouR garbage if possible
+  return(step.my) # return nothing, since results are saved on disk from the system command
+}
 
 ##########################
 ### FUNCTION fun.grep.variants
@@ -2391,8 +2712,8 @@ fun.grep.variants <- function(file2process.my2, step.my) {
       #######################
       # 1st part- sample.*.exome_summary.csv
       #-------------------------------
-      file_in_g_csv  = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.sum.genome_summary.csv", sep=""); # summarize_annovar.pl adds the extension .genome_summary.csv (hardcoded in annovar).
-      file_out_g_csv = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.sum.genome_summary.fg.csv", sep=""); 
+      file_in_g_csv  = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.sum.colsfixed.genome_summary.csv", sep=""); # summarize_annovar.pl adds the extension .genome_summary.csv (hardcoded in annovar).
+      file_out_g_csv = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.sum.colsfixed.my_genes.genome_summary.csv", sep=""); 
       command01 = "head -1";
       command02 = command00;
       options01 = paste(" ", file_in_g_csv, " > ", file_out_g_csv, sep="");
@@ -2401,8 +2722,8 @@ fun.grep.variants <- function(file2process.my2, step.my) {
       #######################
       # 2nd - sample.*.exome_summary.csv
       #-------------------------------
-      file_in_e_csv  = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.sum.exome_summary.csv", sep=""); # summarize_annovar.pl adds the extension .exome_summary.csv (hardcoded in annovar).
-      file_out_e_csv = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.sum.exome_summary.fg.csv", sep=""); 
+      file_in_e_csv  = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.sum.colsfixed.exome_summary.csv", sep=""); # summarize_annovar.pl adds the extension .exome_summary.csv (hardcoded in annovar).
+      file_out_e_csv = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.sum.colsfixed.my_genes.exome_summary.csv", sep=""); 
       command03 = "head -1";
       command04 = command00;
       options03 = paste(" ", file_in_e_csv, " > ", file_out_e_csv, sep="");
@@ -2512,8 +2833,8 @@ fun.variant.fii.pre.snpeff <- function(file2process.my2, step.my) {
   
   # Example of process in the command line
   #   java -jar SnpSift.jar intidx variants.vcf my_genes.bed > variants_intersecting_intervals.vcf
-#  file_in  = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam.samtools.var.filtered.vcf", sep=""); 
-  # Since the hard link is created already, we can use the much shorter file name for input .f.vcf instead of .sam.sorted.noDup.bam.samtools.var.filtered.vcf
+#  file_in  = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.fixmate.noDup.bam.samtools.var.filtered.vcf", sep=""); 
+  # Since the hard link is created already, we can use the much shorter file name for input .f.vcf instead of .sam.sorted.fixmate.noDup.bam.samtools.var.filtered.vcf
   file_in =  paste(params$directory_out, "/", file2process.my2, ".f.vcf", sep="");
   file_out = paste(params$directory_out, "/", file2process.my2, ".f.my_genes.vcf", sep="");
   # "ssfii" stands for SnpSift Filtered Interseting Intervals. But was later renamed to "my_genes"
@@ -2628,8 +2949,8 @@ fun.variant.filter.pre.snpeff <- function(file2process.my2, step.my) {
 
   # Example of process in the command line
   #   java -jar SnpSift.jar annotate -v dbSnp.vcf.gz file.vcf > file.dbSnp.vcf
-#  file_in  = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam.samtools.var.filtered.vcf", sep=""); 
-  # Since the hard link is created already, we can use the much shorter file name for input .f.vcf instead of .sam.sorted.noDup.bam.samtools.var.filtered.vcf
+#  file_in  = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.fixmate.noDup.bam.samtools.var.filtered.vcf", sep=""); 
+  # Since the hard link is created already, we can use the much shorter file name for input .f.vcf instead of .sam.sorted.fixmate.noDup.bam.samtools.var.filtered.vcf
   file_in =  paste(params$directory_out, "/", file2process.my2, ".f.vcf", sep="");
   file_out = paste(params$directory_out, "/", file2process.my2, ".f.ssann.vcf", sep=""); 
   # "ssann" in "...filtered.ssann.vcf" stands for annotated (ann) by SnpSift (ss)
@@ -2826,12 +3147,12 @@ fun.grep.pre.snpeff.report <- function(file2process.my2, step.my) {
     # 1st part - sample.*.snpEff.[params$opt$snpeff.of] (= .vcf, .txt, ...)
     #-------------------------------
 #    file_in  = paste(params$directory_out, "/", file2process.my2, ".f.ssann.eff.vcf", sep=""); 
-#    file_out = paste(params$directory_out, "/", file2process.my2, ".f.ssann.eff.fg.vcf", sep=""); 
+#    file_out = paste(params$directory_out, "/", file2process.my2, ".f.ssann.eff.my_genes.vcf", sep=""); 
 
-#    file_in  = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam.samtools.var.filtered.vcf", sep=""); 
-    # Since the hard link is created already, we can use the much shorter file name for input .f.vcf instead of .sam.sorted.noDup.bam.samtools.var.filtered.vcf
+#    file_in  = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.fixmate.noDup.bam.samtools.var.filtered.vcf", sep=""); 
+    # Since the hard link is created already, we can use the much shorter file name for input .f.vcf instead of .sam.sorted.fixmate.noDup.bam.samtools.var.filtered.vcf
     file_in =  paste(params$directory_out, "/", file2process.my2, ".f.vcf", sep="");
-    file_out = paste(params$directory_out, "/", file2process.my2, ".f.fg.vcf", sep=""); 
+    file_out = paste(params$directory_out, "/", file2process.my2, ".f.my_genes.vcf", sep=""); 
     command00 = "grep -P"; # next command.
     options00 = paste(" '", params$opt$filter,"' ", file_in, " > ", file_out, sep="");
     # Remember that the values in the previous opt$filter variable needs to be like: 'BRCA1\|BRCA2' 
@@ -2959,8 +3280,8 @@ fun.variant.eff.report <- function(file2process.my2, step.my) {
  # ---------------------------
  print_doc(paste("    Substep ", step.my$n, ".", step.my$tmp, "b). Report using snpEff with the whole list of genes: ", file2process.my2, " ###\n", sep=""), file2process.my2);
   
-#  file_in  = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.noDup.bam.samtools.var.filtered.vcf", sep=""); 
-  # Since the hard link is created already, we can use the much shorter file name for input .f.vcf instead of .sam.sorted.noDup.bam.samtools.var.filtered.vcf
+#  file_in  = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.fixmate.noDup.bam.samtools.var.filtered.vcf", sep=""); 
+  # Since the hard link is created already, we can use the much shorter file name for input .f.vcf instead of .sam.sorted.fixmate.noDup.bam.samtools.var.filtered.vcf
   file_in =  paste(params$directory_out, "/", file2process.my2, ".f.vcf", sep="");
   file_out = paste(params$directory_out, "/", file2process.my2, ".f.snpEff.", params$opt$snpeff.of, sep=""); 
   file_out_base = paste(params$directory_out, "/", file2process.my2, ".f.snpEff", sep="");     
@@ -3019,7 +3340,7 @@ fun.grep.post.snpeff.report <- function(file2process.my2, step.my) {
     # 1st part - sample.*.snpEff.[params$opt$snpeff.of] (= .vcf, .txt, ...)
     #-------------------------------
     file_in  = paste(params$directory_out, "/", file2process.my2, ".f.snpEff.", params$opt$snpeff.of, sep=""); 
-    file_out = paste(params$directory_out, "/", file2process.my2, ".f.snpEff.fg.", params$opt$snpeff.of, sep=""); 
+    file_out = paste(params$directory_out, "/", file2process.my2, ".f.snpEff.my_genes.", params$opt$snpeff.of, sep=""); 
     command00 = "grep -P"; # next command.
     options00 = paste(" '", params$opt$filter,"' ", file_in, " > ", file_out, sep="");
     # Remember that the values in the previous opt$filter variable needs to be like: 'BRCA1\|BRCA2' 
@@ -3042,7 +3363,7 @@ fun.grep.post.snpeff.report <- function(file2process.my2, step.my) {
     # 2nd part- sample.*.snpEff_summary.genes.txt
     #-------------------------------
     file_in  = paste(params$directory_out, "/", file2process.my2, ".f.snpEff_summary.genes.txt", sep=""); 
-    file_out = paste(params$directory_out, "/", file2process.my2, ".f.snpEff_summary.genes.fg.txt", sep=""); 
+    file_out = paste(params$directory_out, "/", file2process.my2, ".f.snpEff_summary.genes.my_genes.txt", sep=""); 
     # Redo the filter from the clean list of genes, and splitted with "\|" when in the command line
     # therefore, they need to be splitted with '\\|' here in R.
     filter.c2 <- gsub(" ", "\\|", params$opt$filter.c, fixed=TRUE)
