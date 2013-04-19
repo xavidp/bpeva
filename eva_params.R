@@ -27,7 +27,7 @@
 # ----------------------
 # (See also http://ueb.vhir.org/PendentsEVA )
 ##
-## * investigate issue with pcr duplicates not being removed by samtools. See it here, for instaace, for the same testset:
+## * [FIXED] investigate issue with pcr duplicates not being removed by samtools. See it here, for instance, for the same testset:
 ##    load in igv the test bam files and search for for this snp in brca1: chr17:41,196,307-41,197,202
 ##
 ## * April 16th, 2013. Variant Filtering bug:
@@ -163,9 +163,10 @@ if (p_test==1) {
   p_in.ext    <- ".sam" #".fastq" # ".fa" ".sam" ".bam" # This is the .extension of all files used as input for the pipeline to process
   p_output   <- "test_out2" #"/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a3b" #"test_out2" # "../test_out2" # "test_out"
   p_f_my_rs  <- "file_my_rs.txt" # In p_input. Needed by SnpEff to filter for the target genes before the report (well, filter for the potential snp rs codes in those genes)
-  p_label    <- "test2_15" #"testrunGATK1" # "testsnpEffCountReads_a" "test-121002" # "test-foo"        # Run Label for output filenames
+  p_label    <- "test2_16" #"testrunGATK1" # "testsnpEffCountReads_a" "test-121002" # "test-foo"        # Run Label for output filenames
   p_desc     <- "Testing run
-                        test2_15: Test the new function to mark duplicates with Picard, prior to removal by samtools rmdup"
+                        test2_16: Test the param to filter by read base quality (Q) at the variant calling process"
+  #                      test2_15: Test the new function to mark duplicates with Picard, prior to removal by samtools rmdup"
   #                      test2_14: Test the new functions to fix INFO fields in splitted columns from csv files from anovar"
   #                      test2_13: Skipped testing the new functions to write the html report (for te time being). 
   #                                Testing samtools remove pcr dups"
@@ -365,15 +366,14 @@ params_wseq <- list(
 runParam <- FALSE #######################
 ####
 p_quality.control             <- runParam
-#####
-runParam <- FALSE #######################
-####
 p_bowtie2sam                  <- runParam
-p_sam2bam.and.sort		        <- runParam
-p_samtools.fixmate            <- runParam
 #####
 runParam <- TRUE #######################
 ####
+p_sam2bam.and.sort		        <- runParam
+                  # This step might not be needed, and in addition, it breaks variant calling!
+                  p_samtools.fixmate            <- FALSE
+                  # Keep p_samtools.fixmate as FALSE until further notice 
 p_picard.mark.dup             <- runParam # Testing the function first
 p_remove.pcr.dup  	          <- runParam # Not using the mark duplicates output yet (Testing phase still)
 p_index.bam.file  	          <- runParam
@@ -385,6 +385,9 @@ p_gatk.sortbyref              <- FALSE # runParam # Not working properly yet. Er
 p_gatk.local.realign.step1    <- FALSE # TRUE # FALSE # runParam
 p_gatk.local.realign.step2    <- FALSE # runParam # Unfinished work
 p_gatk.local.realign.step3    <- FALSE # runParam # Unfinished work
+#####
+runParam <- TRUE #######################
+####
 p_variant.calling		          <- runParam
 p_variant.filtering		        <- runParam
 #####
