@@ -1148,12 +1148,12 @@ fun.samtools.fixmate <- function(file2process.my2, step.my) {
 
 
 ##########################
-### FUNCTION fun.pìcard.mark.dup
+### FUNCTION fun.picard.mark.dup
 ###
 ###   Mark duplicates with Picard
 ##########################
 
-fun.pìcard.mark.dup <- function(file2process.my2, step.my) {
+fun.picard.mark.dup <- function(file2process.my2, step.my) {
   # update step number
   step.my$tmp <- step.my$tmp + 1
   print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Mark duplicates using Picard: ", file2process.my2, " ###\n", sep=""), file2process.my2);

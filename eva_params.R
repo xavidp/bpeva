@@ -374,7 +374,7 @@ p_samtools.fixmate            <- runParam
 #####
 runParam <- TRUE #######################
 ####
-p_pìcard.mark.dup             <- runParam # Testing the function first
+p_picard.mark.dup             <- runParam # Testing the function first
 p_remove.pcr.dup  	          <- runParam # Not using the mark duplicates output yet (Testing phase still)
 p_index.bam.file  	          <- runParam
 p_stats			                  <- runParam
@@ -425,7 +425,7 @@ params_w2pps <- list(
   p_bowtie2sam                        = p_bowtie2sam,
   p_sam2bam.and.sort                  = p_sam2bam.and.sort,
   p_samtools.fixmate                  = p_samtools.fixmate,
-  p_pìcard.mark.dup                   = p_pìcard.mark.dup,
+  p_picard.mark.dup                   = p_picard.mark.dup,
   p_remove.pcr.dup                    = p_remove.pcr.dup,
   p_gatk.sortbyref                    = p_gatk.sortbyref,
   p_gatk.local.realign.step1          = p_gatk.local.realign.step1,
