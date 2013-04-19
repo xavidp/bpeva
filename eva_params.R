@@ -163,9 +163,10 @@ if (p_test==1) {
   p_in.ext    <- ".sam" #".fastq" # ".fa" ".sam" ".bam" # This is the .extension of all files used as input for the pipeline to process
   p_output   <- "test_out2" #"/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a3b" #"test_out2" # "../test_out2" # "test_out"
   p_f_my_rs  <- "file_my_rs.txt" # In p_input. Needed by SnpEff to filter for the target genes before the report (well, filter for the potential snp rs codes in those genes)
-  p_label    <- "test2_14" #"testrunGATK1" # "testsnpEffCountReads_a" "test-121002" # "test-foo"        # Run Label for output filenames
+  p_label    <- "test2_15" #"testrunGATK1" # "testsnpEffCountReads_a" "test-121002" # "test-foo"        # Run Label for output filenames
   p_desc     <- "Testing run
-                        test2_14: Test the new functions to fix INFO fields in splitted columns from csv files from anovar"
+                        test2_15: Test the new function to mark duplicates with Picard, prior to removal by samtools rmdup"
+  #                      test2_14: Test the new functions to fix INFO fields in splitted columns from csv files from anovar"
   #                      test2_13: Skipped testing the new functions to write the html report (for te time being). 
   #                                Testing samtools remove pcr dups"
   #                      test2_12: Testing the new functions to write the html report. 
@@ -369,11 +370,12 @@ runParam <- FALSE #######################
 ####
 p_bowtie2sam                  <- runParam
 p_sam2bam.and.sort		        <- runParam
-#####
-runParam <- FALSE #######################
-####
 p_samtools.fixmate            <- runParam
-p_remove.pcr.dup		          <- runParam
+#####
+runParam <- TRUE #######################
+####
+p_pìcard.mark.dup             <- runParam # Testing the function first
+p_remove.pcr.dup  	          <- runParam # Not using the mark duplicates output yet (Testing phase still)
 p_index.bam.file  	          <- runParam
 p_stats			                  <- runParam
 #####
@@ -386,7 +388,7 @@ p_gatk.local.realign.step3    <- FALSE # runParam # Unfinished work
 p_variant.calling		          <- runParam
 p_variant.filtering		        <- runParam
 #####
-runParam <- TRUE #######################
+runParam <- FALSE #######################
 ####
 p_gatk.combine.vcfs           <- FALSE # runParam # Non-started work (place holder only)
 p_convert2vcf4		            <- runParam
@@ -423,6 +425,7 @@ params_w2pps <- list(
   p_bowtie2sam                        = p_bowtie2sam,
   p_sam2bam.and.sort                  = p_sam2bam.and.sort,
   p_samtools.fixmate                  = p_samtools.fixmate,
+  p_pìcard.mark.dup                   = p_pìcard.mark.dup,
   p_remove.pcr.dup                    = p_remove.pcr.dup,
   p_gatk.sortbyref                    = p_gatk.sortbyref,
   p_gatk.local.realign.step1          = p_gatk.local.realign.step1,
@@ -513,7 +516,8 @@ if (p_server==1) { # MainHead server
   path_gatk = "/home/ueb/GenomeAnalysisTKLite-2.3-4-gb8f1308/GenomeAnalysisTKLite.jar" # end with the jar file since it can be lite or not
   path_gatk_key = "/home/ueb/GenomeAnalysisTKLite-2.3-4-gb8f1308/ueb_vhir.org.key" # key to avoid gatk 'calling home' (to gatk authors) on each run. See http://gatkforums.broadinstitute.org/discussion/1250/what-is-phone-home-and-how-does-it-affect-me
   path_gatk_sortbyref = "/home/ueb/Data/gatk-data-2.3/SortByRef.pl" # see http://gatkforums.broadinstitute.org/discussion/1328/script-for-sorting-an-input-file-based-on-a-reference-sortbyref-pl
-
+  path_picard = "/home/ueb/software/picard/picard-tools-1.89/MarkDuplicates.jar"           
+      
 } else if (p_server==2) { # B52 server
     
   path_fastq = "/home/ueb/software/FastQC/fastqc"
@@ -527,6 +531,7 @@ if (p_server==1) { # MainHead server
   path_snpEff = "/home/ueb/snpEff/" # end with trailing slash but no script, since the same folder is used for several files           
   path_gatk = "/home/ueb/GenomeAnalysisTKLite-2.3-4-gb8f1308/GenomeAnalysisTKLite.jar" # end with the jar file since it can be lite or not
   path_gatk_key = "/home/ueb/GenomeAnalysisTKLite-2.3-4-gb8f1308/ueb_vhir.org.key" # key to avoid gatk 'calling home' (to gatk authors) on each run. See http://gatkforums.broadinstitute.org/discussion/1250/what-is-phone-home-and-how-does-it-affect-me
+  path_picard = "/home/ueb/software/picard/picard-tools-1.89/MarkDuplicates.jar"           
   path_dbSNP1 = "/home/ueb/Data/dbSNP/dbsnp132_20101103.vcf"
   path_dbSNP = path_dbSNP1
   path_exon_capture_file1 = "/home/ueb/Data/BED/TruSeq_exome_targeted_regions.hg19.bed.chr"

@@ -98,6 +98,7 @@ wrapper2.parallelizable.per.sample <- function(datastep.my2) {
   bowtie2sam                        <- params_w2pps$p_bowtie2sam
   sam2bam.and.sort	 	              <- params_w2pps$p_sam2bam.and.sort
   samtools.fixmate                  <- params_w2pps$p_samtools.fixmate
+  pìcard.mark.dup                   <- params_w2pps$p_pìcard.mark.dup
   remove.pcr.dup		                <- params_w2pps$p_remove.pcr.dup
   gatk.sortbyref                    <- params_w2pps$p_gatk.sortbyref
   gatk.local.realign.step1          <- params_w2pps$p_gatk.local.realign.step1
@@ -284,7 +285,13 @@ wrapper2.parallelizable.per.sample <- function(datastep.my2) {
     step <- fun.samtools.fixmate(file2process.my2  = file2process.my1,
                                step.my  = step)
   }
-
+  
+  if (pìcard.mark.dup) {
+    # Next Step
+    step <- fun.pìcard.mark.dup(file2process.my2  = file2process.my1,
+                               step.my  = step)
+  }
+  
   if (remove.pcr.dup) {
     # Next Step
     step <- fun.remove.pcr.dup(file2process.my2  = file2process.my1,

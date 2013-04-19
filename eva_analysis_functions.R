@@ -1146,6 +1146,43 @@ fun.samtools.fixmate <- function(file2process.my2, step.my) {
   return(step.my) # return nothing, since results are saved on disk from the system command
 }
 
+
+##########################
+### FUNCTION fun.pìcard.mark.dup
+###
+###   Mark duplicates with Picard
+##########################
+
+fun.pìcard.mark.dup <- function(file2process.my2, step.my) {
+  # update step number
+  step.my$tmp <- step.my$tmp + 1
+  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Mark duplicates using Picard: ", file2process.my2, " ###\n", sep=""), file2process.my2);
+  
+  file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.fixmate.bam", sep="");
+  file_out = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.fixmate.dupmarked.bam", sep="");
+  file_metrics = paste(params$directory_out, "/", file2process.my2, ".bam.metrics.txt", sep="");
+  # java -jar ${picard_dir}/MarkDuplicates.jar I=${name}_bwa.bam O=${name}_bwa_dedup.bam M=${name}_bwa_dedup_metrics.txt
+  command00 = " java  -Xmx4g -jar "; # next command.
+  # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
+  file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
+  
+  options00 = paste(" ", params$path_picard, " I=", file_in, " O=", file_out, " M=", file_metrics, 
+                    "  REMOVE_DUPLICATES=false  AS=true ", " 2>> ", file_stderr, sep="");
+  # AS=true tells picard to assume that the bam file is coordinate sorted.
+  command = paste(command00, " ", options00, sep="");
+  check2showcommand(params$opt$showc, command, file2process.my2);
+  system(command);
+  check2clean(file_in, file2process.my2);
+  print_done(file2process.my2);
+  
+  # direct command line call for testing other things:
+  # samtools  rmdup -s file_in.sam.sorted.bam file_in.sam.sorted.fixmate.dupmarked.noDup.bam
+  
+  
+  gc() # Let's clean ouR garbage if possible
+  return(step.my) # return nothing, since results are saved on disk from the system command
+}
+
 ##########################
 ### FUNCTION fun.remove.pcr.dup
 ###
@@ -1159,8 +1196,8 @@ fun.remove.pcr.dup <- function(file2process.my2, step.my) {
   step.my$tmp <- step.my$tmp + 1
   print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Remove possible PCR duplicates: ", file2process.my2, " ###\n", sep=""), file2process.my2);
   
-  file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.fixmate.bam", sep="");
-  file_out = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.fixmate.noDup.bam", sep="");
+  file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.fixmate.dupmarked.bam", sep="");
+  file_out = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.fixmate.dupmarked.noDup.bam", sep="");
   command00 = "samtools"; # next command.
   ###   -s   Remove duplicate for single-end reads. By default, the command works for paired-end reads only.
   ###   -S   Treat paired-end reads as single-end reads.
@@ -1169,8 +1206,23 @@ fun.remove.pcr.dup <- function(file2process.my2, step.my) {
   if ( (params$opt$bwa == 1) || (params$opt$bwa == 3) ) {
     rmdup.param <- " -s " # Case for single end
   } else if (params$opt$bwa == 2) {
-        rmdup.param <- " -S " # Case for paired end, treating reads as single end. Otherwise, it doesn't work with samtools rmdup
-    # rmdup.param <- " " # Case for paired end, in theory, to remove dups as paired end. But it doesn't work.
+    # In theory we could use no param (for paired end data) or param -S to tread reads as single end.
+    # Which as the consequences of doing so?:
+    ##
+    ##  Quote From http://seqanswers.com/forums/showpost.php?p=101616&postcount=3
+    ##
+    ##  "If you have one pair of reads where read 1 starts at position 100, and the other end starts at position 200, 
+    ##   and a second pair of reads where read 1 starts at position 100, and read 2 starts at position 250, 
+    ##   those came from different fragments of DNA. You can tell because the read 2 start is different, 
+    ##   even though the read 1 start is the same.
+    ##
+    ##   When treating the reads as paired end, none of those reads should be deleted as PCR duplicates.
+    ##   However, if you ran rmdup -S, the software will not check to see if read 2 has a different start coordinate, 
+    ##   so one of those read 1 reads will be treated as a duplicate, and deleted."
+    ##
+    
+    #rmdup.param <- " -S " # Case for paired end, treating reads as single end. Otherwise, it doesn't work with samtools rmdup
+    rmdup.param <- " " # Case for paired end, in theory, to remove dups as paired end. But it doesn't work.
   } else {
     cat("\n\nn[ERROR] Wrong value in param opt$bwa or p_bwa. Only values 1, 2 or 3 are allowed\n\n")
   }
@@ -1183,7 +1235,7 @@ fun.remove.pcr.dup <- function(file2process.my2, step.my) {
   print_done(file2process.my2);
 
   # direct command line call for testing other things:
-  # samtools  rmdup -s file_in.sam.sorted.bam file_in.sam.sorted.fixmate.noDup.bam
+  # samtools  rmdup -s file_in.sam.sorted.bam file_in.sam.sorted.fixmate.dupmarked.noDup.bam
   
   
   gc() # Let's clean ouR garbage if possible
@@ -1252,8 +1304,8 @@ fun.gatk.local.realign.step1 <- function(file2process.my2, step.my) {
   step.my$tmp <- step.my$tmp + 1
   print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Local Realignment with GATK - Step 1: Generating interval file: ", file2process.my2, " ###\n", sep=""), file2process.my2);
 
-  file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.fixmate.noDup.bam", sep="");
-  file_out = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.fixmate.noDup.bam.intervals", sep="");
+  file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.fixmate.dupmarked.noDup.bam", sep="");
+  file_out = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.fixmate.dupmarked.noDup.bam.intervals", sep="");
   command00 = "java -jar "; # next command.
   # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
   file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
@@ -1267,7 +1319,7 @@ fun.gatk.local.realign.step1 <- function(file2process.my2, step.my) {
     # Former option -B:dbsnp,vcf has been converted into -known:dbsnp,vcf. See http://seqanswers.com/forums/showthread.php?t=14013  
 
   # For manual debugging, see this example to be run in the command line:
-  # java -Xmx4G -jar /path_gatk/GenomeAnalysisTKLite.jar -T RealignerTargetCreator -R /path_refgenome/hg19.fa -I /pathtest_out/sample.sam.sorted.fixmate.noDup.bam --known:dbsnp,vcf /path_dbSNP/dbsnp132_20101103_gatk.vcf -o /pathtest_out/sample.sam.sorted.fixmate.noDup.bam.intervals -et NO_ET -K /pathkey/ueb_vhir.org.key  2>&1 | tee -a /pathtest_out/foo.txt
+  # java -Xmx4G -jar /path_gatk/GenomeAnalysisTKLite.jar -T RealignerTargetCreator -R /path_refgenome/hg19.fa -I /pathtest_out/sample.sam.sorted.fixmate.dupmarked.noDup.bam --known:dbsnp,vcf /path_dbSNP/dbsnp132_20101103_gatk.vcf -o /pathtest_out/sample.sam.sorted.fixmate.dupmarked.noDup.bam.intervals -et NO_ET -K /pathkey/ueb_vhir.org.key  2>&1 | tee -a /pathtest_out/foo.txt
   
   # As a refence, see also this pipeline from Alberta Children's Hospital Research Institue
   # http://achri-bioinformatics.appspot.com/Alignment_Post-processing
@@ -1308,8 +1360,8 @@ fun.gatk.local.realign.step2 <- function(file2process.my2, step.my) {
   step.my$tmp <- step.my$tmp + 1
   print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Local Realignment with GATK - Step 1: Generating interval file: ", file2process.my2, " ###\n", sep=""), file2process.my2);
   
-  file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.fixmate.noDup.bam", sep="");
-  file_out = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.fixmate.noDup.intervals", sep="");
+  file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.fixmate.dupmarked.noDup.bam", sep="");
+  file_out = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.fixmate.dupmarked.noDup.intervals", sep="");
   command00 = "java -jar "; # next command.
   # options00 = ...
   
@@ -1334,8 +1386,8 @@ fun.gatk.local.realign.step3 <- function(file2process.my2, step.my) {
   step.my$tmp <- step.my$tmp + 1
   print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Local Realignment with GATK - Step 1: Generating interval file: ", file2process.my2, " ###\n", sep=""), file2process.my2);
   
-  file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.fixmate.noDup.bam", sep="");
-  file_out = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.fixmate.noDup.intervals", sep="");
+  file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.fixmate.dupmarked.noDup.bam", sep="");
+  file_out = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.fixmate.dupmarked.noDup.intervals", sep="");
   command00 = "java -jar "; # next command.
   # options00 = ...
   
@@ -1360,7 +1412,7 @@ fun.index.bam.file <- function(file2process.my2, step.my) {
   step.my$tmp <- step.my$tmp + 1
   print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Index the bam file: ", file2process.my2, " ###\n", sep=""), file2process.my2);
   
-  file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.fixmate.noDup.bam", sep="");
+  file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.fixmate.dupmarked.noDup.bam", sep="");
   #  file_out = paste(file_in, ".foo", sep="");
   command00 = "samtools"; # next command.
   options00 = paste(" index ", file_in, sep="");
@@ -1371,7 +1423,7 @@ fun.index.bam.file <- function(file2process.my2, step.my) {
   print_done(file2process.my2);
   
   # direct command line call for testing other things:
-  # samtools  index file_in.sam.sorted.fixmate.noDup.bam
+  # samtools  index file_in.sam.sorted.fixmate.dupmarked.noDup.bam
   
   
   gc() # Let's clean ouR garbage if possible
@@ -1389,7 +1441,8 @@ fun.stats <- function(file2process.my2, step.my) {
   step.my$tmp <- step.my$tmp + 1
   print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Get some stats using the samtools [optional]: ", file2process.my2, " ###\n", sep=""), file2process.my2);
   
-  file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.fixmate.noDup.bam", sep="");
+  file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.fixmate.dupmarked.noDup.bam", sep="");
+  file_metrics = paste(params$directory_out, "/", file2process.my2, ".bam.metrics.txt", sep="");
   #  file_out = paste(file_in, ".foo", sep="");
   command00 = "samtools"; # next command.
   # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
@@ -1419,10 +1472,23 @@ fun.stats <- function(file2process.my2, step.my) {
   
   # Substep 2: by samtools flagstat 
   #---------------
-  options00 = paste(" flagstat ", file_in,  " >> ", file_stderr,  " 2>> ", file_stderr, sep="");
+  options00 = paste(" flagstat ", file_in,  " >> ", file_metrics,  " 2>> ", file_stderr, sep="");
   command = paste(command00, " ", options00, sep="");
   check2showcommand(params$opt$showc, command, file2process.my2);
+  # write a header in the file_metrics to indicate where does it come from
+  mess.my <- paste("\n[COMMAND RUN]----->\n", command, "\n<-----\n", sep="");
+  print_mes(mess=paste("\n[CONTENTS INSERTED HERE FROM FILE: ", file_metrics,
+                     "]-----> \n ", sep=""), filename.my1=file2process.my2)
+  #print_mes_fullpath(mess=mess.my, filename.my1=file_metrics)
+  
+  # Run the command
   system(command);
+
+  # End of contents inserted from the file on disk with the metrics
+  print_mes_fullpath(mess="\n<-----\n", filename.my1=file_metrics)
+  
+  # Copy the contents from the file "metrics" into the log file for the processing of this run
+  system(paste("cat ", file_metrics, " >> ", file_stderr, " 2>>", file_stderr, sep=""))
   
   # Don't check for check2clean("$file_in") since we still need it for the variant calling
   print_done(file2process.my2);
@@ -1486,7 +1552,7 @@ fun.snpeff.count.reads <- function(file2process.my2, step.my) {
   step.my$tmp <- step.my$tmp + 1
   print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "a. Count Reads using snpEff: ", file2process.my2, " ###\n", sep=""), file2process.my2);
   
-  file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.fixmate.noDup.bam", sep="");
+  file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.fixmate.dupmarked.noDup.bam", sep="");
   file_out = paste(file_in, ".cr.txt", sep="");
   # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
   file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
@@ -1502,10 +1568,10 @@ fun.snpeff.count.reads <- function(file2process.my2, step.my) {
   
   # Manual debugging XXX
   # file2process.my2 <- "sgs7a_merged12"
-  # file_in <- "./test_out2/sgs7a_merged12.sam.sorted.fixmate.noDup.bam"
-  # file_out <- "./test_out2/sgs7a_merged12.sam.sorted.fixmate.noDup.bam.cr.txt"
-  # file_in <- "./test_out/sample_a_merged12.sam.sorted.fixmate.noDup.bam"
-  # file_out <- "./test_out/sample_a_merged12.sam.sorted.fixmate.noDup.bam.cr.txt"
+  # file_in <- "./test_out2/sgs7a_merged12.sam.sorted.fixmate.dupmarked.noDup.bam"
+  # file_out <- "./test_out2/sgs7a_merged12.sam.sorted.fixmate.dupmarked.noDup.bam.cr.txt"
+  # file_in <- "./test_out/sample_a_merged12.sam.sorted.fixmate.dupmarked.noDup.bam"
+  # file_out <- "./test_out/sample_a_merged12.sam.sorted.fixmate.dupmarked.noDup.bam.cr.txt"
   
   print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "b0. Generate cr.table.csv using R: ", file2process.my2, " ###\n", sep=""), file2process.my2);
   
@@ -1675,7 +1741,7 @@ fun.snpeff.count.reads <- function(file2process.my2, step.my) {
   print_done(file2process.my2);
   
   # direct command line call for testing other things:
-  # java -Xmx4g -jar /home/ueb/snpEff/snpEff.jar countReads hg19 file_in.sam.sorted.fixmate.noDup.bam > file_in.sam.sorted.fixmate.noDup.bam.cr.txt
+  # java -Xmx4g -jar /home/ueb/snpEff/snpEff.jar countReads hg19 file_in.sam.sorted.fixmate.dupmarked.noDup.bam > file_in.sam.sorted.fixmate.dupmarked.noDup.bam.cr.txt
 
   gc() # Let's clean ouR garbage if possible
   return(step.my) # return nothing, since results are saved on disk from the system command
@@ -1883,7 +1949,7 @@ fun.variant.calling <- function(file2process.my2, step.my) {
   step.my$tmp <- step.my$tmp + 1
   print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Variant calling: ", file2process.my2, " ###\n", sep=""), file2process.my2);
   
-  file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.fixmate.noDup.bam", sep="");
+  file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.fixmate.dupmarked.noDup.bam", sep="");
   file_out = paste(file_in, ".samtools.var.raw.vcf", sep="");
   command00 = "samtools"; # next command.
   
@@ -2100,8 +2166,8 @@ fun.variant.filtering <- function(file2process.my2, step.my) {
   step.my$tmp <- step.my$tmp + 1
   print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "b. Variant Filtering with vcfutils.pl (Samtools): ", file2process.my2, " ###\n", sep=""), file2process.my2);
   
-  file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.fixmate.noDup.bam.samtools.var.raw.vcf", sep="");
-  file_out = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.fixmate.noDup.bam.samtools.var.filtered.vcf", sep="");
+  file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.fixmate.dupmarked.noDup.bam.samtools.var.raw.vcf", sep="");
+  file_out = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.fixmate.dupmarked.noDup.bam.samtools.var.filtered.vcf", sep="");
   command00 = params$path_vcfutils ; # next command.
 
   ## This line below contain the new params set as default for the EVA pipeline, as of March 13th, 2013.
@@ -2145,7 +2211,7 @@ fun.variant.filtering <- function(file2process.my2, step.my) {
   system(command);
 
   # Report that the hard link is created
-  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "b. File alias (hardlink) .f.vcf created for .sam.sorted.fixmate.noDup.bam.samtools.var.filtered.vcf: ", file2process.my2, " ###\n", sep=""), file2process.my2);
+  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "b. File alias (hardlink) .f.vcf created for .sam.sorted.fixmate.dupmarked.noDup.bam.samtools.var.filtered.vcf: ", file2process.my2, " ###\n", sep=""), file2process.my2);
 
   # Create also a hard link with a shorter file name that will be he base for the next processing
   # The param "prefix_path" is needed because when running with relative directories (like when doing test-mode runs),
@@ -2158,7 +2224,7 @@ fun.variant.filtering <- function(file2process.my2, step.my) {
     prefix_path <- "./"
   }
   # Set the params for the hardlink
-  from  <- paste(prefix_path, params$directory_out, "/", file2process.my2, ".sam.sorted.fixmate.noDup.bam.samtools.var.filtered.vcf", sep="");
+  from  <- paste(prefix_path, params$directory_out, "/", file2process.my2, ".sam.sorted.fixmate.dupmarked.noDup.bam.samtools.var.filtered.vcf", sep="");
   to    <- paste("", params$directory_out, "/", file2process.my2, ".f.vcf", sep="");
   # Check if hard link exists
   if ( file.exists(to) ) {
@@ -2218,8 +2284,8 @@ fun.convert2vcf4 <- function(file2process.my2, step.my) {
   step.my$tmp <- step.my$tmp + 1
   print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Convert files to Annnovar vcf4 format: ", file2process.my2, " ###\n", sep=""), file2process.my2);
   
-#  file_in =  paste(params$directory_out, "/", file2process.my2, ".sam.sorted.fixmate.noDup.bam.samtools.var.filtered.vcf", sep="");
-  # Since the hard link is created already, we can use the much shorter file name for input .f.vcf instead of .sam.sorted.fixmate.noDup.bam.samtools.var.filtered.vcf
+#  file_in =  paste(params$directory_out, "/", file2process.my2, ".sam.sorted.fixmate.dupmarked.noDup.bam.samtools.var.filtered.vcf", sep="");
+  # Since the hard link is created already, we can use the much shorter file name for input .f.vcf instead of .sam.sorted.fixmate.dupmarked.noDup.bam.samtools.var.filtered.vcf
   file_in =  paste(params$directory_out, "/", file2process.my2, ".f.vcf", sep="");
   file_out = paste(params$directory_out, "/", file2process.my2, ".f.vcf4", sep=""); # shorten the name a bit
   command00 = params$path_convert2annovar; # next command.
@@ -2293,8 +2359,8 @@ fun.variant.annotation.geneb <- function(file2process.my2, step.my) {
   print_done(file2process.my2);
   
   # a mà la instrucció al mainhead és:
-  # perl /home/ueb/annovar/annotate_variation.pl -geneanno --buildver hg19 /home/xavi/repo/peeva/dir_out/Gutierrez_B_Sure.sequence_m50.sam.sorted.fixmate.noDup.bam.samtools.var.f.vcf4 /home/ueb/annovar/humandb/
-  # perl /home/ueb/annovar/annotate_variation.pl -geneanno --buildver hg19 /home/ueb/estudis/ngs/2011-08-SGutierrez-VHIO-207/111224_peeva_dir_out/Gutierrez_B_Sure.sequence.sam.sorted.fixmate.noDup.bam.samtools.var.f.vcf4 /home/ueb/annovar/humandb/
+  # perl /home/ueb/annovar/annotate_variation.pl -geneanno --buildver hg19 /home/xavi/repo/peeva/dir_out/Gutierrez_B_Sure.sequence_m50.sam.sorted.fixmate.dupmarked.noDup.bam.samtools.var.f.vcf4 /home/ueb/annovar/humandb/
+  # perl /home/ueb/annovar/annotate_variation.pl -geneanno --buildver hg19 /home/ueb/estudis/ngs/2011-08-SGutierrez-VHIO-207/111224_peeva_dir_out/Gutierrez_B_Sure.sequence.sam.sorted.fixmate.dupmarked.noDup.bam.samtools.var.f.vcf4 /home/ueb/annovar/humandb/
   
   gc() # Let's clean ouR garbage if possible
   return(step.my) # return nothing, since results are saved on disk from the system command
@@ -2346,7 +2412,7 @@ fun.variant.annotation.filterb <- function(file2process.my2, step.my) {
   print_done(file2process.my2);
   
   # a mà la instrucció al mainhead és:
-  # perl /home/ueb/annovar/annotate_variation.pl -filter --buildver hg19 -dbtype snp132 /home/xavi/repo/peeva/dir_out/vhir_sample_a_sure_1e6.sam.sorted.fixmate.noDup.bam.samtools.var.f.vcf4 /home/ueb/annovar/humandb/
+  # perl /home/ueb/annovar/annotate_variation.pl -filter --buildver hg19 -dbtype snp132 /home/xavi/repo/peeva/dir_out/vhir_sample_a_sure_1e6.sam.sorted.fixmate.dupmarked.noDup.bam.samtools.var.f.vcf4 /home/ueb/annovar/humandb/
   
   gc() # Let's clean ouR garbage if possible
   return(step.my) # return nothing, since results are saved on disk from the system command
@@ -2405,7 +2471,7 @@ fun.variant.annotation.summarize <- function(file2process.my2, step.my) {
   fun.variant.annotation.summary.call.fixcolumns( file2process.my2, step.my)
   
   # a mà la instrucció al mainhead és:
-  # perl /home/ueb/annovar/summarize_annovar.pl --buildver hg19  --verdbsnp 137 /home/xavi/repo/peeva/dir_out/vhir_sample_a_sure_1e6.sam.sorted.fixmate.noDup.bam.samtools.var.f.vcf4 /home/ueb/annovar/humandb/ --outfile sample_a_sure_sum
+  # perl /home/ueb/annovar/summarize_annovar.pl --buildver hg19  --verdbsnp 137 /home/xavi/repo/peeva/dir_out/vhir_sample_a_sure_1e6.sam.sorted.fixmate.dupmarked.noDup.bam.samtools.var.f.vcf4 /home/ueb/annovar/humandb/ --outfile sample_a_sure_sum
   
   gc() # Let's clean ouR garbage if possible
   return(step.my) # return nothing, since results are saved on disk from the system command
@@ -2680,7 +2746,7 @@ fun.variant.annotation.summary.fixcolumns <- function(file2process.my2, step.my,
   print_done(file2process.my2);
   
   # a mà la instrucció al mainhead és:
-  # perl /home/ueb/annovar/summarize_annovar.pl --buildver hg19  --verdbsnp 137 /home/xavi/repo/peeva/dir_out/vhir_sample_a_sure_1e6.sam.sorted.fixmate.noDup.bam.samtools.var.f.vcf4 /home/ueb/annovar/humandb/ --outfile sample_a_sure_sum
+  # perl /home/ueb/annovar/summarize_annovar.pl --buildver hg19  --verdbsnp 137 /home/xavi/repo/peeva/dir_out/vhir_sample_a_sure_1e6.sam.sorted.fixmate.dupmarked.noDup.bam.samtools.var.f.vcf4 /home/ueb/annovar/humandb/ --outfile sample_a_sure_sum
   
   gc() # Let's clean ouR garbage if possible
   return(step.my) # return nothing, since results are saved on disk from the system command
@@ -2833,8 +2899,8 @@ fun.variant.fii.pre.snpeff <- function(file2process.my2, step.my) {
   
   # Example of process in the command line
   #   java -jar SnpSift.jar intidx variants.vcf my_genes.bed > variants_intersecting_intervals.vcf
-#  file_in  = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.fixmate.noDup.bam.samtools.var.filtered.vcf", sep=""); 
-  # Since the hard link is created already, we can use the much shorter file name for input .f.vcf instead of .sam.sorted.fixmate.noDup.bam.samtools.var.filtered.vcf
+#  file_in  = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.fixmate.dupmarked.noDup.bam.samtools.var.filtered.vcf", sep=""); 
+  # Since the hard link is created already, we can use the much shorter file name for input .f.vcf instead of .sam.sorted.fixmate.dupmarked.noDup.bam.samtools.var.filtered.vcf
   file_in =  paste(params$directory_out, "/", file2process.my2, ".f.vcf", sep="");
   file_out = paste(params$directory_out, "/", file2process.my2, ".f.my_genes.vcf", sep="");
   # "ssfii" stands for SnpSift Filtered Interseting Intervals. But was later renamed to "my_genes"
@@ -2949,8 +3015,8 @@ fun.variant.filter.pre.snpeff <- function(file2process.my2, step.my) {
 
   # Example of process in the command line
   #   java -jar SnpSift.jar annotate -v dbSnp.vcf.gz file.vcf > file.dbSnp.vcf
-#  file_in  = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.fixmate.noDup.bam.samtools.var.filtered.vcf", sep=""); 
-  # Since the hard link is created already, we can use the much shorter file name for input .f.vcf instead of .sam.sorted.fixmate.noDup.bam.samtools.var.filtered.vcf
+#  file_in  = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.fixmate.dupmarked.noDup.bam.samtools.var.filtered.vcf", sep=""); 
+  # Since the hard link is created already, we can use the much shorter file name for input .f.vcf instead of .sam.sorted.fixmate.dupmarked.noDup.bam.samtools.var.filtered.vcf
   file_in =  paste(params$directory_out, "/", file2process.my2, ".f.vcf", sep="");
   file_out = paste(params$directory_out, "/", file2process.my2, ".f.ssann.vcf", sep=""); 
   # "ssann" in "...filtered.ssann.vcf" stands for annotated (ann) by SnpSift (ss)
@@ -3149,8 +3215,8 @@ fun.grep.pre.snpeff.report <- function(file2process.my2, step.my) {
 #    file_in  = paste(params$directory_out, "/", file2process.my2, ".f.ssann.eff.vcf", sep=""); 
 #    file_out = paste(params$directory_out, "/", file2process.my2, ".f.ssann.eff.my_genes.vcf", sep=""); 
 
-#    file_in  = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.fixmate.noDup.bam.samtools.var.filtered.vcf", sep=""); 
-    # Since the hard link is created already, we can use the much shorter file name for input .f.vcf instead of .sam.sorted.fixmate.noDup.bam.samtools.var.filtered.vcf
+#    file_in  = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.fixmate.dupmarked.noDup.bam.samtools.var.filtered.vcf", sep=""); 
+    # Since the hard link is created already, we can use the much shorter file name for input .f.vcf instead of .sam.sorted.fixmate.dupmarked.noDup.bam.samtools.var.filtered.vcf
     file_in =  paste(params$directory_out, "/", file2process.my2, ".f.vcf", sep="");
     file_out = paste(params$directory_out, "/", file2process.my2, ".f.my_genes.vcf", sep=""); 
     command00 = "grep -P"; # next command.
@@ -3280,8 +3346,8 @@ fun.variant.eff.report <- function(file2process.my2, step.my) {
  # ---------------------------
  print_doc(paste("    Substep ", step.my$n, ".", step.my$tmp, "b). Report using snpEff with the whole list of genes: ", file2process.my2, " ###\n", sep=""), file2process.my2);
   
-#  file_in  = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.fixmate.noDup.bam.samtools.var.filtered.vcf", sep=""); 
-  # Since the hard link is created already, we can use the much shorter file name for input .f.vcf instead of .sam.sorted.fixmate.noDup.bam.samtools.var.filtered.vcf
+#  file_in  = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.fixmate.dupmarked.noDup.bam.samtools.var.filtered.vcf", sep=""); 
+  # Since the hard link is created already, we can use the much shorter file name for input .f.vcf instead of .sam.sorted.fixmate.dupmarked.noDup.bam.samtools.var.filtered.vcf
   file_in =  paste(params$directory_out, "/", file2process.my2, ".f.vcf", sep="");
   file_out = paste(params$directory_out, "/", file2process.my2, ".f.snpEff.", params$opt$snpeff.of, sep=""); 
   file_out_base = paste(params$directory_out, "/", file2process.my2, ".f.snpEff", sep="");     
