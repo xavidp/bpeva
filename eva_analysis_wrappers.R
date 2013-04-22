@@ -97,6 +97,8 @@ wrapper2.parallelizable.per.sample <- function(datastep.my2) {
   convert.file.list.pe2             <- params_w2pps$p_convert.file.list.pe2
   bowtie2sam                        <- params_w2pps$p_bowtie2sam
   sam2bam.and.sort	 	              <- params_w2pps$p_sam2bam.and.sort
+  samtools.fixmate                  <- params_w2pps$p_samtools.fixmate
+  picard.mark.dup                   <- params_w2pps$p_picard.mark.dup
   remove.pcr.dup		                <- params_w2pps$p_remove.pcr.dup
   gatk.sortbyref                    <- params_w2pps$p_gatk.sortbyref
   gatk.local.realign.step1          <- params_w2pps$p_gatk.local.realign.step1
@@ -104,7 +106,6 @@ wrapper2.parallelizable.per.sample <- function(datastep.my2) {
   gatk.local.realign.step3          <- params_w2pps$p_gatk.local.realign.step3
   index.bam.file		                <- params_w2pps$p_index.bam.file
   stats			                        <- params_w2pps$p_stats
-  snpeff.count.reads                <- params_w2pps$p_snpeff.count.reads
   variant.calling		                <- params_w2pps$p_variant.calling
   variant.filtering		              <- params_w2pps$p_variant.filtering
   gatk.combine.vcfs                 <- params_w2pps$p_gatk.combine.vcfs
@@ -121,6 +122,7 @@ wrapper2.parallelizable.per.sample <- function(datastep.my2) {
   grep.pre.snpeff.report            <- params_w2pps$p_grep.pre.snpeff.report
   variant.eff.report                <- params_w2pps$p_variant.eff.report
   grep.post.snpeff.report           <- params_w2pps$p_grep.post.snpeff.report
+  snpeff.count.reads                <- params_w2pps$p_snpeff.count.reads
   
   # -----------------------------
   
@@ -278,6 +280,18 @@ wrapper2.parallelizable.per.sample <- function(datastep.my2) {
                                  step.my  = step)
   }
   
+  if (samtools.fixmate) {
+    # Next Step
+    step <- fun.samtools.fixmate(file2process.my2  = file2process.my1,
+                               step.my  = step)
+  }
+  
+  if (picard.mark.dup) {
+    # Next Step
+    step <- fun.picard.mark.dup(file2process.my2  = file2process.my1,
+                               step.my  = step)
+  }
+  
   if (remove.pcr.dup) {
     # Next Step
     step <- fun.remove.pcr.dup(file2process.my2  = file2process.my1,
@@ -318,12 +332,6 @@ wrapper2.parallelizable.per.sample <- function(datastep.my2) {
     # Next Step
     step <- fun.stats(file2process.my2  = file2process.my1,
                       step.my  = step)
-  }
-  
-  if (snpeff.count.reads) {
-    # Next Step
-    step <- fun.snpeff.count.reads(file2process.my2  = file2process.my1,
-                                   step.my  = step)
   }
   
   if (variant.calling) {
@@ -374,7 +382,7 @@ wrapper2.parallelizable.per.sample <- function(datastep.my2) {
     step <- fun.variant.annotation.summarize(file2process.my2  = file2process.my1,
                                              step.my  = step)
   }
-  
+
   if (grep.variants) {
     # Next Step
     step <- fun.grep.variants(file2process.my2  = file2process.my1,
@@ -421,6 +429,12 @@ wrapper2.parallelizable.per.sample <- function(datastep.my2) {
     # Next Step
     step <- fun.grep.post.snpeff.report(file2process.my2  = file2process.my1,
                                           step.my  = step)
+  }
+  
+  if (snpeff.count.reads) {
+    # Next Step
+    step <- fun.snpeff.count.reads(file2process.my2  = file2process.my1,
+                                   step.my  = step)
   }
   
   
