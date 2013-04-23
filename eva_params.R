@@ -148,6 +148,9 @@ if (p_test==1) {
   #                  0/n: no, use mapped and unmapped reads; 
   #                  1/y: yes, use only mapped reads; 
   #                 -1/u: the opposite, use only unmapped reads.
+  p_bychr     <- 0  # Split the processing by chromosomes (variant calling only, as of April 23, 2013). 
+                    # Watch out that some QUAL might be recorded as lower than the value indicated at the bam file
+                    # for some misterous reason. See comments inside function var.calling
   p_convert.file.list.pe1        <- TRUE #FALSE #TRUE # Keep as TRUE if you have paired end samples (sampe; p_bwa=2)
   p_convert.file.list.pe2        <- TRUE # This needs to be FALSE for using sam files as input files for the pipeline
   #                                 --and you are re-processing just some steps--, since you will need
@@ -163,9 +166,10 @@ if (p_test==1) {
   p_in.ext    <- ".sam" #".fastq" # ".fa" ".sam" ".bam" # This is the .extension of all files used as input for the pipeline to process
   p_output   <- "test_out2" #"/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a3b" #"test_out2" # "../test_out2" # "test_out"
   p_f_my_rs  <- "file_my_rs.txt" # In p_input. Needed by SnpEff to filter for the target genes before the report (well, filter for the potential snp rs codes in those genes)
-  p_label    <- "test2_16" #"testrunGATK1" # "testsnpEffCountReads_a" "test-121002" # "test-foo"        # Run Label for output filenames
+  p_label    <- "test2_17" #"testrunGATK1" # "testsnpEffCountReads_a" "test-121002" # "test-foo"        # Run Label for output filenames
   p_desc     <- "Testing run
-                        test2_16: Test the param to filter by read base quality (Q) at the variant calling process"
+                        test2_17: Test the splitting of bam in chromosomes prior to variant calling"
+  #                      test2_16: Test the param to filter by read base quality (Q) at the variant calling process"
   #                      test2_15: Test the new function to mark duplicates with Picard, prior to removal by samtools rmdup"
   #                      test2_14: Test the new functions to fix INFO fields in splitted columns from csv files from anovar"
   #                      test2_13: Skipped testing the new functions to write the html report (for te time being). 
@@ -234,6 +238,9 @@ if (p_test==1) {
   #                 0/n: no, use mapped and unmapped reads; 
   #                 1/y: yes, use only mapped reads; 
   #                -1/u: the opposite, use only unmapped reads.
+  p_bychr     <- 0  # Split the processing by chromosomes (variant calling only, as of April 23, 2013). 
+                    # Watch out that some QUAL might be recorded as lower than the value indicated at the bam file
+                    # for some misterous reason. See comments inside function var.calling
   p_convert.file.list.pe1        <- TRUE #FALSE #TRUE # Keep as TRUE if you have paired end samples (sampe; p_bwa=2)
   p_convert.file.list.pe2        <- FALSE # This needs to be FALSE for using sam files as input files for the pipeline
   #                                 --and you are re-processing just some steps--, since you will need
@@ -301,6 +308,9 @@ if (p_test==1) {
                       # 0/n: no, use mapped and unmapped reads; 
                       # 1/y: yes, use only mapped reads; 
                       # -1/u: the opposite, use only unmapped reads.
+  p_bychr     <- 0  # Split the processing by chromosomes (variant calling only, as of April 23, 2013). 
+                    # Watch out that some QUAL might be recorded as lower than the value indicated at the bam file
+                    # for some misterous reason. See comments inside function var.calling
   p_convert.file.list.pe1        <- TRUE #FALSE #TRUE # Keep as TRUE if you have paired end samples (sampe; p_bwa=2)
   p_convert.file.list.pe2        <- TRUE # This needs to be FALSE for using sam files as input files for the pipeline
   #                                 --and you are re-processing just some steps--, since you will need
@@ -368,7 +378,7 @@ runParam <- FALSE #######################
 p_quality.control             <- runParam
 p_bowtie2sam                  <- runParam
 #####
-runParam <- TRUE #######################
+runParam <- FALSE #######################
 ####
 p_sam2bam.and.sort		        <- runParam
                   # This step might not be needed, and in addition, it breaks variant calling!
@@ -389,10 +399,10 @@ p_gatk.local.realign.step3    <- FALSE # runParam # Unfinished work
 runParam <- TRUE #######################
 ####
 p_variant.calling		          <- runParam
-p_variant.filtering		        <- runParam
 #####
 runParam <- FALSE #######################
 ####
+p_variant.filtering		        <- runParam
 p_gatk.combine.vcfs           <- FALSE # runParam # Non-started work (place holder only)
 p_convert2vcf4		            <- runParam
 p_variant.annotation.geneb	  <- runParam

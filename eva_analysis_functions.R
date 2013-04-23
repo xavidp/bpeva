@@ -2167,22 +2167,6 @@ fun.variant.calling <- function(file2process.my2, step.my) {
   #   -U INT	 Number of permutations for association test (effective only with -1) [0]
   #   -X FLOAT	 Only perform permutations for P(chi^2)<FLOAT (effective only with -U) [0.01]
   
-  # changed on Jan 8th, 2013, to test the potential reduction of false positives (adding -C50 and -B , see documentation above)
-  #options00 = paste(" mpileup -uf ", params$path_genome, " ", file_in, " | bcftools view -vcg - >  ", file_out, sep="");
-
-  #  options00 = paste(" mpileup -uf -C50 -EDS -q50 -d10000  ", params$path_genome, " ", file_in, " | bcftools view -Avcg - >  ", file_out, sep="");
-  # Since all this together doesn't work, let's try one by one.
-#  options00 = paste(" mpileup -uf      -EDS", params$path_genome, " ", file_in, " | bcftools view -Avcg - >  ", file_out, sep="");
-#  options00 = paste(" mpileup -uf           -q50 ", params$path_genome, " ", file_in, " | bcftools view -Avcg - >  ", file_out, sep="");
-#  options00 = paste(" mpileup -uf                -d10000  ", params$path_genome, " ", file_in, " | bcftools view -Avcg - >  ", file_out, sep="");
-#  options00 = paste(" mpileup -uf                         ", params$path_genome, " ", file_in, " | bcftools view -vcg - >  ", file_out, sep="");
-
-  # Those params needed to be called after the file_in!!!
-#  options00 = paste(" mpileup -uf ", params$path_genome, " ", file_in, " -C50 -EDS -q50 -d10000 | bcftools view -Avcg - >  ", file_out, sep="");
-## March 18th: Removing the -A from bcftools to see whether the weird X letters in alternative nucleotide go away from vcf files. 
-  options00 = paste(" mpileup -uf ", params$path_genome, " ", file_in, " -C50 -EDS -q50 -d10000",
-                    " -Q", params$opt$st.vf.Q, 
-                   " | bcftools view -vcg - >  ", file_out, sep="");
   
   # Jan 9th, 2013: 
   ## added params in samtools mpileup: 
@@ -2209,12 +2193,140 @@ fun.variant.calling <- function(file2process.my2, step.my) {
   ## Added params in bcftools view: 
   ##  -A: Retain all possible alternate alleles at variant sites. By default, the view command discards unlikely alleles.
   
-  command = paste(command00, " ", options00, sep="");
-  check2showcommand(params$opt$showc, command, file2process.my2);
-  system(command);
+  if (params$opt$bychr != 1) {
+    # -----------------------
+    # Variant Calling without splitting chromosomes in parallel
+    # -----------------------
+    # Do the variant calling in one go, without splitting by chromosomes
+    options00 = paste(" mpileup -uf ", params$path_genome, " ", file_in, " -C50 -EDS -q50 -d10000",
+                      " -Q", params$opt$st.vf.Q, 
+                      " | bcftools view -vcg - >  ", file_out, sep="");
+
+    # changed on Jan 8th, 2013, to test the potential reduction of false positives (adding -C50 and -B , see documentation above)
+    #options00 = paste(" mpileup -uf ", params$path_genome, " ", file_in, " | bcftools view -vcg - >  ", file_out, sep="");
+    #  options00 = paste(" mpileup -uf -C50 -EDS -q50 -d10000  ", params$path_genome, " ", file_in, " | bcftools view -Avcg - >  ", file_out, sep="");
+    # Since all this together doesn't work, let's try one by one.
+    #  options00 = paste(" mpileup -uf      -EDS", params$path_genome, " ", file_in, " | bcftools view -Avcg - >  ", file_out, sep="");
+    #  options00 = paste(" mpileup -uf           -q50 ", params$path_genome, " ", file_in, " | bcftools view -Avcg - >  ", file_out, sep="");
+    #  options00 = paste(" mpileup -uf                -d10000  ", params$path_genome, " ", file_in, " | bcftools view -Avcg - >  ", file_out, sep="");
+    #  options00 = paste(" mpileup -uf                         ", params$path_genome, " ", file_in, " | bcftools view -vcg - >  ", file_out, sep="");
+    # Those params needed to be called after the file_in!!!
+    #  options00 = paste(" mpileup -uf ", params$path_genome, " ", file_in, " -C50 -EDS -q50 -d10000 | bcftools view -Avcg - >  ", file_out, sep="");
+    ## March 18th: Removing the -A from bcftools to see whether the weird X letters in alternative nucleotide go away from vcf files. 
+    
+    command = paste(command00, " ", options00, sep="");
+    check2showcommand(params$opt$showc, command, file2process.my2);
+    system(command);
+    
+  } else if (params$opt$bychr == 1) {
+
+    # -----------------------
+    # Variant Calling in Parallel by Chr
+    # http://www.research.janahang.com/2013/01/02/efficient-way-to-generate-vcf-files-using-samtools/
+    # http://www.biostars.org/p/48781/
+    #
+    # Xavier de Pedro, April 23rd, 2013: 
+    #   Unluckily, my first tests with our small test datase (covering variants in 3 chromosomes) indicate that
+    #   when running splitting the job by chromosomes, there is one variant that is recorded with a lower 
+    #   QUAL and mapping quality (MQ) than the one indicated in the bam file, for some misterious reason.
+    #   Running samtools mpileup without splitting by chromosome records Qual and MQ properly.
+    #
+    #chr13  32889762	.	G	T	15.1	.	DP=1;AF1=1;AC1=2;DP4=0,0,1,0;MQ=45;FQ=-30	GT:PL:DP:SP:GQ	1/1:45,3,0:1:0:6
+    #vs
+    #chr13  32889762	.	G	T	30	.	DP=1;AF1=1;AC1=2;DP4=0,0,1,0;MQ=60;FQ=-30	GT:PL:DP:SP:GQ	1/1:60,3,0:1:0:6
+    #
+    #The second corresponds to the properly mapped one, as it equals the values shown in igv for that position from the bam file
+    #
+    # Moreover for this small test set, running in parallel (splitted by chromosomes), 
+    # takes twice as much time (34sec aprox) than running all in a row (17sec aprox)
+    
+    # -----------------------
+      # Variant Calling in Parallel by Chr - step 1
+      # http://www.research.janahang.com/2013/01/02/efficient-way-to-generate-vcf-files-using-samtools/
+      # -----------------------
+      # 1) Create a list of chromosomes from your BAM header and use ‘P’ for creating number of 
+      #   parallel processes to run the mplieup. Change the mpileup filtering parameters accordingly
+      files_tmp = paste(params$directory_out, "/", file2process.my2, ".tmp.{}.vcf", sep="");
+      options00 = paste(" view -H ", file_in, "  | grep \"\\@SQ\" | sed 's/^.*SN://g' | cut -f 1 ",
+                        " |xargs -I {} -n 1 -P 4 sh -c ", 
+                        " \"", # start of the section of options that go surrounded by double quotes 
+                            " samtools mpileup  -C50 -EDS -q50 -d10000 -Q", params$opt$st.vf.Q,
+                            " -uf ", params$path_genome, " -r {} ",  file_in, " ",
+                            " | bcftools view -vcg - > ", files_tmp, 
+                        " \"", # end of the section of options that go surrounded by double quotes 
+                        sep="") # end of paste.
+      command = paste(command00, " ", options00, sep="");
+      check2showcommand(params$opt$showc, command, file2process.my2);
+      system(command);
+    
+      # -----------------------
+      # Variant Calling in Parallel by Chr - step 2
+      # -----------------------
+      # 2) Merge the vcf files
+      # First remove any previous file with that same name from previous runs before appending new content
+      file.remove(file_out)
+      # Now merge the tmp vcf files in file_out
+      files_tmp2 = paste(params$directory_out, "/", file2process.my2, ".tmp.$F[0].vcf", sep="");
+      options00 = paste(" view -H ", file_in, "  | grep \"\\@SQ\" | sed 's/^.*SN://g' | cut -f 1 ",
+                      " | perl -ane 'system(", # nested system call 
+                      "\"", # start of the section of options that go surrounded by double quotes 
+                          "cat ", files_tmp2, " >> ", file_out, ".tmp",
+                      "\"", # end of the section of options that go surrounded by double quotes 
+                      ")'; ", # end of nested system call 
+                      sep="") # end of paste.
+      command = paste(command00, " ", options00, sep="");
+      check2showcommand(params$opt$showc, command, file2process.my2);
+      system(command);
+
+      # -----------------------
+      # Variant Calling in Parallel by Chr - step 3
+      # -----------------------
+      # 3) Count the number of header lines; number to be used in a step below
+      #file_out <- "test_out2/sgs7b_merged12.sam.sorted.edited.bam.samtools.var.raw.vcf"
+      file_tmp3 <-  paste(file_out, ".tmp", sep="");
+      tmp3 <- readLines(file_tmp3)
+      if (length(grep("#CHROM", tmp3)) > 0) {
+        last.header.line.number <- grep("#CHROM", tmp3)[1]
+      } else {
+        # We could chose something else, but in case we can't find #CHROM, we get 
+        # and arbritary num,ber of header lines here, which should be safe, upon the risk of repeating some info.
+        last.header.line.number <- 40
+      }
+
+      
+      # -----------------------
+      # Variant Calling in Parallel by Chr - step 4
+      # -----------------------
+      # 4) Remove the unwanted headers from vcf files generated. 
+      #   Each temporary file generated will have a header and the idea hear is to keep
+      #   the first header and remove the rest.
+      
+      command00 = "cat "
+      options00 = paste(" ", file_out, ".tmp  | sed -e 1,", last.header.line.number, 
+                        "b -e '/^#/d' > ", file_out, "_new.vcf",
+                        sep="") # end of paste.
+      command = paste(command00, " ", options00, sep="");
+      check2showcommand(params$opt$showc, command, file2process.my2);
+      system(command);
+      
+      # -----------------------
+      # Variant Calling in Parallel by Chr - step 5
+      # -----------------------
+      # file2process.my2 <- "sgs7a_merged12"
+      # 5) Delete the temporary files
+      setwd(paste("./", params$directory_out, sep="")) # move to the directory of the tmp files
+      command00 = paste("ls ", file2process.my2,"* | grep -E tmp |xargs rm ", sep="")
+      command = command00
+      system(command);
+      setwd("..") # Return to the previous directory where the whole pipeline runs
+      check2showcommand(params$opt$showc, command, file2process.my2);
+      
+       # -----------------------
+  }
+     
   check2clean(file_in, file2process.my2);
   create.hard.link(file2process.my2, step.my, 
-                   suffix_file_from=".sam.sorted.edited.bam.samtools.var.raw.vcf",
+                   suffix_file_from=".sam.sorted.edited.bam.samtools.var.raw.vcf_new.vcf",
                    suffix_file_to=".sam.sorted.edited.vcf")
   print_done(file2process.my2);
   
