@@ -166,9 +166,13 @@ if (p_test==1) {
   p_in.ext    <- ".sam" #".fastq" # ".fa" ".sam" ".bam" # This is the .extension of all files used as input for the pipeline to process
   p_output   <- "test_out2" #"/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a3b" #"test_out2" # "../test_out2" # "test_out"
   p_f_my_rs  <- "file_my_rs.txt" # In p_input. Needed by SnpEff to filter for the target genes before the report (well, filter for the potential snp rs codes in those genes)
-  p_label    <- "test2_17" #"testrunGATK1" # "testsnpEffCountReads_a" "test-121002" # "test-foo"        # Run Label for output filenames
+  p_label    <- "test2_14c" #"testrunGATK1" # "testsnpEffCountReads_a" "test-121002" # "test-foo"        # Run Label for output filenames
   p_desc     <- "Testing run
-                        test2_17: Test the splitting of bam in chromosomes prior to variant calling"
+                        test2_14c: As in test2_14b, but only with the function to fix cols: 
+                                    testing the a csv file heavier to test for preformance improvement (right now it was 1 second only)"
+  #                      test2_14b: As in test2_14, no changes so far: 
+  #                                  testing the new functions to fix INFO fields in splitted columns from csv files from anovar"
+  #                      test2_17: Test the splitting of bam in chromosomes prior to variant calling"
   #                      test2_16: Test the param to filter by read base quality (Q) at the variant calling process"
   #                      test2_15: Test the new function to mark duplicates with Picard, prior to removal by samtools rmdup"
   #                      test2_14: Test the new functions to fix INFO fields in splitted columns from csv files from anovar"
@@ -396,12 +400,9 @@ p_gatk.local.realign.step1    <- FALSE # TRUE # FALSE # runParam
 p_gatk.local.realign.step2    <- FALSE # runParam # Unfinished work
 p_gatk.local.realign.step3    <- FALSE # runParam # Unfinished work
 #####
-runParam <- TRUE #######################
-####
-p_variant.calling		          <- runParam
-#####
 runParam <- FALSE #######################
 ####
+p_variant.calling		          <- runParam
 p_variant.filtering		        <- runParam
 p_gatk.combine.vcfs           <- FALSE # runParam # Non-started work (place holder only)
 p_convert2vcf4		            <- runParam
@@ -409,6 +410,10 @@ p_variant.annotation.geneb	  <- runParam
 p_variant.annotation.regionb	<- FALSE # runParam # Non-started work (place holder only)
 p_variant.annotation.filterb	<- runParam
 p_variant.annotation.summarize<- runParam
+#####
+runParam <- TRUE #######################
+####
+p_variant.annotation.s.fixcols<- FALSE #runParam # Taking too long still with real data
 p_grep.variants		            <- runParam
 p_visualize.variants		      <- FALSE # runParam # Non-started work (place holder only)
 #####
@@ -454,6 +459,7 @@ params_w2pps <- list(
   p_variant.annotation.regionb        = p_variant.annotation.regionb,
   p_variant.annotation.filterb        = p_variant.annotation.filterb,
   p_variant.annotation.summarize      = p_variant.annotation.summarize,
+  p_variant.annotation.s.fixcols      = p_variant.annotation.s.fixcols,
   p_grep.variants                     = p_grep.variants,
   p_visualize.variants                = p_visualize.variants,
   p_variant.fii.pre.snpeff            = p_variant.fii.pre.snpeff,

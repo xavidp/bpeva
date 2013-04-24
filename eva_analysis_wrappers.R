@@ -114,6 +114,7 @@ wrapper2.parallelizable.per.sample <- function(datastep.my2) {
   variant.annotation.regionb	      <- params_w2pps$p_variant.annotation.regionb
   variant.annotation.filterb	      <- params_w2pps$p_variant.annotation.filterb
   variant.annotation.summarize      <- params_w2pps$p_variant.annotation.summarize
+  variant.annotation.s.fixcols      <- params_w2pps$p_variant.annotation.s.fixcols
   grep.variants		                  <- params_w2pps$p_grep.variants
   visualize.variants		            <- params_w2pps$p_visualize.variants
   variant.fii.pre.snpeff            <- params_w2pps$p_variant.fii.pre.snpeff
@@ -383,6 +384,12 @@ wrapper2.parallelizable.per.sample <- function(datastep.my2) {
                                              step.my  = step)
   }
 
+  if (variant.annotation.s.fixcols) {
+    # Next Step
+    step <- fun.variant.annotation.summary.call.fixcolumns(file2process.my2  = file2process.my1,
+                                             step.my  = step)
+  }
+  
   if (grep.variants) {
     # Next Step
     step <- fun.grep.variants(file2process.my2  = file2process.my1,
