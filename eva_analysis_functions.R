@@ -1613,35 +1613,53 @@ fun.addleading0.ids <- function(x, sep, nd)
 ##########################
 
 fun.snpeff.count.reads <- function(file2process.my2, step.my) {
+  # Manual debugging
+  # file2process.my2 <- "/mnt/magatzem02/tmp/run_sara_293a/dir_in_test_cr_ind1/s_1_m11_143b_merged12"
+  
   # update step number
   step.my$tmp <- step.my$tmp + 1
   print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "a. Count Reads using snpEff: ", file2process.my2, " ###\n", sep=""), file2process.my2);
   
+  # If for whatever reason, the filetoprocess.my2 comes with the base path (from dir_in or dir_out) 
+  # as a prefix, remove it.
+  if ( length(grep(params$directory_in, file2process.my2)) ) {
+    file2process.my2 <- sub(paste(params$directory_in, "/", sep=""), "", file2process.my2)
+  } else if ( length(grep(params$directory_out, file2process.my2)) ) {
+    file2process.my2 <- sub(paste(params$directory_out, "/", sep=""), "", file2process.my2)
+  }
+  
   file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.edited.bam", sep="");
   file_out = paste(file_in, ".cr.txt", sep="");
+  file_bed.my = paste(params$log.folder,"/", params$startdate, ".", params$opt$label,".my_genes.bed", sep="")
+  
   # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
   file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
   
   command00 = "java -Xmx4g -jar "; # next command.
 #  options00 = paste(params$path_snpEff, "snpEff.jar  -c ", params$path_snpEff, "snpEff.config countReads ", params$opt$genver," ", file_in, " > ", file_out, sep="");
 #  options00 = paste(params$path_snpEff, "snpEff.jar  countReads ", params$opt$genver," ", file_in, " > ", file_out, sep="");
-  options00 = paste(params$path_snpEff, "snpEff.jar  countReads ", params$opt$se_db_rg," ", file_in, " > ", file_out, 
-                    " 2>> ", file_stderr, sep="");
+  
+  # Since April 2013, 26, count reads will count only for the inteervals of interested for the researcher (limited to the intervals providedd in the bed file) 
+  options00 = paste(params$path_snpEff, "snpEff.jar  countReads ",  
+                    # Temporarily disabled until feedback from snpEff author about potential bug here with the -i param for the bed file
+                    # " -i '", file_bed.my, "' ", 
+                    params$opt$se_db_rg, " ", file_in, " > ", file_out, " 2>> ", file_stderr, sep="");
   command = paste(command00, " ", options00, sep="");
   check2showcommand(params$opt$showc, command, file2process.my2);
   system(command);
   
   # Manual debugging XXX
   # file2process.my2 <- "sgs7a_merged12"
-  # file_in <- "./test_out2/sgs7a_merged12.sam.sorted.fixmate.dupmarked.noDup.bam"
-  # file_out <- "./test_out2/sgs7a_merged12.sam.sorted.fixmate.dupmarked.noDup.bam.cr.txt"
-  # file_in <- "./test_out/sample_a_merged12.sam.sorted.fixmate.dupmarked.noDup.bam"
-  # file_out <- "./test_out/sample_a_merged12.sam.sorted.fixmate.dupmarked.noDup.bam.cr.txt"
+  # file_in <- "./test_out2/sgs7a_merged12.sam.sorted.edited.bam"
+  # file_out <- "./test_out2/sgs7a_merged12.sam.sorted.edited.bam.cr.txt"
+  # file_in <- "/mnt/magatzem02/tmp/run_sara_293a/dir_out_all/test_out/s_4_m11_146b_merged12.sam.sorted.edited.bam"
+  # file_out <- "/mnt/magatzem02/tmp/run_sara_293a/dir_out_all/s_4_m11_146b_merged12.sam.sorted.edited.bam.cr.txt"
   
   print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "b0. Generate cr.table.csv using R: ", file2process.my2, " ###\n", sep=""), file2process.my2);
   
   # load the file created as file2process.countreads (aka: f2p.cr)
   f2p.cr <- read.table(file_out, header=T, sep="\t")
+  # head(f2p.cr)
   #dim(f2p.cr)
   x.my <- as.character(f2p.cr$IDs)
   
@@ -1766,20 +1784,46 @@ fun.snpeff.count.reads <- function(file2process.my2, step.my) {
     
     print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "b3. Apply function ftable in R: ", file2process.my2, " ###\n", sep=""), file2process.my2);
     
+    # (Approach 1) Implementation with ftable ------------->
+    #startcr <- Sys.time();
+
     # Therefore, this (below) is the table with all values (including the wrong chromosome numbers as gene symbols by mistake)
     # convert in a flat table sorting first by Gene Symbol, and then, by exon number.
     f2p.cr.table <- ftable(f2p.cr.genes2, row.vars = 2:1)
+    #head(f2p.cr.genes2)
     #str(f2p.cr.table)
     #?print.ftable
     
-    print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "b4. Re-order results in R: ", file2process.my2, " ###\n", sep=""), file2process.my2);
+    print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "b4a. Convert ftable into dataframe (R): ", file2process.my2, " ###\n", sep=""), file2process.my2);
     
     # [SOLVED] as.data.frame.table or as.data.frame.matrix !!!!!!
     f2p.cr.dft <- as.data.frame.table(f2p.cr.table)
+    
+    print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "b4b. Re-order results in R: ", file2process.my2, " ###\n", sep=""), file2process.my2);
+    
     # We need to re-sort in a similar way to what the ftable was
     f2p.cr.dft <- f2p.cr.dft[order(f2p.cr.dft$GeneSymbol, f2p.cr.dft$unitN),]
+    
+    print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "b4c. Remove zeros from counts in the data frame (R): ", file2process.my2, " ###\n", sep=""), file2process.my2);
+    
     # And last, we remove all row with 0 in the column Counts
     f2p.cr.dft <- f2p.cr.dft[!f2p.cr.dft$Freq==0,]
+  
+    #durationftable <- Sys.time() - startcr
+    # (Approach 1) <------ Implementation with ftable
+
+#     # (Approach 2) Implementation with aggregate ------------->
+#     startcr <- Sys.time();
+#     
+#     f2p.cr.df2 <- aggregate(ENST ~ GeneSymbol + unitN, data=f2p.cr.genes, FUN=length)
+#     #class(f2p.cr.df2)
+#     f2p.cr.df2 <- f2p.cr.df2[order(f2p.cr.df2$GeneSymbol, f2p.cr.df2$unitN),]
+#     f2p.cr.df2 <- f2p.cr.df2[!f2p.cr.df2$unitN=="NA",]
+#     #str(f2p.cr.table)
+#     #?head(f2p.cr.table)
+#     
+#     durationaggr <- Sys.time() - startcr
+#     # (Approach 2) <------ Implementation with aggregate
     
     print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "b5. Write the file  cr.table.csv using R: ", file2process.my2, " ###\n", sep=""), file2process.my2);
     
@@ -2870,16 +2914,23 @@ fun.variant.annotation.summary.call.fixcolumns <- function(file2process.my2, ste
   
   # update step number
   step.my$tmp <- step.my$tmp + 1
-  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Call the fixing of INFO columns for both genome and exome csv files from annovar: ", file2process.my2, " ###\n", sep=""), file2process.my2);
+  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Call the fixing of INFO columns for EXOME csv files from annovar: ", file2process.my2, " ###\n", sep=""), file2process.my2);
   
   # Fix INFO cols for exome_summary csv file
-  file_in1 = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.sum.exome_summary.csv", sep=""); 
-  file_out1 = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.sum.colsfixed.exome_summary.csv", sep="");
+  file_in1 = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.sum.my_genes.exome_summary.csv", sep=""); 
+  file_out1 = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.sum.my_genes.colsfixed.exome_summary.csv", sep="");
   fun.variant.annotation.summary.fixcolumns(file2process.my2, step.my, "EXOME", file_in1, file_out1)
+
+  # update step number
+  step.my$tmp <- step.my$tmp + 1
+  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Call the fixing of INFO columns for GENOME csv files from annovar: ", file2process.my2, " ###\n", sep=""), file2process.my2);
+
+  # # We don't do check2clean here  either since we will still use the .vcf.annovar file in the next steps (filtering)
+  print_done(file2process.my2);
   
   # Fix INFO cols for genome_summary csv file
-  file_in2 = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.sum.genome_summary.csv", sep=""); 
-  file_out2 = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.sum.colsfixed.genome_summary.csv", sep="");
+  file_in2 = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.sum.my_genes.genome_summary.csv", sep=""); 
+  file_out2 = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.sum.my_genes.colsfixed.genome_summary.csv", sep="");
   fun.variant.annotation.summary.fixcolumns(file2process.my2, step.my, "GENOME", file_in2, file_out2)
   
   # # We don't do check2clean here  either since we will still use the .vcf.annovar file in the next steps (filtering)
@@ -2929,7 +2980,9 @@ fun.variant.annotation.summary.fixcolumns <- function(file2process.my2, step.my,
   if (length(f2p.se) > 0) {
     
     # Load the header, add missing column names with default names so far, and assign them as column names
-    f2p.se.header.ini <- readLines(file(file_in.my), 1); close(file(file_in.my))
+    con.my <- file(file_in.my)
+    f2p.se.header.ini <- readLines(con.my, 1);
+    close(con.my)
     f2p.se.header.ini <- unlist(strsplit(f2p.se.header.ini, ","))
     f2p.se.header.end <- paste("V", (length(f2p.se.header.ini)+1):length(f2p.se), sep="")
     f2p.se.header <- c(f2p.se.header.ini, f2p.se.header.end)
@@ -3009,8 +3062,8 @@ fun.grep.variants <- function(file2process.my2, step.my) {
       #######################
       # 1st part- sample.*.exome_summary.csv
       #-------------------------------
-      file_in_g_csv  = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.sum.colsfixed.genome_summary.csv", sep=""); # summarize_annovar.pl adds the extension .genome_summary.csv (hardcoded in annovar).
-      file_out_g_csv = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.sum.colsfixed.my_genes.genome_summary.csv", sep=""); 
+      file_in_g_csv  = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.sum.genome_summary.csv", sep=""); # summarize_annovar.pl adds the extension .genome_summary.csv (hardcoded in annovar).
+      file_out_g_csv = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.sum.my_genes.genome_summary.csv", sep=""); 
       command01 = "head -1";
       command02 = command00;
       options01 = paste(" ", file_in_g_csv, " > ", file_out_g_csv, sep="");
@@ -3019,8 +3072,8 @@ fun.grep.variants <- function(file2process.my2, step.my) {
       #######################
       # 2nd - sample.*.exome_summary.csv
       #-------------------------------
-      file_in_e_csv  = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.sum.colsfixed.exome_summary.csv", sep=""); # summarize_annovar.pl adds the extension .exome_summary.csv (hardcoded in annovar).
-      file_out_e_csv = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.sum.colsfixed.my_genes.exome_summary.csv", sep=""); 
+      file_in_e_csv  = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.sum.exome_summary.csv", sep=""); # summarize_annovar.pl adds the extension .exome_summary.csv (hardcoded in annovar).
+      file_out_e_csv = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.sum.my_genes.exome_summary.csv", sep=""); 
       command03 = "head -1";
       command04 = command00;
       options03 = paste(" ", file_in_e_csv, " > ", file_out_e_csv, sep="");

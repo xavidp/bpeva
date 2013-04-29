@@ -54,7 +54,8 @@
 ## -----
 ##
 ## * Performance Improvements Pending:
-##  #) split the bam files by chr, so that variant calling with samtools can be run in parallel for one patient (each chr to a differnt cpu, etc)
+##  #) [DONE] split the bam files by chr, so that variant calling with samtools can be run in parallel for one patient (each chr to a differnt cpu, etc)
+##      However, the result is not clear, since there was some error in the MQ of one variant, so I can't trust blidnly this approach of using xargs, etc.
 ##
 ## * Count reads again from the results for the target genes with variants found, 
 ##    so that number of reads count can be split between 'Wild type' and 'Variant' (and therefore, '% or variant' can be computed).
@@ -78,7 +79,7 @@
 # ---------------------------------------------------------------------
 startdate <- paste(format(Sys.Date(), "%y%m%d"), sep="")
 
-p_test     = 2 # 0-1-2; ### Is this a test run? ###
+p_test     = 0 # 0-1-2; ### Is this a test run? ###
                 # 0 = normal run
                 # 1 = test run, so that use the predefined values for a test run, with samples: ; 
                 # 2 = test run, so that use the predefined values for a test run; 
@@ -166,10 +167,12 @@ if (p_test==1) {
   p_in.ext    <- ".sam" #".fastq" # ".fa" ".sam" ".bam" # This is the .extension of all files used as input for the pipeline to process
   p_output   <- "test_out2" #"/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a3b" #"test_out2" # "../test_out2" # "test_out"
   p_f_my_rs  <- "file_my_rs.txt" # In p_input. Needed by SnpEff to filter for the target genes before the report (well, filter for the potential snp rs codes in those genes)
-  p_label    <- "test2_14c" #"testrunGATK1" # "testsnpEffCountReads_a" "test-121002" # "test-foo"        # Run Label for output filenames
+  p_label    <- "test2_18" #"testrunGATK1" # "testsnpEffCountReads_a" "test-121002" # "test-foo"        # Run Label for output filenames
   p_desc     <- "Testing run
-                        test2_14c: As in test2_14b, but only with the function to fix cols: 
-                                    testing the a csv file heavier to test for preformance improvement (right now it was 1 second only)"
+                        test2_18: Testing the count reads: 
+                                    How long does it take with the test set?"
+  #                      test2_14c: As in test2_14b, but only with the function to fix cols: 
+  #                                  testing the a csv file heavier to test for preformance improvement (right now it was 1 second only)"
   #                      test2_14b: As in test2_14, no changes so far: 
   #                                  testing the new functions to fix INFO fields in splitted columns from csv files from anovar"
   #                      test2_17: Test the splitting of bam in chromosomes prior to variant calling"
@@ -236,7 +239,7 @@ if (p_test==1) {
   #p_filter   <- ""   
   p_filter   <- "BRCA1|\\|BRCA2|\\|CHEK2|\\|PALB2|\\|BRIP1|\\|TP53|\\|PTEN|\\|STK11|\\|CDH1|\\|ATM|\\|BARD1|\\|APC|\\|MLH1|\\|MRE11A|\\|MSH2|\\|MSH6|\\|MUTYH|\\|NBN|\\|PMS1|\\|PMS2|\\|RAD50|\\|RAD51D|\\|RAD51C|\\|XRCC2|\\|UIMC1|\\|FAM175A|\\|ERCC4|\\|RAD51|\\|RAD51B|\\|XRCC3|\\|FANCA|\\|FANCB|\\|FANCC|\\|FANCD2|\\|FANCE|\\|FANCF|\\|FANCG|\\|FANCI|\\|FANCL|\\|FANCM|\\|SLX4|\\|CASP8|\\|FGFR2|\\|TOX3|\\|MAP3K1|\\|MRPS30|\\|SLC4A7|\\|NEK10|\\|COX11|\\|ESR1|\\|CDKN2A|\\|CDKN2B|\\|ANKRD16|\\|FBXO18|\\|ZNF365|\\|ZMIZ1|\\|BABAM1|\\|LSP1|\\|ANKLE1|\\|TOPBP1|\\|BCCIP|\\|TP53BP1|\\|BRCA1:\\|BRCA2:\\|CHEK2:\\|PALB2:\\|BRIP1:\\|TP53:\\|PTEN:\\|STK11:\\|CDH1:\\|ATM:\\|BARD1:\\|APC:\\|MLH1:\\|MRE11A:\\|MSH2:\\|MSH6:\\|MUTYH:\\|NBN:\\|PMS1:\\|PMS2:\\|RAD50:\\|RAD51D:\\|RAD51C:\\|XRCC2:\\|UIMC1:\\|FAM175A:\\|ERCC4:\\|RAD51:\\|RAD51B:\\|XRCC3:\\|FANCA:\\|FANCB:\\|FANCC:\\|FANCD2:\\|FANCE:\\|FANCF:\\|FANCG:\\|FANCI:\\|FANCL:\\|FANCM:\\|SLX4:\\|CASP8:\\|FGFR2:\\|TOX3:\\|MAP3K1:\\|MRPS30:\\|SLC4A7:\\|NEK10:\\|COX11:\\|ESR1:\\|CDKN2A:\\|CDKN2B:\\|ANKRD16:\\|FBXO18:\\|ZNF365:\\|ZMIZ1:\\|BABAM1:\\|LSP1:\\|ANKLE1:\\|TOPBP1:\\|BCCIP:\\|TP53BP1:\\|^BRCA1\t\\|^BRCA2\t\\|^CHEK2\t\\|^PALB2\t\\|^BRIP1\t\\|^TP53\t\\|^PTEN\t\\|^STK11\t\\|^CDH1\t\\|^ATM\t\\|^BARD1\t\\|^APC\t\\|^MLH1\t\\|^MRE11A\t\\|^MSH2\t\\|^MSH6\t\\|^MUTYH\t\\|^NBN\t\\|^PMS1\t\\|^PMS2\t\\|^RAD50\t\\|^RAD51D\t\\|^RAD51C\t\\|^XRCC2\t\\|^UIMC1\t\\|^FAM175A\t\\|^ERCC4\t\\|^RAD51\t\\|^RAD51B\t\\|^XRCC3\t\\|^FANCA\t\\|^FANCB\t\\|^FANCC\t\\|^FANCD2\t\\|^FANCE\t\\|^FANCF\t\\|^FANCG\t\\|^FANCI\t\\|^FANCL\t\\|^FANCM\t\\|^SLX4\t\\|^CASP8\t\\|^FGFR2\t\\|^TOX3\t\\|^MAP3K1\t\\|^MRPS30\t\\|^SLC4A7\t\\|^NEK10\t\\|^COX11\t\\|^ESR1\t\\|^CDKN2A\t\\|^CDKN2B\t\\|^ANKRD16\t\\|^FBXO18\t\\|^ZNF365\t\\|^ZMIZ1\t\\|^BABAM1\t\\|^LSP1\t\\|^ANKLE1\t\\|^TOPBP1\t\\|^BCCIP\t\\|^TP53BP1\t\\|\"BRCA1\"\\|\"BRCA2\"\\|\"CHEK2\"\\|\"PALB2\"\\|\"BRIP1\"\\|\"TP53\"\\|\"PTEN\"\\|\"STK11\"\\|\"CDH1\"\\|\"ATM\"\\|\"BARD1\"\\|\"APC\"\\|\"MLH1\"\\|\"MRE11A\"\\|\"MSH2\"\\|\"MSH6\"\\|\"MUTYH\"\\|\"NBN\"\\|\"PMS1\"\\|\"PMS2\"\\|\"RAD50\"\\|\"RAD51D\"\\|\"RAD51C\"\\|\"XRCC2\"\\|\"UIMC1\"\\|\"FAM175A\"\\|\"ERCC4\"\\|\"RAD51\"\\|\"RAD51B\"\\|\"XRCC3\"\\|\"FANCA\"\\|\"FANCB\"\\|\"FANCC\"\\|\"FANCD2\"\\|\"FANCE\"\\|\"FANCF\"\\|\"FANCG\"\\|\"FANCI\"\\|\"FANCL\"\\|\"FANCM\"\\|\"SLX4\"\\|\"CASP8\"\\|\"FGFR2\"\\|\"TOX3\"\\|\"MAP3K1\"\\|\"MRPS30\"\\|\"SLC4A7\"\\|\"NEK10\"\\|\"COX11\"\\|\"ESR1\"\\|\"CDKN2A\"\\|\"CDKN2B\"\\|\"ANKRD16\"\\|\"FBXO18\"\\|\"ZNF365\"\\|\"ZMIZ1\"\\|\"BABAM1\"\\|\"LSP1\"\\|\"ANKLE1\"\\|\"TOPBP1\"\\|\"BCCIP\"\\|\"TP53BP1\"\\|BRCA1\t|BRCA2\t|CHEK2\t|PALB2\t|BRIP1\t|TP53\t|PTEN\t|STK11\t|CDH1\t|ATM\t|BARD1\t|APC\t|MLH1\t|MRE11A\t|MSH2\t|MSH6\t|MUTYH\t|NBN\t|PMS1\t|PMS2\t|RAD50\t|RAD51D\t|RAD51C\t|XRCC2\t|UIMC1\t|FAM175A\t|ERCC4\t|RAD51\t|RAD51B\t|XRCC3\t|FANCA\t|FANCB\t|FANCC\t|FANCD2\t|FANCE\t|FANCF\t|FANCG\t|FANCI\t|FANCL\t|FANCM\t|SLX4\t|CASP8\t|FGFR2\t|TOX3\t|MAP3K1\t|MRPS30\t|SLC4A7\t|NEK10\t|COX11\t|ESR1\t|CDKN2A\t|CDKN2B\t|ANKRD16\t|FBXO18\t|ZNF365\t|ZMIZ1\t|BABAM1\t|LSP1\t|ANKLE1\t|TOPBP1\t|BCCIP\t|TP53BP1  "
   p_filter.c  <- "BRCA1 BRCA2 CHEK2 PALB2 BRIP1 TP53 PTEN STK11 CDH1 ATM BARD1 APC MLH1 MRE11A MSH2 MSH6 MUTYH NBN PMS1 PMS2 RAD50 RAD51D RAD51C XRCC2 UIMC1 FAM175A ERCC4 RAD51 RAD51B XRCC3 FANCA FANCB FANCC FANCD2 FANCE FANCF FANCG FANCI FANCL FANCM SLX4 CASP8 FGFR2 TOX3 MAP3K1 MRPS30 SLC4A7 NEK10 COX11 ESR1 CDKN2A CDKN2B ANKRD16 FBXO18 ZNF365 ZMIZ1 BABAM1 LSP1 ANKLE1 TOPBP1 BCCIP TP53BP1"
-  p_tggbf     <- FALSE #TRUE # TRUE=A bed file will be generated with the intersecting intervals for the target genes. Needed to filter vcf files for target genes before reunning custom snpEff Report 
+  p_tggbf     <- TRUE #TRUE # TRUE=A bed file will be generated with the intersecting intervals for the target genes. Needed to filter vcf files for target genes before reunning custom snpEff Report 
   p_mail.send <- 0 # 0=FALSE, 1=TRUE ; Indicate whether we want an email sent when the run is finished
   p_only.m.r  <- 1 # Use only Mapped reads to created the corresponding bam files?
   #                 0/n: no, use mapped and unmapped reads; 
@@ -254,14 +257,25 @@ if (p_test==1) {
   #                                 of running the whole pipeline or just some steps, when using short reads paired end (sampe; p_bwa=2)
   } else {
   path_input_absolute <- "1" # Define whether the p_input is absolute or relative
-# PARAMS for dir_out_293a5 Individuals 5 & 6.
-# -----------------------------------------
-  p_input    <- "/mnt/magatzem02/tmp/run_sara_293a/dir_in_293a5" # "../dir_in" # "test_in"   # "dir_in"     
-  p_output   <- "/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a5" #../dir_out_293" # "../dir_out_293" # "test_out"	 # "dir_out_293"
+  
+  # PARAMS for dir_out_all from dir_in_test_cr_ind1: Individual 1.
+  # -----------------------------------------
+  p_input    <- "/mnt/magatzem02/tmp/run_sara_293a/dir_in_test_cr_ind1" # "../dir_in" # "test_in"   # "dir_in"     
+  p_output   <- "/mnt/magatzem02/tmp/run_sara_293a/dir_out_all" #../dir_out_293" # "../dir_out_293" # "test_out"   # "dir_out_293"
   p_f_my_rs  <- "file_my_rs.txt" # In p_input. Needed by SnpEff to filter for the target genes before the report (well, filter for the potential snp rs codes in those genes)
-  p_label    <-  "sg293a5_b13" # sg293a2b2.snpeff.greped" # "test-121002" # ".sg293_qa_sg3sg4"   # "test-121002" ".sara207_4s4cpu"        # Run Label for output filenames
-  p_desc     <- "Individuals 5 & 6.
-                      sg293a5_b13: as in previous, but re-running ssfii (filter intersecting intervals) to generate the my_genes snpEff reports, etc"
+  p_label    <-  "sg293_i01_01" # sg293a2b2.snpeff.greped" # "test-121002" # ".sg293_qa_sg3sg4"   # "test-121002" ".sara207_4s4cpu"        # Run Label for output filenames
+  p_desc     <- "Individual 1
+                      sg293_i01_01: running count reads on ind 1 only, with only regions from bed file."
+  #                    sg293a5_b12: as in sg293a5_b10, but re-run quality control, as it was missing for some reason for individual 6"
+  
+# # PARAMS for dir_out_293a5 Individuals 5 & 6.
+# # -----------------------------------------
+#   p_input    <- "/mnt/magatzem02/tmp/run_sara_293a/dir_in_293a5" # "../dir_in" # "test_in"   # "dir_in"     
+#   p_output   <- "/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a5" #../dir_out_293" # "../dir_out_293" # "test_out"	 # "dir_out_293"
+#   p_f_my_rs  <- "file_my_rs.txt" # In p_input. Needed by SnpEff to filter for the target genes before the report (well, filter for the potential snp rs codes in those genes)
+#   p_label    <-  "sg293a5_b13" # sg293a2b2.snpeff.greped" # "test-121002" # ".sg293_qa_sg3sg4"   # "test-121002" ".sara207_4s4cpu"        # Run Label for output filenames
+#   p_desc     <- "Individuals 5 & 6.
+#                       sg293a5_b13: as in previous, but re-running ssfii (filter intersecting intervals) to generate the my_genes snpEff reports, etc"
   #                    sg293a5_b12: as in sg293a5_b10, but re-run quality control, as it was missing for some reason for individual 6"
   #                    sg293a5_b11: as in sg293a5_b10, As in sg293a4b_06 but testing functions in snpEff and snpSift related with dbSnp"
   #                    sg293a5_b10: as in sg293a5_b09, but running only grep post snpEff report (with r101)"
@@ -411,10 +425,10 @@ p_variant.annotation.regionb	<- FALSE # runParam # Non-started work (place holde
 p_variant.annotation.filterb	<- runParam
 p_variant.annotation.summarize<- runParam
 #####
-runParam <- TRUE #######################
+runParam <- FALSE #######################
 ####
-p_variant.annotation.s.fixcols<- FALSE #runParam # Taking too long still with real data
 p_grep.variants		            <- runParam
+p_variant.annotation.s.fixcols	<- runParam
 p_visualize.variants		      <- FALSE # runParam # Non-started work (place holder only)
 #####
 runParam <- FALSE #######################
@@ -425,6 +439,9 @@ p_variant.dbsnp.pre.snpeff    <- FALSE # runParam # Non-started work (place hold
 p_grep.pre.snpeff.report      <- FALSE # runParam # Not running properly yet
 p_variant.eff.report          <- runParam
 p_grep.post.snpeff.report     <- runParam
+#####
+runParam <- TRUE #######################
+####
 p_snpeff.count.reads          <- runParam 
 #####
 runParam <- FALSE #######################
@@ -459,8 +476,8 @@ params_w2pps <- list(
   p_variant.annotation.regionb        = p_variant.annotation.regionb,
   p_variant.annotation.filterb        = p_variant.annotation.filterb,
   p_variant.annotation.summarize      = p_variant.annotation.summarize,
-  p_variant.annotation.s.fixcols      = p_variant.annotation.s.fixcols,
   p_grep.variants                     = p_grep.variants,
+  p_variant.annotation.s.fixcols      = p_variant.annotation.s.fixcols,
   p_visualize.variants                = p_visualize.variants,
   p_variant.fii.pre.snpeff            = p_variant.fii.pre.snpeff,
   p_variant.filter.pre.snpeff         = p_variant.filter.pre.snpeff,

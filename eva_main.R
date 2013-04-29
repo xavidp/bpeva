@@ -51,7 +51,7 @@ source("eva_analysis_functions.R")
 source("eva_analysis_wrappers.R")
 
 # Import the file with functions to build the html report
-source("eva_buildmenu.R")
+#source("eva_buildmenu.R")
 
 ##############################################################################
 ##############################################################################

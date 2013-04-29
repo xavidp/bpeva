@@ -384,15 +384,15 @@ wrapper2.parallelizable.per.sample <- function(datastep.my2) {
                                              step.my  = step)
   }
 
-  if (variant.annotation.s.fixcols) {
-    # Next Step
-    step <- fun.variant.annotation.summary.call.fixcolumns(file2process.my2  = file2process.my1,
-                                             step.my  = step)
-  }
-  
   if (grep.variants) {
     # Next Step
     step <- fun.grep.variants(file2process.my2  = file2process.my1,
+                                             step.my  = step)
+  }
+  
+  if (variant.annotation.s.fixcols) {
+    # Next Step
+    step <- fun.variant.annotation.summary.call.fixcolumns(file2process.my2  = file2process.my1,
                               step.my  = step)
   }
   
