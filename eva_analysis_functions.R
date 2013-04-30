@@ -1622,9 +1622,9 @@ fun.snpeff.count.reads <- function(file2process.my2, step.my) {
   
   # If for whatever reason, the filetoprocess.my2 comes with the base path (from dir_in or dir_out) 
   # as a prefix, remove it.
-  if ( length(grep(params$directory_in, file2process.my2)) ) {
+  if ( length(grep(params$directory_in, file2process.my2)) > 0 ) {
     file2process.my2 <- sub(paste(params$directory_in, "/", sep=""), "", file2process.my2)
-  } else if ( length(grep(params$directory_out, file2process.my2)) ) {
+  } else if ( length(grep(params$directory_out, file2process.my2)) > 0 ) {
     file2process.my2 <- sub(paste(params$directory_out, "/", sep=""), "", file2process.my2)
   }
   
@@ -1648,36 +1648,184 @@ fun.snpeff.count.reads <- function(file2process.my2, step.my) {
   check2showcommand(params$opt$showc, command, file2process.my2);
   system(command);
   
+  
+  # Don't check for check2clean("$file_in") since we still need it for the variant calling
+  print_done(file2process.my2);
+  
+  # direct command line call for testing other things:
+  # java -Xmx4g -jar /home/ueb/snpEff/snpEff.jar countReads hg19 file_in.sam.sorted.fixmate.dupmarked.noDup.bam > file_in.sam.sorted.fixmate.dupmarked.noDup.bam.cr.txt
+  
+  gc() # Let's clean ouR garbage if possible
+  return(step.my) # return nothing, since results are saved on disk from the system command
+}
+
+##########################
+### FUNCTION fun.snpeff.cr.postprocess
+###
+###   Postprocess snpEff Count Reads using R [optional]
+##########################
+
+fun.snpeff.cr.postprocess <- function(file2process.my2, step.my) {
+  # Manual debugging
+  # file2process.my2 <- "/mnt/magatzem02/tmp/run_sara_293a/dir_in_test_cr_ind1/s_1_m11_143b_merged12"
+  
+  # update step number
+  step.my$tmp <- step.my$tmp + 1
+  
   # Manual debugging XXX
   # file2process.my2 <- "sgs7a_merged12"
   # file_in <- "./test_out2/sgs7a_merged12.sam.sorted.edited.bam"
   # file_out <- "./test_out2/sgs7a_merged12.sam.sorted.edited.bam.cr.txt"
   # file_in <- "/mnt/magatzem02/tmp/run_sara_293a/dir_out_all/test_out/s_4_m11_146b_merged12.sam.sorted.edited.bam"
   # file_out <- "/mnt/magatzem02/tmp/run_sara_293a/dir_out_all/s_4_m11_146b_merged12.sam.sorted.edited.bam.cr.txt"
+  # file2process.my2 <- "s_1_m11_143b_merged12"
+  # file_in <- "/mnt/magatzem02/tmp/run_sara_293a/dir_out_all/s_1_m11_143b_merged12.sam.sorted.edited.bam"
+  # file_out <- "/mnt/magatzem02/tmp/run_sara_293a/dir_out_all/s_1_m11_143b_merged12.sam.sorted.edited.bam.cr.txt"
+  # params$log.folder <- params$directory_out
   
-  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "b0. Generate cr.table.csv using R: ", file2process.my2, " ###\n", sep=""), file2process.my2);
+  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "a. Generation of cr.table.csv using R: Load .cr.txt file: ", file2process.my2, " ###\n", sep=""), file2process.my2);
+  
+  # If for whatever reason, the filetoprocess.my2 comes with the base path (from dir_in or dir_out) 
+  # as a prefix, remove it.
+  if ( length(grep(params$directory_in, file2process.my2)) > 0 ) {
+    file2process.my2 <- sub(paste(params$directory_in, "/", sep=""), "", file2process.my2)
+  } else if ( length(grep(params$directory_out, file2process.my2)) > 0 ) {
+    file2process.my2 <- sub(paste(params$directory_out, "/", sep=""), "", file2process.my2)
+  }
+  
+  file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.edited.bam", sep="");
+  file_out = paste(file_in, ".cr.txt", sep="");
+  
+  # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
+  file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
+  
+  # Load library mmap to map the cr file on disk and use it in R memory only the pieces needed each time (not the whole file all the time)
+  if(!require(mmap)){ install.packages("mmap") }
+  library('mmap', quietly = TRUE);
+  
+  print_doc(paste("\t\t\t\t\tMemory usage (Vcell) pre-loading cr.txt file: ", gc()[2,2], " Mb\n", sep=""), file2process.my2); 
   
   # load the file created as file2process.countreads (aka: f2p.cr)
-  f2p.cr <- read.table(file_out, header=T, sep="\t")
-  # head(f2p.cr)
-  #dim(f2p.cr)
-  x.my <- as.character(f2p.cr$IDs)
+  #f2p.cr <- read.table(file_out, header=T, sep="\t", stringsAsFactors = FALSE)
+  #f2p.cr <- read.table(file_out, header=T, sep="\t")
+  
+  # Read the file with mmap.csv() 
+  # mmap.csv() is meant to be the analogue of read.csv in R, with the primary difference being
+  # that data is read, by column, into memory-mapped structs on disk. 
+  f2p.cr <- mmap.csv(file_out, header=T, sep="\t")   # mmap in the csv
+  print_done(file2process.my2); # with timestamp, to indicate how long did it take this loading step
+  print_doc(paste("\t\t\t\t\tMemory usage (Vcell) after cr.txt file loaded (as mmap object): ", gc()[2,2], " Mb\n", sep=""), file2process.my2); 
+  
+# Leftover to be removed --------------->
+#   f2p.cr.nrows <- dim(f2p.cr)[1] 
+#   
+#   # Convert the object f2p.cr into a mapped file, to reduce RAM consumption (object is stored on disk, and only loaded the bits to be used when needed)
+#   f2p.cr.mm <- as.mmap(f2p.cr, 
+#                        struct(
+#                           chr = char(20),
+#                           start = int32(), 
+#                           end = int32(), 
+#                           type = char(20),
+#                           IDs = char(100),
+#                           int32(),
+#                           int32() 
+#                           )
+#                        )
+#   head(f2p.cr.mm)
+#   str(f2p.cr.mm)
+#   str(f2p.cr)
+#   
+#   myClasses <- rapply(f2p.cr, typeof)
+#   mm2 <- as.mmap(f2p.cr, myClasses) 
+#   
+#   tmp <- tempfile()
+#   write.csv(f2p.cr, tmp)
+#   m <- mmap.csv(tmp)   # mmap in the csv
+#   head(m)
+# <---------- Leftover to be removed 
+  
+
+  #------------------
+  # Tip from: 
+  # http://stackoverflow.com/questions/8005417/mmap-and-csv-files
+  #
+  #tmpDF <- read.csv(myFile, nrow = 10)
+  #myClasses <- rapply(tmpDF, typeof)
+  #Thus, you read in only a small amount of information and let R determine classes for you. You may need to address the stringsAsFactors issue, i.e. via read.csv(..., stringsAsFactors = FALSE).
+  #------------------
+  
+  # Another approach is to load the cr.txt file already as mmap object # Fails because it reads as fixed width
+  #mm <- mmap( file= file_out, mode = struct(char(20),  int32(), int32(), char(20), char(100), int32(), int32()))
+  #head(mm)
+  
+  #print_doc("Garbage collection output (R) after mmap'ing cr.txt file: \n", file2process.my2);
+  #print_mes(dimnames(gc())[[1]][2], file2process.my2); print_mes(dimnames(gc())[[2]], file2process.my2); print_mes(gc()[2,], file2process.my2)
+  
+  # ---------------
+  # NOTE: Special syntax to refer to columns in a mapped data.frame with as.mmap() 
+  # Examples Taken from: 
+  # http://stackoverflow.com/questions/8748096/access-data-frame-columns-in-r-mmap-objects
+  #
+  #   > foo <- as.mmap(mtcars)
+  #   > foo[,'mpg'] # works
+  #   mpg
+  #   1  21.0
+  #   2  21.0
+  #   3  22.8
+  #   4  21.4
+  #   5  18.7
+  #   ...
+  #   > foo$mpg #does not work
+  #   NULL
+  #   > foo[['mpg']] #also does not work
+  #   NULL
+  #   > foo[]$mpg #works
+  #   ...
+  #   > foo[][['mpg']] #also works
+  # ---------------
+  
+  # Convert IDS to character (needed for later)
+  x.my <- as.character(f2p.cr[]$IDs)
   
   # Do all the processing only if there is some data to process. To avoid the program to break when snpEff fails to count reads
   # dues to the issues with "MAPQ should be zero for unmmaped reads", etc. 
   if (length(x.my) > 0) {
-    
+    print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "b. Split Annotation and create new columns...: ", file2process.my2, " ###\n", sep=""), file2process.my2);
+    #------------
+    print_doc(paste("\t\t\t\t\tMemory usage (Vcell): ", gc()[2,2], " Mb\n", sep=""), file2process.my2); 
+    #------------
     # Split IDs by ; and create the new columns on the right with separated unitN, ENST (ENSEMBL Transcript) & ENSG (ensembl_gene_id) codes.
     out.my <- fun.splitAnnot(x.my)
     colnames(out.my) <- c("unitN", "ENST","ENSG")  # unitN stands for exonNumber or IntronNumber or similar
-    f2p.cr <- cbind(f2p.cr, out.my)
+    # Remove spaces in values of out.my using stringr package
+    if(!require(stringr)){ install.packages("stringr") }
+    library(stringr, quietly = TRUE)
+    out.my <- str_trim(out.my)
     
+    ## cbind:  It doesn't work with mmapped objects!
+    #f2p.cr[] <- cbind(f2p.cr[], out.my)
+    ## from now onwards, where I was using f2p.cr[,8] I will be using out.my[,1] instead
+
+    #head(f2p.cr[])
+    #head(f2p.cr)
+    #head(f2p.cr[]$IDs)
+    #head(x.my)
+    #head(out.my)
+    #tail(out.my)
+    
+    print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "c. Add leading zeros where needed for common # of characters...: ", file2process.my2, " ###\n", sep=""), file2process.my2);
+    #------------
+    print_doc(paste("\t\t\t\t\tMemory usage (Vcell): ", gc()[2,2], " Mb\n", sep=""), file2process.my2); 
+    #------------
     # convert column 8 into character vectors and apply the function to add leading zeros for correct ordering as text
-    x <- as.character(f2p.cr[,8])
-    # Add leading zeros whre needed to have up to 3 digits for all numbers (from exon_001 to exon_999)
-    f2p.cr[,8] <- fun.addleading0.ids(x, "_", 3)
+    #x <- as.character(f2p.cr[,8])
+    x <- as.character(out.my[,1])
     
-    print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "b1. Get hgnc_symbols for the corresponding ensembl_gene_id: ", file2process.my2, " ###\n", sep=""), file2process.my2);
+    # Add leading zeros where needed to have up to 3 digits for all numbers (from exon_001 to exon_999)
+    #f2p.cr[,8] <- fun.addleading0.ids(x, "_", 3)
+    out.my[,1] <- fun.addleading0.ids(x, "_", 3)
+      
+    print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "d. Get hgnc_symbols for the corresponding ensembl_gene_id: ", file2process.my2, " ###\n", sep=""), file2process.my2);
     
     # Convert ENSG (ensembl_gene_id) to Gene_symbols (hgnc_symbol) and add it as new column to f2p.cr$Gene_Symbol
     # ------------------------------------------------------------------------------------------------------------
@@ -1690,22 +1838,33 @@ fun.snpeff.count.reads <- function(file2process.my2, step.my) {
     df.a <- read.table(file_my_genenames, header=T, sep="\t")
     #str(df.a)
     
-    df.b <- f2p.cr
-    #str(df.b)
+    # I skip the generation of a new object with all contents from f2p.cr since 
+    # it may mean doubling memory consumption in RAM, and f2p.cr is a already big object 
+    #df.b <- f2p.cr
+    #b <- as.character(df.b[,"ENSG"])
+    #f2p.cr[,"ENSG"] <- as.character(f2p.cr[,"ENSG"])
+    out.my[,"ENSG"] <- str_trim(as.character(out.my[,"ENSG"]))
+    # Convert matrix out.my into a data.frame
+    out.my <- as.data.frame(out.my)
     
-    b <- as.character(df.b[,"ENSG"])
     a <- as.character(df.a[,"ensembl_gene_id"])
     # Example of match in the testset
     # a: ENSG00000012048
     # b: ENSG00000012048
-    #match.b.a <- pmatch(b, a, nomatch=0)
-    match.b.a <- pmatch(b, a, duplicates.ok=TRUE)
+    ##match.b.a <- pmatch(b, a, nomatch=0)
+    #match.b.a <- pmatch(b, a, duplicates.ok=TRUE)
+    #match.b.a <- pmatch(f2p.cr[,"ENSG"], a, duplicates.ok=TRUE)
+    match.b.a <- pmatch(out.my[,"ENSG"], a, duplicates.ok=TRUE)
+    
     # Get the vector with the hgnc_symbols corresponding to those genes. There can be some gaps, like in the case of the KIAA1462 in the testset
     GeneSymbol <- df.a[ match.b.a, "hgnc_symbol" ]
+    # class(GeneSymbol)
     # length(my_hgnc_symbols)
     # dim(df.b)
     # dim(f2p.cr)
-    f2p.cr <- cbind(f2p.cr, GeneSymbol)
+    #f2p.cr <- cbind(f2p.cr, GeneSymbol)
+    out.my <- cbind(out.my, GeneSymbol)
+    
     #str(f2p.cr)
     # --------------- end adding new column with Gene_symbols corresponding to the ENSG (ensembl_gene_id) found
     
@@ -1744,7 +1903,7 @@ fun.snpeff.count.reads <- function(file2process.my2, step.my) {
       # Remove the case of an empty value
       tgenes <- tgenes[-match("", tgenes)]
     # --------------------------------------------------
-    print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "b2. Filter results by a subset with only target genes: ", file2process.my2, " ###\n", sep=""), file2process.my2);
+    print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "e. Filter results by a subset with only target genes: ", file2process.my2, " ###\n", sep=""), file2process.my2);
     
 
     ## Filter results by the genes of interest only WITH A SUBSET
@@ -1754,13 +1913,20 @@ fun.snpeff.count.reads <- function(file2process.my2, step.my) {
       ## Example for a couple of gene Symbols
       #f2p.cr.tg <- f2p.cr[f2p.cr$GeneSymbol %in% c("WASH7P", "OR4F5"), ]
     # Do the filtering for the genes of interest (in the list of target genes: tgenes) 
-    f2p.cr.tg <- f2p.cr[f2p.cr$GeneSymbol %in% tgenes, ]
+    #f2p.cr.tg <- f2p.cr[f2p.cr[]$GeneSymbol %in% tgenes, ]
+    #str(out.my)
+    #head(out.my)
+
+    f2p.cr.tg <- out.my[out.my$GeneSymbol %in% tgenes, ]
+
     # for the sake of simplicity and effectiveness, we assign the subset of count reads 
     # for the genes of interest ("target genes", aka, "tg") to the whole list of count reads in the file to process (f2p.cr)
-    f2p.cr <- f2p.cr.tg
+    #f2p.cr <- f2p.cr.tg
+    out.my <- f2p.cr.tg
     
     # Get the last three columns as Gene symbols and exon and intron numbers
-    f2p.cr.genes <- f2p.cr[,c(8,9,11)]
+    #f2p.cr.genes <- f2p.cr[][,c(8,9,11)]
+    f2p.cr.genes <- out.my[,c(1,2,4)]
     #summary(f2p.cr.genes)
     
     ## Convert into true/false
@@ -1782,57 +1948,97 @@ fun.snpeff.count.reads <- function(file2process.my2, step.my) {
     f2p.cr.genes2$GeneSymbol <- as.factor(as.character(f2p.cr.genes2$GeneSymbol))
     #str(f2p.cr.genes2)
     
-    print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "b3. Apply function ftable in R: ", file2process.my2, " ###\n", sep=""), file2process.my2);
-    
-    # (Approach 1) Implementation with ftable ------------->
-    #startcr <- Sys.time();
-
-    # Therefore, this (below) is the table with all values (including the wrong chromosome numbers as gene symbols by mistake)
-    # convert in a flat table sorting first by Gene Symbol, and then, by exon number.
-    f2p.cr.table <- ftable(f2p.cr.genes2, row.vars = 2:1)
-    #head(f2p.cr.genes2)
-    #str(f2p.cr.table)
-    #?print.ftable
-    
-    print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "b4a. Convert ftable into dataframe (R): ", file2process.my2, " ###\n", sep=""), file2process.my2);
-    
-    # [SOLVED] as.data.frame.table or as.data.frame.matrix !!!!!!
-    f2p.cr.dft <- as.data.frame.table(f2p.cr.table)
-    
-    print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "b4b. Re-order results in R: ", file2process.my2, " ###\n", sep=""), file2process.my2);
-    
-    # We need to re-sort in a similar way to what the ftable was
-    f2p.cr.dft <- f2p.cr.dft[order(f2p.cr.dft$GeneSymbol, f2p.cr.dft$unitN),]
-    
-    print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "b4c. Remove zeros from counts in the data frame (R): ", file2process.my2, " ###\n", sep=""), file2process.my2);
-    
-    # And last, we remove all row with 0 in the column Counts
-    f2p.cr.dft <- f2p.cr.dft[!f2p.cr.dft$Freq==0,]
-  
-    #durationftable <- Sys.time() - startcr
-    # (Approach 1) <------ Implementation with ftable
-
-#     # (Approach 2) Implementation with aggregate ------------->
-#     startcr <- Sys.time();
-#     
-#     f2p.cr.df2 <- aggregate(ENST ~ GeneSymbol + unitN, data=f2p.cr.genes, FUN=length)
-#     #class(f2p.cr.df2)
-#     f2p.cr.df2 <- f2p.cr.df2[order(f2p.cr.df2$GeneSymbol, f2p.cr.df2$unitN),]
-#     f2p.cr.df2 <- f2p.cr.df2[!f2p.cr.df2$unitN=="NA",]
+#    print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "b5. Apply function ftable in R: ", file2process.my2, " ###\n", sep=""), file2process.my2);
+#    
+#     # (Approach 1) Implementation with ftable ------------->
+#     #startcr <- Sys.time();
+# 
+#     # Therefore, this (below) is the table with all values (including the wrong chromosome numbers as gene symbols by mistake)
+#     # convert in a flat table sorting first by Gene Symbol, and then, by exon number.
+#     f2p.cr.table <- ftable(f2p.cr.genes2, row.vars = 2:1)
+#     #head(f2p.cr.genes2)
 #     #str(f2p.cr.table)
-#     #?head(f2p.cr.table)
+#     #?print.ftable
 #     
-#     durationaggr <- Sys.time() - startcr
-#     # (Approach 2) <------ Implementation with aggregate
+#     print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "f1. Convert ftable into dataframe (R): ", file2process.my2, " ###\n", sep=""), file2process.my2);
+#     
+#     # [SOLVED] as.data.frame.table or as.data.frame.matrix !!!!!!
+#     f2p.cr.dft <- as.data.frame.table(f2p.cr.table)
+#     
+#     # Write the column names that will be used later for the sav file written on disk
+#     col.names.my <- "\"ENST\",\"unitN\",\"GeneSymbol\",\"Count\""
+#    
+#     print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "f2. Re-order results in R: ", file2process.my2, " ###\n", sep=""), file2process.my2);
+#     
+#     # We need to re-sort in a similar way to what the ftable was
+#     f2p.cr.dft <- f2p.cr.dft[order(f2p.cr.dft$GeneSymbol, f2p.cr.dft$unitN),]
+#     
+#     print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "f3. Remove zeros from counts in the data frame (R): ", file2process.my2, " ###\n", sep=""), file2process.my2);
+#     
+#     # And last, we remove all row with 0 in the column Counts
+#     f2p.cr.dft <- f2p.cr.dft[!f2p.cr.dft$Freq==0,]
+#   
+#     #durationftable <- Sys.time() - startcr
+#    # (Approach 1) <------ Implementation with ftable
+
+    # (Approach 2) Implementation with aggregate ------------->
+    #startcr <- Sys.time();
+    command = paste("free -t -m -g | grep 'otal\\|Mem\\|Swap'", 
+                    " >> ", file_stderr, " 2>> ", file_stderr, sep="")
+    #check2showcommand(params$opt$showc, command, file2process.my2);
+    system(command);
+    #------------
+    print_doc(paste("\t\t\t\t\tMemory usage (Vcell): ", gc()[2,2], " Mb\n", sep=""), file2process.my2); 
+    #------------
     
-    print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "b5. Write the file  cr.table.csv using R: ", file2process.my2, " ###\n", sep=""), file2process.my2);
+    print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "f1. Aggregate data (R): ", file2process.my2, " ###\n", sep=""), file2process.my2);
+    f2p.cr.df2 <- aggregate(ENST ~ GeneSymbol + unitN, data=f2p.cr.genes2, FUN=length)
+    command = paste("free -t -m -g | grep 'otal\\|Mem\\|Swap'", 
+                    " >> ", file_stderr, " 2>> ", file_stderr, sep="")
+    #check2showcommand(params$opt$showc, command, file2process.my2);
+    system(command);
+    #------------
+    print_doc(paste("\t\t\t\t\tMemory usage (Vcell): ", gc()[2,2], " Mb\n", sep=""), file2process.my2); 
+    #------------
+    
+    # Write the column names that will be used later for the file written on disk
+    col.names.my <- "\"GeneSymbol\",\"unitN\",\"Count\""
+    
+    #class(f2p.cr.df2)
+    print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "f2. Reorder data (R): ", file2process.my2, " ###\n", sep=""), file2process.my2);
+    f2p.cr.df2 <- f2p.cr.df2[order(f2p.cr.df2$GeneSymbol, f2p.cr.df2$unitN),]
+    command = paste("free -t -m -g | grep 'otal\\|Mem\\|Swap'", 
+                    " >> ", file_stderr, " 2>> ", file_stderr, sep="")
+    #check2showcommand(params$opt$showc, command, file2process.my2);
+    system(command);
+    #------------
+    print_doc(paste("\t\t\t\t\tMemory usage (Vcell): ", gc()[2,2], " Mb\n", sep=""), file2process.my2); 
+    #------------
+    
+            
+    print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "f3. Remove NA (R): ", file2process.my2, " ###\n", sep=""), file2process.my2);
+    f2p.cr.df2 <- f2p.cr.df2[!f2p.cr.df2$unitN=="NA",]
+    command = paste("free -t -m -g | grep 'otal\\|Mem\\|Swap'", 
+                    " >> ", file_stderr, " 2>> ", file_stderr, sep="")
+    #check2showcommand(params$opt$showc, command, file2process.my2);
+    system(command);
+    #------------
+    print_doc(paste("\t\t\t\t\tMemory usage (Vcell): ", gc()[2,2], " Mb\n", sep=""), file2process.my2); 
+    #------------
+    
+    f2p.cr.dft <- f2p.cr.df2
+    #durationaggr <- Sys.time() - startcr
+
+    # (Approach 2) <------ Implementation with aggregate
+    
+    print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "g. Write the file  cr.table.csv using R: ", file2process.my2, " ###\n", sep=""), file2process.my2);
     
     ## as.data.frame.matrix was useful when f2p.cr.table was another type of object, but not nowadays
     #f2p.cr.dfm <- as.data.frame.matrix(f2p.cr.table)
     
     file_out.table = paste(file_in, ".cr.table.csv", sep="");
     # Write the first line with the column names
-    write("\"ENST\",\"unitN\",\"GeneSymbol\",\"Count\"", file=file_out.table, append = F, sep = "")
+    write(col.names.my, file=file_out.table, append = F, sep = "")
     #  write.table(f2p.cr.table, file=file_out.table, append=T, quote=T, sep=",", row.names=T, col.names=F)
     
     #tapply(as.numeric(colnames(f2p.cr.table)), 1:9, FUN=is.numeric)
@@ -1841,10 +2047,19 @@ fun.snpeff.count.reads <- function(file2process.my2, step.my) {
     # Write the rest: all data without column names
     write.table(f2p.cr.dft, file=file_out.table, append=T, quote=T, sep=",", row.names=F, col.names=F)
     #write.ftable(f2p.cr.table, file=file_out.table, append=T, quote=T)
+
     
   } else {
     print_mes("XXX Count Reads failed XXX; no results saved.", file2process.my2)
   }
+  
+  
+  # Finally, unmap the mapped file
+  munmap(f2p.cr)
+  
+  #------------
+  print_doc(paste("\t\t\t\t\tMemory usage (Vcell) after unmapping cr.txt file: ", gc()[2,2], " Mb\n", sep=""), file2process.my2); 
+  #------------
   
   # Don't check for check2clean("$file_in") since we still need it for the variant calling
   print_done(file2process.my2);

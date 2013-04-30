@@ -124,6 +124,7 @@ wrapper2.parallelizable.per.sample <- function(datastep.my2) {
   variant.eff.report                <- params_w2pps$p_variant.eff.report
   grep.post.snpeff.report           <- params_w2pps$p_grep.post.snpeff.report
   snpeff.count.reads                <- params_w2pps$p_snpeff.count.reads
+  snpeff.cr.postprocess             <- params_w2pps$p_snpeff.cr.postprocess
   
   # -----------------------------
   
@@ -444,6 +445,11 @@ wrapper2.parallelizable.per.sample <- function(datastep.my2) {
                                    step.my  = step)
   }
   
+  if (snpeff.cr.postprocess) {
+    # Next Step
+    step <- fun.snpeff.cr.postprocess(file2process.my2  = file2process.my1,
+                                   step.my  = step)
+  }
   
   step$tmp <- step$tmp+1;
   print_doc(paste("	Part B. End of processing this file: ", file2process.my1, "\n", sep=""), file2process.my1);
