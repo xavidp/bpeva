@@ -282,6 +282,12 @@ wrapper2.parallelizable.per.sample <- function(datastep.my2) {
                                  step.my  = step)
   }
   
+  if (index.bam.file) {
+    # Next Step
+    step <- fun.index.bam.file(file2process.my2  = file2process.my1,
+                               step.my  = step)
+  }
+  
   if (samtools.fixmate) {
     # Next Step
     step <- fun.samtools.fixmate(file2process.my2  = file2process.my1,
