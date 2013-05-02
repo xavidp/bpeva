@@ -340,6 +340,7 @@ show_help <- function(program_ueb.my)
   cat("\n   -c: number of cpus to use (if parallel). Default: 7\t\t    [optional]\n")
   cat("\n   -h: show this help text \t\t\t\t\t    [optional]\n")
   cat("\n   -l: log process output. Default: 1 (TRUE)\t\t\t    [optional]\n")
+  cat("\n   ...and many more. see -h: for the help \t\t\t    [optional]\n")
   cat("\n Example1: Rscript", program_ueb.my,"-i ./dir_in -o ./dir_out -s -f 'BRCA1|BRCA2|unknown'")
   cat("\n Example2: Rscript", program_ueb.my,"-i ./test_in -o ./test_out -s -k > ./logs/log_both.txt 2>&1")
   cat("\n Example3: Rscript", program_ueb.my,"-i ./test_in -o ./test_out -s -k | tee /dev/tty ./logs/log_both.txt\n");
@@ -1217,7 +1218,8 @@ fun.picard.mark.dup <- function(file2process.my2, step.my) {
   file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
   
   options00 = paste(" ", params$path_picard, " I=", file_in, " O=", file_out, " M=", file_metrics, 
-                    "  REMOVE_DUPLICATES=false  AS=true ", " 2>> ", file_stderr, sep="");
+                    "  REMOVE_DUPLICATES=false  AS=true TMP_DIR=", params$opt$tmp_dir , " ",
+                    " 2>> ", file_stderr, sep="");
   # AS=true tells picard to assume that the bam file is coordinate sorted.
   command = paste(command00, " ", options00, sep="");
   check2showcommand(params$opt$showc, command, file2process.my2);
@@ -1537,6 +1539,9 @@ fun.stats <- function(file2process.my2, step.my) {
   
   # Substep 2: by samtools flagstat 
   #---------------
+  # Add a note in .bam.merics.txt that the next lines come from samtools flagstat
+  system(paste("echo '\nOutput from Samtools flagstat: ------------------>\n\n' >> ", file_metrics, sep=""));
+  
   options00 = paste(" flagstat ", file_in,  " >> ", file_metrics,  " 2>> ", file_stderr, sep="");
   command = paste(command00, " ", options00, sep="");
   check2showcommand(params$opt$showc, command, file2process.my2);
@@ -1548,6 +1553,9 @@ fun.stats <- function(file2process.my2, step.my) {
   
   # Run the command
   system(command);
+
+  # Add a mark to indicate that the output from samtools flagstat finished here
+  system(paste("echo '\n<------------------ end of output from samtools flagstat\n' >> ", file_metrics, sep=""));
 
   # End of contents inserted from the file on disk with the metrics
   print_mes_fullpath(mess="\n<-----\n", filename.my1=file_metrics)

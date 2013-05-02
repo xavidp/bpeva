@@ -166,6 +166,7 @@ my.options <- c(
   'keep'     , 'k', 0, "logical"  , #, "__K__eep temporal dummy files after they have been used # Optional",
   'showc'    , 'C', 0, "logical"  , #, "__S__how commands run literally # Optional",
   'cpus'     , 'c', 1, "integer"  , #, "__C__pus to use from the multicore computer or cluster # Optional".
+  'tmp_dir'  , 't', 1, "character", #, "__T__mp_dir used in some steps (like picard rmdup) # Optional".
   'parallel' , 'p', 0, "logical"  , #, "__P__arallel processing using SnowFall package # Optional"
   'label'    , 'b', 1, "character"  #, "Run la__B__el to add to output file names, Like: "test-paralel-a", or "sample with param X as Y" # Optional"
 )
@@ -212,6 +213,7 @@ if ( is.null(opt$snpeff.of) ) { opt$snpeff.of= p_snpeff.of          }
 if ( is.null(opt$keep     ) ) { opt$keep     = p_keep         } # Enable if run through editor and you want to keep temp files
 if ( is.null(opt$showc    ) ) { opt$showc    = p_showc        } # Enable to show the exact commands run in he command line
 if ( is.null(opt$cpus     ) ) { opt$cpus     = p_cpus             }
+if ( is.null(opt$tmp_dir  ) ) { opt$tmp_dir  = p_tmp_dir          }
 if ( is.null(opt$parallel ) ) { opt$parallel = p_parallel        }
 if ( is.null(opt$label    ) ) { opt$label    = p_label	} # "sara207_4s4cpu"        } # Run Label for output filenames
 if ( is.null(opt$bwa      ) ) { opt$bwa      = p_bwa          } # 1: bwa aln (short reads, low errors, allowing paired end also); 2= bwa bwasw (longer reads, single end only) # Algorythm for mapping with bwa

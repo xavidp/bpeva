@@ -359,7 +359,8 @@ p_dbsnp     <- "137" # e.g. 132 for dbsnp132. You need to download first the cor
 p_summarize <- TRUE  
 p_snpeff.of <- "vcf" # Output format for snpEff. Possible values: txt, vcf, gatk, bed, bedAnn (txt will be deprecated, but it can be ocasionally useful still in the meantime)
 p_cpus      <- 4             
-p_parallel  <- TRUE #FALSE #TRUE # Do you want to allow running some parallelized processes at all? (which ones will be specified elsewhere in the code)
+p_tmp_dir   <- "/mnt/magatzem03/tmp/tmp_dir/"
+p_parallel  <- TRUE #FALSE #FALSE #TRUE # Do you want to allow running some parallelized processes at all? (which ones will be specified elsewhere in the code)
 p_bwa       <- 2          # Algorythm for mapping with bwa - http://bio-bwa.sourceforge.net/bwa.shtml
                         # 1: bwa aln      + samse  (short reads, single ends, low errors);
                         # 2: bwa aln (x2) + sampe  (short reads, paired ends, low errors);
