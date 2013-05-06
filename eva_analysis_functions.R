@@ -3586,7 +3586,7 @@ fun.snpeff.count.reads <- function(file2process.my2, step.my) {
   file_bed.my = paste(params$log.folder,"/", params$startdate, ".", params$opt$label,".my_genes.bed", sep="")
   
   # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
-  file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
+  file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".cr.txt", sep="");
   
   command00 = "java -Xmx4g -jar "; # next command.
   #  options00 = paste(params$path_snpEff, "snpEff.jar  -c ", params$path_snpEff, "snpEff.config countReads ", params$opt$genver," ", file_in, " > ", file_out, sep="");
