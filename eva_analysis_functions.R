@@ -2076,6 +2076,56 @@ fun.variant.filtering <- function(file2process.my2, step.my) {
   return(step.my) # return nothing, since results are saved on disk from the system command
 }
 
+##########################
+### FUNCTION fun.variant.filter.fix.qual
+###
+###   Variant Filtering, fixing the issue with qualities with decimal numbers not being fixed properly by samtools
+###   Using system call to awk fo that
+###
+##########################
+
+fun.variant.filter.fix.qual <- function(file2process.my2, step.my) {
+  # update step number
+  step.my$tmp <- step.my$tmp + 1
+  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "c. Variant Filtering, for qualities with decimal numbers (using awk): ", file2process.my2, " ###\n", sep=""), file2process.my2);
+  
+  file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.edited.bam.samtools.var.filtered.vcf", sep="");
+  file_out = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.edited.bam.samtools.var.filtered.fixqual.vcf", sep="");
+  command00 = "grep " ; # next command.
+
+  # Commands on a console
+  #grep '#' sgs7a_merged12.f.vcf > sgs7a_merged12.f_q10.vcf
+  #grep -v '#' sgs7a_merged12.f.vcf | awk '{ if ($6>=10) print$0 }'  >> sgs7a_merged12.f_q10.vcf
+  
+  ## This line below contain the new params set as default for the EVA pipeline, as of March 13th, 2013.
+  #former hardcoded params in 1 line: options00 = paste(" varFilter -Q10 -d10 -a2 -D10000000 -S1000 ", file_in, " > ", file_out, sep=""); 
+  options00 = paste(" \'#\' ", file_in, " > ", file_out, sep="")
+  options01 = paste(" -v \'#\' ", file_in," | awk \'{ if ($6>=", params$opt$st.vf.Q,") print$0 }\'  >> ", 
+                    file_out, sep="")
+  
+  command = paste(command00, " ", options00, sep="");
+  check2showcommand(params$opt$showc, command, file2process.my2);
+  system(command);
+  
+  command = paste(command00, " ", options01, sep="");
+  check2showcommand(params$opt$showc, command, file2process.my2);
+  system(command);
+  
+  create.hard.link(file2process.my2, step.my, 
+                   suffix_file_from=".sam.sorted.edited.bam.samtools.var.filtered.fixqual.vcf",
+                   suffix_file_to=".sam.sorted.edited.vcf")
+  
+  create.hard.link(file2process.my2, step.my, 
+                   suffix_file_from=".sam.sorted.edited.bam.samtools.var.filtered.fixqual.vcf",
+                   suffix_file_to=".f.vcf")
+  
+  check2clean(file_in, file2process.my2);
+  print_done(file2process.my2);
+  
+  gc() # Let's clean ouR garbage if possible
+  return(step.my) # return nothing, since results are saved on disk from the system command
+}
+
 
 ##########################
 ### FUNCTION fun.gatk.combine.vcfs

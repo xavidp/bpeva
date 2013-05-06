@@ -168,10 +168,12 @@ if (p_test==1) {
   p_in.ext    <- ".sam" #".fastq" # ".fa" ".sam" ".bam" # This is the .extension of all files used as input for the pipeline to process
   p_output   <- "test_out2" #"/mnt/magatzem02/tmp/run_sara_293a/dir_out_293a3b" #"test_out2" # "../test_out2" # "test_out"
   p_f_my_rs  <- "file_my_rs.txt" # In p_input. Needed by SnpEff to filter for the target genes before the report (well, filter for the potential snp rs codes in those genes)
-  p_label    <- "test2_19" #"testrunGATK1" # "testsnpEffCountReads_a" "test-121002" # "test-foo"        # Run Label for output filenames
+  p_label    <- "test2_20" #"testrunGATK1" # "testsnpEffCountReads_a" "test-121002" # "test-foo"        # Run Label for output filenames
   p_desc     <- "Testing run
-                        test2_19: Testing the count reads: 
-                                    New functions to reduce memory consumption (mmap, etc)"
+                        test2_20: Testing the filtering by Quality at Var Calling or Var Fultering: 
+                                    Adding a system call with awk if needed to mimic this filter."
+  #                      test2_19: Testing the count reads: 
+  #                                  New functions to reduce memory consumption (mmap, etc)"
   #                      test2_18: Testing the count reads: 
   #                                  How long does it take with the test set?"
   #                      test2_14c: As in test2_14b, but only with the function to fix cols: 
@@ -426,10 +428,14 @@ p_gatk.local.realign.step1    <- FALSE # TRUE # FALSE # runParam
 p_gatk.local.realign.step2    <- FALSE # runParam # Unfinished work
 p_gatk.local.realign.step3    <- FALSE # runParam # Unfinished work
 #####
-runParam <- FALSE #######################
+runParam <- TRUE #######################
 ####
 p_variant.calling		          <- runParam
 p_variant.filtering		        <- runParam
+p_variant.filter.fix.qual     <- runParam
+#####
+runParam <- FALSE #######################
+####
 p_gatk.combine.vcfs           <- FALSE # runParam # Non-started work (place holder only)
 p_convert2vcf4		            <- runParam
 p_variant.annotation.geneb	  <- runParam
@@ -452,9 +458,6 @@ p_grep.pre.snpeff.report      <- FALSE # runParam # Not running properly yet
 p_variant.eff.report          <- runParam
 p_grep.post.snpeff.report     <- runParam
 p_snpeff.count.reads          <- runParam 
-#####
-runParam <- TRUE #######################
-####
 p_snpeff.cr.postprocess       <- runParam
 #####
 runParam <- FALSE #######################
@@ -483,6 +486,7 @@ params_w2pps <- list(
   p_stats                             = p_stats,
   p_variant.calling                   = p_variant.calling,
   p_variant.filtering                 = p_variant.filtering,
+  p_variant.filter.fix.qual           = p_variant.filter.fix.qual,
   p_gatk.combine.vcfs                 = p_gatk.combine.vcfs,
   p_convert2vcf4                      = p_convert2vcf4,
   p_variant.annotation.geneb          = p_variant.annotation.geneb,

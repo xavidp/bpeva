@@ -108,6 +108,7 @@ wrapper2.parallelizable.per.sample <- function(datastep.my2) {
   stats			                        <- params_w2pps$p_stats
   variant.calling		                <- params_w2pps$p_variant.calling
   variant.filtering		              <- params_w2pps$p_variant.filtering
+  variant.filter.fix.qual           <- params_w2pps$p_variant.filter.fix.qual
   gatk.combine.vcfs                 <- params_w2pps$p_gatk.combine.vcfs
   convert2vcf4		                  <- params_w2pps$p_convert2vcf4
   variant.annotation.geneb	        <- params_w2pps$p_variant.annotation.geneb
@@ -351,6 +352,12 @@ wrapper2.parallelizable.per.sample <- function(datastep.my2) {
   if (variant.filtering) {
     # Next Step
     step <- fun.variant.filtering(file2process.my2  = file2process.my1,
+                                  step.my  = step)
+  }
+  
+  if (variant.filter.fix.qual) {
+    # Next Step
+    step <- fun.variant.filter.fix.qual(file2process.my2  = file2process.my1,
                                   step.my  = step)
   }
   
