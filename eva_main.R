@@ -53,7 +53,7 @@ source("eva_analysis_functions.R")
 source("eva_analysis_wrappers.R")
 
 # Import the file with functions to build the html report
-source("eva_buildmenu.R")
+#source("eva_buildmenu.R")
 
 ##############################################################################
 ##############################################################################
@@ -153,6 +153,7 @@ my.options <- c(
   'index'    , 'n', 0, "logical"  , # "i__N__dex the reference genome # Optional",
   'bwa'      , 'w', 1, "integer"  , #, "b__W__a algorythm used. See http://bio-bwa.sourceforge.net/bwa.shtml ".
   'only.m.r' , 'y', 1, "character", # "__O__nly__ __M__apped reads used in bam files # Optional",
+  'bychr'    , 'Y', 1, "integer"  , # "Run samtools variant calling splitting the work b__Y__ Chromosomes # Optional",
   'st.vf.Q'  , 'Q', 2, "integer"  , #, "__S__am__T__ools vcftools.pl __v__ariant__F__ilter Q param: Minimum base quality for a base to be considered: 10 (same for small testing sets). 10 (90% accuracy)|20 (99.9%)|30 (99.99%)|40 (99.999%)|50 (99.9999%). See Wikipedia.".
   'st.vf.d'  , 'd', 2, "integer"  , #, "__S__am__T__ools vcftools.pl __v__ariant__F__ilter d param: Minimum read depth (coverage) to call a SNP: 10-15 (1-2 for small testing sets)".
   'st.vf.a'  , 'a', 2, "integer"  , #, "__S__am__T__ools vcftools.pl __v__ariant__F__ilter a param: Minimum number of alternate bases: 2-3 (1-2 for small testing sets)".
@@ -160,13 +161,14 @@ my.options <- c(
   'st.vf.S'  , 'S', 2, "integer"  , #, "__S__am__T__ools vcftools.pl __v__ariant__F__ilter S param: minimum SNP quality: 1000 (same for small testing sets). The smaller, the better (more precise, more quality in the SNP). High values are too permissive.".
   'filter'   , 'f', 1, "character", # "__F__ilter results for these target genes (showing all variants | ^: )# Optional",
   'filter.c' , 'F', 1, "character", # "Filter (__C__lean) results for these target genes: "g1 g2 g3 ..." # Optional",
-  'tggbf'    , 'B', 0, "logical",   # "__B__ed file generation with the intervals for the target genes # Optional",
+  'tggbf'    , 'B', 0, "logical"  , # "__B__ed file generation with the intervals for the target genes # Optional",
   'log'      , 'l', 1, "integer"  , # "__L__og info about the process into a log file # Optional",
   'summarize', 's', 0, "logical"  , # "__S__summarize results in a single .csv file with annotations # Optional",
   'dbsnp'    , 'N', 1, "integer"  , #, "dbS__N__P version used. E.g.: 132, 135, 137, ...".
   'keep'     , 'k', 0, "logical"  , #, "__K__eep temporal dummy files after they have been used # Optional",
   'showc'    , 'C', 0, "logical"  , #, "__S__how commands run literally # Optional",
   'cpus'     , 'c', 1, "integer"  , #, "__C__pus to use from the multicore computer or cluster # Optional".
+  'tmp_dir'  , 't', 1, "character", #, "__T__mp_dir used in some steps (like picard rmdup) # Optional".
   'parallel' , 'p', 0, "logical"  , #, "__P__arallel processing using SnowFall package # Optional"
   'label'    , 'b', 1, "character"  #, "Run la__B__el to add to output file names, Like: "test-paralel-a", or "sample with param X as Y" # Optional"
 )
@@ -213,10 +215,12 @@ if ( is.null(opt$snpeff.of) ) { opt$snpeff.of= p_snpeff.of          }
 if ( is.null(opt$keep     ) ) { opt$keep     = p_keep         } # Enable if run through editor and you want to keep temp files
 if ( is.null(opt$showc    ) ) { opt$showc    = p_showc        } # Enable to show the exact commands run in he command line
 if ( is.null(opt$cpus     ) ) { opt$cpus     = p_cpus             }
+if ( is.null(opt$tmp_dir  ) ) { opt$tmp_dir  = p_tmp_dir          }
 if ( is.null(opt$parallel ) ) { opt$parallel = p_parallel        }
 if ( is.null(opt$label    ) ) { opt$label    = p_label	} # "sara207_4s4cpu"        } # Run Label for output filenames
 if ( is.null(opt$bwa      ) ) { opt$bwa      = p_bwa          } # 1: bwa aln (short reads, low errors, allowing paired end also); 2= bwa bwasw (longer reads, single end only) # Algorythm for mapping with bwa
 if ( is.null(opt$only.m.r ) ) { opt$only.m.r = p_only.m.r     } # 0/n: no, use mapped and unmapped reads; 1/y: yes, use only mapped reads; -1/u: the opposite, use only unmapped reads
+if ( is.null(opt$bychr    ) ) { opt$bychr    = p_bychr        } # 0: no, don't split the calling by chromosomes; 1: yes, split by chromosomes and merge the vcf later
 
 
 # 0d. Check requirements for the libraries dependent on params added by the user in the program run (such as genome version hg18 or hg19, etc)
@@ -422,9 +426,11 @@ sfExport( "params",
           "fun.addleading0.ids",
           "fun.splitAnnot",
           "fun.snpeff.count.reads",
+          "fun.snpeff.cr.postprocess",
           "fun.genedata",
           "fun.variant.calling",
 	        "fun.variant.filtering",
+          "fun.variant.filter.fix.qual",
           "fun.gatk.combine.vcfs",
 	        "fun.convert2vcf4",
 	        "fun.variant.annotation.geneb",

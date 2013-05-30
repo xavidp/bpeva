@@ -108,12 +108,14 @@ wrapper2.parallelizable.per.sample <- function(datastep.my2) {
   stats			                        <- params_w2pps$p_stats
   variant.calling		                <- params_w2pps$p_variant.calling
   variant.filtering		              <- params_w2pps$p_variant.filtering
+  variant.filter.fix.qual           <- params_w2pps$p_variant.filter.fix.qual
   gatk.combine.vcfs                 <- params_w2pps$p_gatk.combine.vcfs
   convert2vcf4		                  <- params_w2pps$p_convert2vcf4
   variant.annotation.geneb	        <- params_w2pps$p_variant.annotation.geneb
   variant.annotation.regionb	      <- params_w2pps$p_variant.annotation.regionb
   variant.annotation.filterb	      <- params_w2pps$p_variant.annotation.filterb
   variant.annotation.summarize      <- params_w2pps$p_variant.annotation.summarize
+  variant.annotation.s.fixcols      <- params_w2pps$p_variant.annotation.s.fixcols
   grep.variants		                  <- params_w2pps$p_grep.variants
   visualize.variants		            <- params_w2pps$p_visualize.variants
   variant.fii.pre.snpeff            <- params_w2pps$p_variant.fii.pre.snpeff
@@ -123,6 +125,7 @@ wrapper2.parallelizable.per.sample <- function(datastep.my2) {
   variant.eff.report                <- params_w2pps$p_variant.eff.report
   grep.post.snpeff.report           <- params_w2pps$p_grep.post.snpeff.report
   snpeff.count.reads                <- params_w2pps$p_snpeff.count.reads
+  snpeff.cr.postprocess             <- params_w2pps$p_snpeff.cr.postprocess
   
   # -----------------------------
   
@@ -280,6 +283,12 @@ wrapper2.parallelizable.per.sample <- function(datastep.my2) {
                                  step.my  = step)
   }
   
+  if (index.bam.file) {
+    # Next Step
+    step <- fun.index.bam.file(file2process.my2  = file2process.my1,
+                               step.my  = step)
+  }
+  
   if (samtools.fixmate) {
     # Next Step
     step <- fun.samtools.fixmate(file2process.my2  = file2process.my1,
@@ -346,6 +355,12 @@ wrapper2.parallelizable.per.sample <- function(datastep.my2) {
                                   step.my  = step)
   }
   
+  if (variant.filter.fix.qual) {
+    # Next Step
+    step <- fun.variant.filter.fix.qual(file2process.my2  = file2process.my1,
+                                  step.my  = step)
+  }
+  
   if (gatk.combine.vcfs) {
     # Next Step
     step <- fun.gatk.combine.vcfs(file2process.my2  = file2process.my1,
@@ -386,6 +401,12 @@ wrapper2.parallelizable.per.sample <- function(datastep.my2) {
   if (grep.variants) {
     # Next Step
     step <- fun.grep.variants(file2process.my2  = file2process.my1,
+                                             step.my  = step)
+  }
+  
+  if (variant.annotation.s.fixcols) {
+    # Next Step
+    step <- fun.variant.annotation.summary.call.fixcolumns(file2process.my2  = file2process.my1,
                               step.my  = step)
   }
   
@@ -437,6 +458,11 @@ wrapper2.parallelizable.per.sample <- function(datastep.my2) {
                                    step.my  = step)
   }
   
+  if (snpeff.cr.postprocess) {
+    # Next Step
+    step <- fun.snpeff.cr.postprocess(file2process.my2  = file2process.my1,
+                                   step.my  = step)
+  }
   
   step$tmp <- step$tmp+1;
   print_doc(paste("	Part B. End of processing this file: ", file2process.my1, "\n", sep=""), file2process.my1);

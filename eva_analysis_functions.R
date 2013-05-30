@@ -340,6 +340,7 @@ show_help <- function(program_ueb.my)
   cat("\n   -c: number of cpus to use (if parallel). Default: 7\t\t    [optional]\n")
   cat("\n   -h: show this help text \t\t\t\t\t    [optional]\n")
   cat("\n   -l: log process output. Default: 1 (TRUE)\t\t\t    [optional]\n")
+  cat("\n   ...and many more. see -h: for the help \t\t\t    [optional]\n")
   cat("\n Example1: Rscript", program_ueb.my,"-i ./dir_in -o ./dir_out -s -f 'BRCA1|BRCA2|unknown'")
   cat("\n Example2: Rscript", program_ueb.my,"-i ./test_in -o ./test_out -s -k > ./logs/log_both.txt 2>&1")
   cat("\n Example3: Rscript", program_ueb.my,"-i ./test_in -o ./test_out -s -k | tee /dev/tty ./logs/log_both.txt\n");
@@ -1198,6 +1199,35 @@ fun.samtools.fixmate <- function(file2process.my2, step.my) {
 
 
 ##########################
+### FUNCTION fun.index.bam.file
+###
+###   Index the bam file
+##########################
+
+fun.index.bam.file <- function(file2process.my2, step.my) {
+  # update step number
+  step.my$tmp <- step.my$tmp + 1
+  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Index the bam file: ", file2process.my2, " ###\n", sep=""), file2process.my2);
+  
+  file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.edited.bam", sep="");
+  #  file_out = paste(file_in, ".foo", sep="");
+  command00 = "samtools"; # next command.
+  options00 = paste(" index ", file_in, sep="");
+  command = paste(command00, " ", options00, sep="");
+  check2showcommand(params$opt$showc, command, file2process.my2);
+  system(command);
+  # Don't check for check2clean("$file_in") since we still need it to do some stats upon it
+  print_done(file2process.my2);
+  
+  # direct command line call for testing other things:
+  # samtools  index file_in.sam.sorted.fixmate.dupmarked.noDup.bam
+  
+  
+  gc() # Let's clean ouR garbage if possible
+  return(step.my) # return nothing, since results are saved on disk from the system command
+}
+
+##########################
 ### FUNCTION fun.picard.mark.dup
 ###
 ###   Mark duplicates with Picard
@@ -1217,7 +1247,8 @@ fun.picard.mark.dup <- function(file2process.my2, step.my) {
   file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
   
   options00 = paste(" ", params$path_picard, " I=", file_in, " O=", file_out, " M=", file_metrics, 
-                    "  REMOVE_DUPLICATES=false  AS=true ", " 2>> ", file_stderr, sep="");
+                    "  REMOVE_DUPLICATES=false  AS=true TMP_DIR=", params$opt$tmp_dir , " ",
+                    " 2>> ", file_stderr, sep="");
   # AS=true tells picard to assume that the bam file is coordinate sorted.
   command = paste(command00, " ", options00, sep="");
   check2showcommand(params$opt$showc, command, file2process.my2);
@@ -1467,35 +1498,6 @@ fun.gatk.local.realign.step3 <- function(file2process.my2, step.my) {
 }
 
 ##########################
-### FUNCTION fun.index.bam.file
-###
-### 	Index the bam file
-##########################
-
-fun.index.bam.file <- function(file2process.my2, step.my) {
-  # update step number
-  step.my$tmp <- step.my$tmp + 1
-  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Index the bam file: ", file2process.my2, " ###\n", sep=""), file2process.my2);
-  
-  file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.edited.bam", sep="");
-  #  file_out = paste(file_in, ".foo", sep="");
-  command00 = "samtools"; # next command.
-  options00 = paste(" index ", file_in, sep="");
-  command = paste(command00, " ", options00, sep="");
-  check2showcommand(params$opt$showc, command, file2process.my2);
-  system(command);
-  # Don't check for check2clean("$file_in") since we still need it to do some stats upon it
-  print_done(file2process.my2);
-  
-  # direct command line call for testing other things:
-  # samtools  index file_in.sam.sorted.fixmate.dupmarked.noDup.bam
-  
-  
-  gc() # Let's clean ouR garbage if possible
-  return(step.my) # return nothing, since results are saved on disk from the system command
-}
-
-##########################
 ### FUNCTION fun.stats
 ###
 ### 	Get some stats using the samtools [optional]
@@ -1537,6 +1539,9 @@ fun.stats <- function(file2process.my2, step.my) {
   
   # Substep 2: by samtools flagstat 
   #---------------
+  # Add a note in .bam.merics.txt that the next lines come from samtools flagstat
+  system(paste("echo '\nOutput from Samtools flagstat: ------------------>\n\n' >> ", file_metrics, sep=""));
+  
   options00 = paste(" flagstat ", file_in,  " >> ", file_metrics,  " 2>> ", file_stderr, sep="");
   command = paste(command00, " ", options00, sep="");
   check2showcommand(params$opt$showc, command, file2process.my2);
@@ -1549,6 +1554,9 @@ fun.stats <- function(file2process.my2, step.my) {
   # Run the command
   system(command);
 
+  # Add a mark to indicate that the output from samtools flagstat finished here
+  system(paste("echo '\n<------------------ end of output from samtools flagstat\n' >> ", file_metrics, sep=""));
+  
   # End of contents inserted from the file on disk with the metrics
   print_mes_fullpath(mess="\n<-----\n", filename.my1=file_metrics)
   
@@ -1561,257 +1569,6 @@ fun.stats <- function(file2process.my2, step.my) {
   gc() # Let's clean ouR garbage if possible
   return(step.my) # return nothing, since results are saved on disk from the system command
 }
-
-##########################
-### FUNCTION fun.addleading0.ids
-###
-### By Josep LLuis Mosquera, UEB-VHIR. jl.mosquera at vhir.org, & 
-###    Xavier de Pedro, UEB-VHIR. xavier.depedro at vhir.org
-###
-##########################
-##
-## Description:
-##
-##   Add leading zeros to ids so that it can be sorted naturally for humans
-##
-## Parameters:
-##
-##          x   : numeric or character vector with ids nn of differnt number of characters (like string_nn) 
-##          sep : separator character to split by. E.g. "_", " ", "-" ...
-##          nd  : number of digits needed in the end after adding as many leading zeroes (o) as required (integer value: 2, 3, etc)
-##
-
-fun.addleading0.ids <- function(x, sep, nd)
-{
-  
-  # First, some data massaging...
-  out.list <- strsplit(x, split = sep)
-  out.df <- do.call("rbind", out.list)
-  out.df2 <-out.df
-  
-  # Get the indexes of values containing NA
-  idx.nona <- which(!is.na(out.df[,2]))
-  
-  # Add as many leading zeroes (0) to the left of the number to have 'nd' digits (2, 3, ...), in all numbers that are no NA
-  # so that even if those numbers were treated as characters (in the variable class in R) they would get sorted properly
-  # also as characters. And exons normally are numbered in tens or hundreds, so that nd should be 2 or 3, repectively (from 01 to 99, or from 001 to 999)
-  out.df2[idx.nona,2] <- unlist(lapply(out.df[idx.nona,2], function(x) sprintf(paste("%0", nd ,"d", sep=""), as.numeric(x) ) ) )
-  
-  # join the two parts again with the same character splitter
-  out.df2 <- paste(out.df2[,1], out.df2[,2], sep=sep)
-  # Fix NA strings (they also became NA_NA). Add other cases here when needed in the future  
-  out.df2 <- gsub("NA_NA", "NA", out.df2)
-  
-  return(out.df2)
-}
-##########################
-
-##########################
-### FUNCTION fun.snpeff.count.reads
-###
-###   Count Reads through snpEff software [optional]
-##########################
-
-fun.snpeff.count.reads <- function(file2process.my2, step.my) {
-  # update step number
-  step.my$tmp <- step.my$tmp + 1
-  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "a. Count Reads using snpEff: ", file2process.my2, " ###\n", sep=""), file2process.my2);
-  
-  file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.edited.bam", sep="");
-  file_out = paste(file_in, ".cr.txt", sep="");
-  # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
-  file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
-  
-  command00 = "java -Xmx4g -jar "; # next command.
-#  options00 = paste(params$path_snpEff, "snpEff.jar  -c ", params$path_snpEff, "snpEff.config countReads ", params$opt$genver," ", file_in, " > ", file_out, sep="");
-#  options00 = paste(params$path_snpEff, "snpEff.jar  countReads ", params$opt$genver," ", file_in, " > ", file_out, sep="");
-  options00 = paste(params$path_snpEff, "snpEff.jar  countReads ", params$opt$se_db_rg," ", file_in, " > ", file_out, 
-                    " 2>> ", file_stderr, sep="");
-  command = paste(command00, " ", options00, sep="");
-  check2showcommand(params$opt$showc, command, file2process.my2);
-  system(command);
-  
-  # Manual debugging XXX
-  # file2process.my2 <- "sgs7a_merged12"
-  # file_in <- "./test_out2/sgs7a_merged12.sam.sorted.fixmate.dupmarked.noDup.bam"
-  # file_out <- "./test_out2/sgs7a_merged12.sam.sorted.fixmate.dupmarked.noDup.bam.cr.txt"
-  # file_in <- "./test_out/sample_a_merged12.sam.sorted.fixmate.dupmarked.noDup.bam"
-  # file_out <- "./test_out/sample_a_merged12.sam.sorted.fixmate.dupmarked.noDup.bam.cr.txt"
-  
-  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "b0. Generate cr.table.csv using R: ", file2process.my2, " ###\n", sep=""), file2process.my2);
-  
-  # load the file created as file2process.countreads (aka: f2p.cr)
-  f2p.cr <- read.table(file_out, header=T, sep="\t")
-  #dim(f2p.cr)
-  x.my <- as.character(f2p.cr$IDs)
-  
-  # Do all the processing only if there is some data to process. To avoid the program to break when snpEff fails to count reads
-  # dues to the issues with "MAPQ should be zero for unmmaped reads", etc. 
-  if (length(x.my) > 0) {
-    
-    # Split IDs by ; and create the new columns on the right with separated unitN, ENST (ENSEMBL Transcript) & ENSG (ensembl_gene_id) codes.
-    out.my <- fun.splitAnnot(x.my)
-    colnames(out.my) <- c("unitN", "ENST","ENSG")  # unitN stands for exonNumber or IntronNumber or similar
-    f2p.cr <- cbind(f2p.cr, out.my)
-    
-    # convert column 8 into character vectors and apply the function to add leading zeros for correct ordering as text
-    x <- as.character(f2p.cr[,8])
-    # Add leading zeros whre needed to have up to 3 digits for all numbers (from exon_001 to exon_999)
-    f2p.cr[,8] <- fun.addleading0.ids(x, "_", 3)
-    
-    print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "b1. Get hgnc_symbols for the corresponding ensembl_gene_id: ", file2process.my2, " ###\n", sep=""), file2process.my2);
-    
-    # Convert ENSG (ensembl_gene_id) to Gene_symbols (hgnc_symbol) and add it as new column to f2p.cr$Gene_Symbol
-    # ------------------------------------------------------------------------------------------------------------
-    file_my_genenames = file=paste(params$log.folder,"/", params$startdate, ".", params$opt$label,".my_genes.names.txt", sep="")
-    # Command (in general)
-    # my_symbols <- df.a[ pmatch(df.b[,"ensembl_gene_id"], df.a[,2]), 1 ]
-    
-    # load the file created previously with the correspondence between hgnc_symbol and ensembl_gene_id (while working with biomaRt to generate the bed file)
-    # f2p.my_genenames
-    df.a <- read.table(file_my_genenames, header=T, sep="\t")
-    #str(df.a)
-    
-    df.b <- f2p.cr
-    #str(df.b)
-    
-    b <- as.character(df.b[,"ENSG"])
-    a <- as.character(df.a[,"ensembl_gene_id"])
-    # Example of match in the testset
-    # a: ENSG00000012048
-    # b: ENSG00000012048
-    #match.b.a <- pmatch(b, a, nomatch=0)
-    match.b.a <- pmatch(b, a, duplicates.ok=TRUE)
-    # Get the vector with the hgnc_symbols corresponding to those genes. There can be some gaps, like in the case of the KIAA1462 in the testset
-    GeneSymbol <- df.a[ match.b.a, "hgnc_symbol" ]
-    # length(my_hgnc_symbols)
-    # dim(df.b)
-    # dim(f2p.cr)
-    f2p.cr <- cbind(f2p.cr, GeneSymbol)
-    #str(f2p.cr)
-    # --------------- end adding new column with Gene_symbols corresponding to the ENSG (ensembl_gene_id) found
-    
-    # Filter results by the genes of interest only
-    #
-    # BEWARE that subset function can lead to confusion in some cases. Subset is useful for interactive programming, not for automatic scripts.
-    # See:
-    # (1) The easy subset way: http://www.ats.ucla.edu/stat/r/faq/subset_R.htm
-    # (2) The potential problems: see 
-    #   http://stackoverflow.com/questions/9860090/in-r-why-is-better-than-subset 
-    #   https://github.com/hadley/devtools/wiki/Evaluation
-    
-    # We could use params$opt$filter.c since it's already clean (added in March 2013)
-    #  but we do clean params$opt$filter here still  
-    # ---------------------------------------------
-    # Get first the list of Gene Symbols for the "target genes" of interest for the researcher (tgenes)
-      # Split values by pipe (it will create some empty values also, but we will remove them later)
-      tgenes <- strsplit(params$opt$filter, "|", fixed=TRUE)
-      tgenes <- unlist(tgenes) # Convert those values from a list into a character vector 
-      # Remove non-intended characters (all except numbers and letters)
-        ## This could be performed with a fairly simple regular expression, such as: 
-        #tgenes <- gsub(pattern="[^A-Za-z0-9]", replacement="",  x=tgenes, fixed=FALSE)
-        ## But I'm not sure that some error would be introduced in the future by removing some otehr valid character.
-        ## Therefore, just in case, I remove the other sets of characters by steps in a FIXED form
-    
-        # Remove non-intended characters (it will create some empty values also, but we will remove them later)
-        tgenes <- gsub(pattern=":", replacement="",  x=tgenes, fixed=TRUE)
-        tgenes <- gsub(pattern="^", replacement="",  x=tgenes, fixed=TRUE)
-        tgenes <- gsub(pattern="\t", replacement="",  x=tgenes, fixed=TRUE)
-        tgenes <- gsub(pattern="\\", replacement="",  x=tgenes, fixed=TRUE)
-        tgenes <- gsub(pattern="\"", replacement="",  x=tgenes, fixed=TRUE)
-        tgenes <- gsub(pattern=" ", replacement="",  x=tgenes, fixed=TRUE)
-    
-      # Remove duplicates of GeneSymbols or ENSEMBL GENES
-      tgenes <- unique(tgenes)
-      # Remove the case of an empty value
-      tgenes <- tgenes[-match("", tgenes)]
-    # --------------------------------------------------
-    print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "b2. Filter results by a subset with only target genes: ", file2process.my2, " ###\n", sep=""), file2process.my2);
-    
-
-    ## Filter results by the genes of interest only WITH A SUBSET
-      ## Works easily with one value
-      # f2p.cr.tg <- f2p.cr[f2p.cr$GeneSymbol == "WASH7P",]
-      ## For multiple values like "1" and "4", we can use the syntax "x.sub5 <- x.df[x.df$y %in% c(1, 4), ]"
-      ## Example for a couple of gene Symbols
-      #f2p.cr.tg <- f2p.cr[f2p.cr$GeneSymbol %in% c("WASH7P", "OR4F5"), ]
-    # Do the filtering for the genes of interest (in the list of target genes: tgenes) 
-    f2p.cr.tg <- f2p.cr[f2p.cr$GeneSymbol %in% tgenes, ]
-    # for the sake of simplicity and effectiveness, we assign the subset of count reads 
-    # for the genes of interest ("target genes", aka, "tg") to the whole list of count reads in the file to process (f2p.cr)
-    f2p.cr <- f2p.cr.tg
-    
-    # Get the last three columns as Gene symbols and exon and intron numbers
-    f2p.cr.genes <- f2p.cr[,c(8,9,11)]
-    #summary(f2p.cr.genes)
-    
-    ## Convert into true/false
-    #f2p.cr.genes.tf <- suppressWarnings(is.na(as.numeric(as.character(unlist(f2p.cr.genes[2])))) )
-    
-    # We want to apply the table function to the subset of values of the data frames (since it seems to be much more complicated
-    # to create a subset of values once the object of type "table" is created)
-    # We do the subset through getting the indexes of these GeneSymbol values (and not the numbers from chromosomes) 
-    f2p.cr.genes.idx <- which(suppressWarnings(is.na(as.numeric(as.character(unlist(f2p.cr.genes["GeneSymbol"]))))) )
-    
-    # this is the list of values with gene symbols only, and not the values the chromosome number as gene symbol
-    f2p.cr.genes2 <- f2p.cr.genes[f2p.cr.genes.idx,]
-    #str(f2p.cr.genes2)
-    #summary(f2p.cr.genes[f2p.cr.genes.idx,])
-    
-    # We fix the levels of the variable Genesymbol from the data frame, which still hold bad names from chromosome numbers
-    # we can't assign the unique value of f2p.cr.genes2$GeneSymbol to the levels of f2p.cr.genes2$GeneSymbol because they differ in length
-    # therefore we apply this trick (thanks jl.moquera!)
-    f2p.cr.genes2$GeneSymbol <- as.factor(as.character(f2p.cr.genes2$GeneSymbol))
-    #str(f2p.cr.genes2)
-    
-    print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "b3. Apply function ftable in R: ", file2process.my2, " ###\n", sep=""), file2process.my2);
-    
-    # Therefore, this (below) is the table with all values (including the wrong chromosome numbers as gene symbols by mistake)
-    # convert in a flat table sorting first by Gene Symbol, and then, by exon number.
-    f2p.cr.table <- ftable(f2p.cr.genes2, row.vars = 2:1)
-    #str(f2p.cr.table)
-    #?print.ftable
-    
-    print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "b4. Re-order results in R: ", file2process.my2, " ###\n", sep=""), file2process.my2);
-    
-    # [SOLVED] as.data.frame.table or as.data.frame.matrix !!!!!!
-    f2p.cr.dft <- as.data.frame.table(f2p.cr.table)
-    # We need to re-sort in a similar way to what the ftable was
-    f2p.cr.dft <- f2p.cr.dft[order(f2p.cr.dft$GeneSymbol, f2p.cr.dft$unitN),]
-    # And last, we remove all row with 0 in the column Counts
-    f2p.cr.dft <- f2p.cr.dft[!f2p.cr.dft$Freq==0,]
-    
-    print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "b5. Write the file  cr.table.csv using R: ", file2process.my2, " ###\n", sep=""), file2process.my2);
-    
-    ## as.data.frame.matrix was useful when f2p.cr.table was another type of object, but not nowadays
-    #f2p.cr.dfm <- as.data.frame.matrix(f2p.cr.table)
-    
-    file_out.table = paste(file_in, ".cr.table.csv", sep="");
-    # Write the first line with the column names
-    write("\"ENST\",\"unitN\",\"GeneSymbol\",\"Count\"", file=file_out.table, append = F, sep = "")
-    #  write.table(f2p.cr.table, file=file_out.table, append=T, quote=T, sep=",", row.names=T, col.names=F)
-    
-    #tapply(as.numeric(colnames(f2p.cr.table)), 1:9, FUN=is.numeric)
-    
-    # I remove the warning messages from this call (below) because of the coercion type of message (harmless, afaik, but annoying and polluting output in log files)
-    # Write the rest: all data without column names
-    write.table(f2p.cr.dft, file=file_out.table, append=T, quote=T, sep=",", row.names=F, col.names=F)
-    #write.ftable(f2p.cr.table, file=file_out.table, append=T, quote=T)
-    
-  } else {
-    print_mes("XXX Count Reads failed XXX; no results saved.", file2process.my2)
-  }
-  
-  # Don't check for check2clean("$file_in") since we still need it for the variant calling
-  print_done(file2process.my2);
-  
-  # direct command line call for testing other things:
-  # java -Xmx4g -jar /home/ueb/snpEff/snpEff.jar countReads hg19 file_in.sam.sorted.fixmate.dupmarked.noDup.bam > file_in.sam.sorted.fixmate.dupmarked.noDup.bam.cr.txt
-
-  gc() # Let's clean ouR garbage if possible
-  return(step.my) # return nothing, since results are saved on disk from the system command
-}
-
 
 ############################################################################
 ### FUNCTION fun.variants.locate.r
@@ -1914,94 +1671,6 @@ fun.variants.locate.r <- function(file2process.my2, step.my) {
   return(step.my) # return nothing, since results are saved on disk from the system command
 }
 
-########################################################################
-
-##
-## fun.splitAnnot
-##
-## Description:
-##
-##    Split the elements of a character vector ‘x’ into substrings according to the
-##    matches to substring ";" within them.
-##
-## Parameters:
-##
-##          x : vector of characters to be splitted.
-##    myNames : vector of characters with the names of the output columns in the new data.frame
-##
-## Details:
-##
-##    It is expected that the input character vector containing one or two ";" symbols, thereby
-##    generating a character vector with three or two components respectively. When the generated
-##    vector has two components, it will be modified to have three components by adding a NA as a
-##    first component.
-##
-## Example:
-##
-##            Generating data
-##
-##            annot.1 <- paste(sample(c("Intron", "Exon"), size = 3, replace = TRUE),
-##                             c("NM_007294.3", "NM_007297.3", "NM_007298.3"),
-##                             rep("BRCA1", 3),
-##                             sep = ";")
-##            annot.2 <- paste(c("NM_007299.3", "NM_007300.3"), rep("BRCA1", 2), sep = ";")
-##            annot.3 <- paste(sample(c("Intron", "Exon"), size = 5, replace = TRUE),
-##                             c("NM_007295.2", "NM_007296.2", "NM_007301.2", "NM_007302.2", "NM_007303.2"),
-##                             rep("BRCA1", 5),
-##                             sep = ";")
-##            annot.4 <- paste("NM_007305.2", "BRCA1", sep = ";")
-##            annot.5 <- paste(sample(c("Intron", "Exon"), size = 1), "NM_007306.2", "BRCA1", sep = ";")
-##
-##            annot <- data.frame(myData = c(annot.1, annot.2, annot.3, annot.4, annot.5))
-##            print(annot)
-##
-##            Apply fun.splitAnnot function
-##
-##            nms <- c("Location", "RefSeq", "Symbol")
-##            annot2split <- as.character(annot$myData)
-##
-##            annot.df <- splitAnnot(x = annot2split, myNames = nms)
-##
-##            print(annot.df)
-
-fun.splitAnnot <- function(x, myNames) {
-
-  x.list <- strsplit(x, split = ";")
-  head(x.list)
-  idx2change <- which(unlist(lapply(x.list, length))<3)
-  # x.list[which(unlist(lapply(x.list, length))<3)]
-  # Add NA to col5 (IDs) files when no data in any of the 3 columns
-  idx <- which(unlist(lapply(x.list, length))==0)
-  if (length(idx) > 0) {
-    x.list2change <- lapply(x.list[idx], function(y){ c(NA, NA, NA) })
-    x.list[idx] <- x.list2change
-  }
-  
-  # Add NA to col5 (IDs) files when no data in the first 2 columns (unitN or NM)
-  idx <- which(unlist(lapply(x.list, length))==1)
-  if (length(idx) > 0) {
-    x.list2change <- lapply(x.list[idx], function(y){ c(NA, NA, y) })
-    x.list[idx] <- x.list2change
-  }
-
-  # Add NA to col5 (IDs) files when no data in the unitN or NM columns
-  idx <- which(unlist(lapply(x.list, length))==2)
-  if (length(idx) > 0) {
-    x.list2change <- lapply(x.list[idx], function(y){ c(NA, y) })
-    x.list[idx] <- x.list2change
-  }
-  
-  out <- do.call("rbind", x.list)
-  #head(f2p.cr)
-  #colnames(f2p.cr)
-  #dim(out)
-  #head(out)
-  #dim(f2p.cr)
-  #summary(out2)
-  #--------
- 
-  return(out)
-}
 
 ##########################
 ### FUNCTION fun.variant.calling
@@ -2167,22 +1836,6 @@ fun.variant.calling <- function(file2process.my2, step.my) {
   #   -U INT	 Number of permutations for association test (effective only with -1) [0]
   #   -X FLOAT	 Only perform permutations for P(chi^2)<FLOAT (effective only with -U) [0.01]
   
-  # changed on Jan 8th, 2013, to test the potential reduction of false positives (adding -C50 and -B , see documentation above)
-  #options00 = paste(" mpileup -uf ", params$path_genome, " ", file_in, " | bcftools view -vcg - >  ", file_out, sep="");
-
-  #  options00 = paste(" mpileup -uf -C50 -EDS -q50 -d10000  ", params$path_genome, " ", file_in, " | bcftools view -Avcg - >  ", file_out, sep="");
-  # Since all this together doesn't work, let's try one by one.
-#  options00 = paste(" mpileup -uf      -EDS", params$path_genome, " ", file_in, " | bcftools view -Avcg - >  ", file_out, sep="");
-#  options00 = paste(" mpileup -uf           -q50 ", params$path_genome, " ", file_in, " | bcftools view -Avcg - >  ", file_out, sep="");
-#  options00 = paste(" mpileup -uf                -d10000  ", params$path_genome, " ", file_in, " | bcftools view -Avcg - >  ", file_out, sep="");
-#  options00 = paste(" mpileup -uf                         ", params$path_genome, " ", file_in, " | bcftools view -vcg - >  ", file_out, sep="");
-
-  # Those params needed to be called after the file_in!!!
-#  options00 = paste(" mpileup -uf ", params$path_genome, " ", file_in, " -C50 -EDS -q50 -d10000 | bcftools view -Avcg - >  ", file_out, sep="");
-## March 18th: Removing the -A from bcftools to see whether the weird X letters in alternative nucleotide go away from vcf files. 
-  options00 = paste(" mpileup -uf ", params$path_genome, " ", file_in, " -C50 -EDS -q50 -d10000",
-                    " -Q", params$opt$st.vf.Q, 
-                   " | bcftools view -vcg - >  ", file_out, sep="");
   
   # Jan 9th, 2013: 
   ## added params in samtools mpileup: 
@@ -2209,12 +1862,140 @@ fun.variant.calling <- function(file2process.my2, step.my) {
   ## Added params in bcftools view: 
   ##  -A: Retain all possible alternate alleles at variant sites. By default, the view command discards unlikely alleles.
   
-  command = paste(command00, " ", options00, sep="");
-  check2showcommand(params$opt$showc, command, file2process.my2);
-  system(command);
+  if (params$opt$bychr != 1) {
+    # -----------------------
+    # Variant Calling without splitting chromosomes in parallel
+    # -----------------------
+    # Do the variant calling in one go, without splitting by chromosomes
+    options00 = paste(" mpileup -uf ", params$path_genome, " ", file_in, " -C50 -EDS -q50 -d10000",
+                      " -Q", params$opt$st.vf.Q, 
+                      " | bcftools view -vcg - >  ", file_out, sep="");
+
+    # changed on Jan 8th, 2013, to test the potential reduction of false positives (adding -C50 and -B , see documentation above)
+    #options00 = paste(" mpileup -uf ", params$path_genome, " ", file_in, " | bcftools view -vcg - >  ", file_out, sep="");
+    #  options00 = paste(" mpileup -uf -C50 -EDS -q50 -d10000  ", params$path_genome, " ", file_in, " | bcftools view -Avcg - >  ", file_out, sep="");
+    # Since all this together doesn't work, let's try one by one.
+    #  options00 = paste(" mpileup -uf      -EDS", params$path_genome, " ", file_in, " | bcftools view -Avcg - >  ", file_out, sep="");
+    #  options00 = paste(" mpileup -uf           -q50 ", params$path_genome, " ", file_in, " | bcftools view -Avcg - >  ", file_out, sep="");
+    #  options00 = paste(" mpileup -uf                -d10000  ", params$path_genome, " ", file_in, " | bcftools view -Avcg - >  ", file_out, sep="");
+    #  options00 = paste(" mpileup -uf                         ", params$path_genome, " ", file_in, " | bcftools view -vcg - >  ", file_out, sep="");
+    # Those params needed to be called after the file_in!!!
+    #  options00 = paste(" mpileup -uf ", params$path_genome, " ", file_in, " -C50 -EDS -q50 -d10000 | bcftools view -Avcg - >  ", file_out, sep="");
+    ## March 18th: Removing the -A from bcftools to see whether the weird X letters in alternative nucleotide go away from vcf files. 
+    
+    command = paste(command00, " ", options00, sep="");
+    check2showcommand(params$opt$showc, command, file2process.my2);
+    system(command);
+    
+  } else if (params$opt$bychr == 1) {
+
+    # -----------------------
+    # Variant Calling in Parallel by Chr
+    # http://www.research.janahang.com/2013/01/02/efficient-way-to-generate-vcf-files-using-samtools/
+    # http://www.biostars.org/p/48781/
+    #
+    # Xavier de Pedro, April 23rd, 2013: 
+    #   Unluckily, my first tests with our small test datase (covering variants in 3 chromosomes) indicate that
+    #   when running splitting the job by chromosomes, there is one variant that is recorded with a lower 
+    #   QUAL and mapping quality (MQ) than the one indicated in the bam file, for some misterious reason.
+    #   Running samtools mpileup without splitting by chromosome records Qual and MQ properly.
+    #
+    #chr13  32889762	.	G	T	15.1	.	DP=1;AF1=1;AC1=2;DP4=0,0,1,0;MQ=45;FQ=-30	GT:PL:DP:SP:GQ	1/1:45,3,0:1:0:6
+    #vs
+    #chr13  32889762	.	G	T	30	.	DP=1;AF1=1;AC1=2;DP4=0,0,1,0;MQ=60;FQ=-30	GT:PL:DP:SP:GQ	1/1:60,3,0:1:0:6
+    #
+    #The second corresponds to the properly mapped one, as it equals the values shown in igv for that position from the bam file
+    #
+    # Moreover for this small test set, running in parallel (splitted by chromosomes), 
+    # takes twice as much time (34sec aprox) than running all in a row (17sec aprox)
+    
+    # -----------------------
+      # Variant Calling in Parallel by Chr - step 1
+      # http://www.research.janahang.com/2013/01/02/efficient-way-to-generate-vcf-files-using-samtools/
+      # -----------------------
+      # 1) Create a list of chromosomes from your BAM header and use ‘P’ for creating number of 
+      #   parallel processes to run the mplieup. Change the mpileup filtering parameters accordingly
+      files_tmp = paste(params$directory_out, "/", file2process.my2, ".tmp.{}.vcf", sep="");
+      options00 = paste(" view -H ", file_in, "  | grep \"\\@SQ\" | sed 's/^.*SN://g' | cut -f 1 ",
+                        " |xargs -I {} -n 1 -P 4 sh -c ", 
+                        " \"", # start of the section of options that go surrounded by double quotes 
+                            " samtools mpileup  -C50 -EDS -q50 -d10000 -Q", params$opt$st.vf.Q,
+                            " -uf ", params$path_genome, " -r {} ",  file_in, " ",
+                            " | bcftools view -vcg - > ", files_tmp, 
+                        " \"", # end of the section of options that go surrounded by double quotes 
+                        sep="") # end of paste.
+      command = paste(command00, " ", options00, sep="");
+      check2showcommand(params$opt$showc, command, file2process.my2);
+      system(command);
+    
+      # -----------------------
+      # Variant Calling in Parallel by Chr - step 2
+      # -----------------------
+      # 2) Merge the vcf files
+      # First remove any previous file with that same name from previous runs before appending new content
+      file.remove(file_out)
+      # Now merge the tmp vcf files in file_out
+      files_tmp2 = paste(params$directory_out, "/", file2process.my2, ".tmp.$F[0].vcf", sep="");
+      options00 = paste(" view -H ", file_in, "  | grep \"\\@SQ\" | sed 's/^.*SN://g' | cut -f 1 ",
+                      " | perl -ane 'system(", # nested system call 
+                      "\"", # start of the section of options that go surrounded by double quotes 
+                          "cat ", files_tmp2, " >> ", file_out, ".tmp",
+                      "\"", # end of the section of options that go surrounded by double quotes 
+                      ")'; ", # end of nested system call 
+                      sep="") # end of paste.
+      command = paste(command00, " ", options00, sep="");
+      check2showcommand(params$opt$showc, command, file2process.my2);
+      system(command);
+
+      # -----------------------
+      # Variant Calling in Parallel by Chr - step 3
+      # -----------------------
+      # 3) Count the number of header lines; number to be used in a step below
+      #file_out <- "test_out2/sgs7b_merged12.sam.sorted.edited.bam.samtools.var.raw.vcf"
+      file_tmp3 <-  paste(file_out, ".tmp", sep="");
+      tmp3 <- readLines(file_tmp3)
+      if (length(grep("#CHROM", tmp3)) > 0) {
+        last.header.line.number <- grep("#CHROM", tmp3)[1]
+      } else {
+        # We could chose something else, but in case we can't find #CHROM, we get 
+        # and arbritary num,ber of header lines here, which should be safe, upon the risk of repeating some info.
+        last.header.line.number <- 40
+      }
+
+      
+      # -----------------------
+      # Variant Calling in Parallel by Chr - step 4
+      # -----------------------
+      # 4) Remove the unwanted headers from vcf files generated. 
+      #   Each temporary file generated will have a header and the idea hear is to keep
+      #   the first header and remove the rest.
+      
+      command00 = "cat "
+      options00 = paste(" ", file_out, ".tmp  | sed -e 1,", last.header.line.number, 
+                        "b -e '/^#/d' > ", file_out, "_new.vcf",
+                        sep="") # end of paste.
+      command = paste(command00, " ", options00, sep="");
+      check2showcommand(params$opt$showc, command, file2process.my2);
+      system(command);
+      
+      # -----------------------
+      # Variant Calling in Parallel by Chr - step 5
+      # -----------------------
+      # file2process.my2 <- "sgs7a_merged12"
+      # 5) Delete the temporary files
+      setwd(paste("./", params$directory_out, sep="")) # move to the directory of the tmp files
+      command00 = paste("ls ", file2process.my2,"* | grep -E tmp |xargs rm ", sep="")
+      command = command00
+      system(command);
+      setwd("..") # Return to the previous directory where the whole pipeline runs
+      check2showcommand(params$opt$showc, command, file2process.my2);
+      
+       # -----------------------
+  }
+     
   check2clean(file_in, file2process.my2);
   create.hard.link(file2process.my2, step.my, 
-                   suffix_file_from=".sam.sorted.edited.bam.samtools.var.raw.vcf",
+                   suffix_file_from=".sam.sorted.edited.bam.samtools.var.raw.vcf_new.vcf",
                    suffix_file_to=".sam.sorted.edited.vcf")
   print_done(file2process.my2);
   
@@ -2287,6 +2068,56 @@ fun.variant.filtering <- function(file2process.my2, step.my) {
   create.hard.link(file2process.my2, step.my, 
                 suffix_file_from=".sam.sorted.edited.bam.samtools.var.filtered.vcf",
                 suffix_file_to=".f.vcf")
+  
+  check2clean(file_in, file2process.my2);
+  print_done(file2process.my2);
+  
+  gc() # Let's clean ouR garbage if possible
+  return(step.my) # return nothing, since results are saved on disk from the system command
+}
+
+##########################
+### FUNCTION fun.variant.filter.fix.qual
+###
+###   Variant Filtering, fixing the issue with qualities with decimal numbers not being fixed properly by samtools
+###   Using system call to awk fo that
+###
+##########################
+
+fun.variant.filter.fix.qual <- function(file2process.my2, step.my) {
+  # update step number
+  step.my$tmp <- step.my$tmp + 1
+  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "c. Variant Filtering, for qualities with decimal numbers (using awk): ", file2process.my2, " ###\n", sep=""), file2process.my2);
+  
+  file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.edited.bam.samtools.var.filtered.vcf", sep="");
+  file_out = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.edited.bam.samtools.var.filtered.fixqual.vcf", sep="");
+  command00 = "grep " ; # next command.
+
+  # Commands on a console
+  #grep '#' sgs7a_merged12.f.vcf > sgs7a_merged12.f_q10.vcf
+  #grep -v '#' sgs7a_merged12.f.vcf | awk '{ if ($6>=10) print$0 }'  >> sgs7a_merged12.f_q10.vcf
+  
+  ## This line below contain the new params set as default for the EVA pipeline, as of March 13th, 2013.
+  #former hardcoded params in 1 line: options00 = paste(" varFilter -Q10 -d10 -a2 -D10000000 -S1000 ", file_in, " > ", file_out, sep=""); 
+  options00 = paste(" \'#\' ", file_in, " > ", file_out, sep="")
+  options01 = paste(" -v \'#\' ", file_in," | awk \'{ if ($6>=", params$opt$st.vf.Q,") print$0 }\'  >> ", 
+                    file_out, sep="")
+  
+  command = paste(command00, " ", options00, sep="");
+  check2showcommand(params$opt$showc, command, file2process.my2);
+  system(command);
+  
+  command = paste(command00, " ", options01, sep="");
+  check2showcommand(params$opt$showc, command, file2process.my2);
+  system(command);
+  
+  create.hard.link(file2process.my2, step.my, 
+                   suffix_file_from=".sam.sorted.edited.bam.samtools.var.filtered.fixqual.vcf",
+                   suffix_file_to=".sam.sorted.edited.vcf")
+  
+  create.hard.link(file2process.my2, step.my, 
+                   suffix_file_from=".sam.sorted.edited.bam.samtools.var.filtered.fixqual.vcf",
+                   suffix_file_to=".f.vcf")
   
   check2clean(file_in, file2process.my2);
   print_done(file2process.my2);
@@ -2519,11 +2350,10 @@ fun.variant.annotation.summarize <- function(file2process.my2, step.my) {
   # # We don't do check2clean here  either since we will still use the .vcf.annovar file in the next steps (filtering)
   print_done(file2process.my2);
   
-  # Call to the function to fix INFO fields in columns from the csv generated by annovar
-  fun.variant.annotation.summary.call.fixcolumns( file2process.my2, step.my)
-  
-  # a mà la instrucció al mainhead és:
-  # perl /home/ueb/annovar/summarize_annovar.pl --buildver hg19  --verdbsnp 137 /home/xavi/repo/peeva/dir_out/vhir_sample_a_sure_1e6.sam.sorted.fixmate.dupmarked.noDup.bam.samtools.var.f.vcf4 /home/ueb/annovar/humandb/ --outfile sample_a_sure_sum
+  ### Call to the function to fix INFO fields in columns from the csv generated by annovar
+  ##fun.variant.annotation.summary.call.fixcolumns( file2process.my2, step.my)
+  # Removed call from here since it will be called from eva_analysis_wrappers.R after  
+  # fun.variant.annotation.summarize is finished
   
   gc() # Let's clean ouR garbage if possible
   return(step.my) # return nothing, since results are saved on disk from the system command
@@ -2628,6 +2458,7 @@ fun.split.csv.info.fields <- function(raw.df, s.my, n.my, x.my, m.my) {
   raw.df <- gsub("INDEL;", "INDEL=1;", raw.df, ignore.case = FALSE, fixed=TRUE)
   
   # Loop to process the whole data frame
+ # start1 <- Sys.time();
   for (i in 1:n.my) {
     
     # Manual debugging 
@@ -2638,10 +2469,11 @@ fun.split.csv.info.fields <- function(raw.df, s.my, n.my, x.my, m.my) {
     # s.my <- "="
     # i<- 1
     # i <- i +1
+    # class(raw.df)
     
     # First, split by semicolon
     tmp <- as.character(unlist(strsplit(raw.df[i], ";")))
-    
+
     #length(tmp)
     tmp <- fun.split.csv.info.varN.fields("DP4", tmp, nfields=4)
     tmp <- fun.split.csv.info.varN.fields("PV4", tmp, nfields=4)
@@ -2681,6 +2513,67 @@ fun.split.csv.info.fields <- function(raw.df, s.my, n.my, x.my, m.my) {
       #x.my
     }
   } # end of for loop
+#  duration1 <- Sys.time()-start1; cat(duration1)
+  
+#   # Second way to do it, withoput loops but Apply'ies
+#   # ---------------------------------------
+#   start2 <- Sys.time();
+#   # First, split by semicolon
+#   tmp <- sapply(strsplit(as.character(raw.df), "\\;"), "[[", 2)
+#   head(raw.df)
+#   head(tmp)
+#   #length(tmp)
+# 
+#   library(stringr)
+#   tmp <- do.call(rbind, str_split(raw.df, ";"))
+#   head(tmp)
+#   class(tmp)
+#   #tmp <- fun.split.csv.info.varN.fields("DP4", tmp, nfields=4)
+#   #tmp <- fun.split.csv.info.varN.fields("PV4", tmp, nfields=4)
+#   #tmp <- fun.split.csv.info.varN.fields("G3", tmp, nfields=3)
+#   #tmp <- fun.split.csv.info.varN.fields("PC2", tmp, nfields=2)
+#   
+#   
+#   str_split(tmp, s.my)
+#   # Then, split by the character which divides the variable and the value (usually var=value, therefore s.my: "=")
+#   tmp <- do.call(rbind, str_split(tmp, s.my))
+#   head(tmp)
+#   sapply(strsplit(as.character(tmp), s.my), "[[", 2)
+#   
+#   tmp <- strsplit(tmp, s.my)
+#   
+#   head(tmp)
+#   
+#   ## Four ways to convert a list into a data frame
+#   # http://stackoverflow.com/questions/4227223/r-list-to-data-frame
+#   ## (1) Convert the list into a data frame. Titles are weird
+#   #do.call(rbind.data.frame, tmp)
+#   ## (2) This doesn't work as expected. http://stackoverflow.com/questions/4227223/r-list-to-data-frame
+#   #library(plyr)
+#   #tmp <- ldply(tmp, data.frame)
+#   # (3) This works fine, even if will be difficult to remember, maybe
+#   #tmp <- data.frame(matrix(unlist(tmp), nrow=m.my, byrow=T))
+#   # (4) This also works fine (c seems to be a function to display the contents???)
+#   # and maybe is the most intuitive or easy to remember (If I succeed to remember the "c" function)
+#   tmp <- data.frame(t(sapply(tmp, c)))
+#   
+#   etiq <- tmp[1]
+#   valor <- tmp[2]
+#   #length(tmp)
+#   #Manual debugging
+#   # m.my <- m
+#   # i <- 1 # Rows
+#   # j # Columns
+#   for (j in 1:nrow(etiq)) {
+#     #Manual debugging
+#     # j <-1
+#     #j <- j+1
+#     #x.my["DP"][i,1]
+#     x.my[as.character(etiq[j,1])][i,1] <- as.numeric(as.character(valor[j,1]))
+#     #x.my
+#   }
+#   duration2 <- Sys.time()-start2; cat(duration2)
+  
   return  (x.my) 
 }  # end fo function
 
@@ -2696,16 +2589,23 @@ fun.variant.annotation.summary.call.fixcolumns <- function(file2process.my2, ste
   
   # update step number
   step.my$tmp <- step.my$tmp + 1
-  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Call the fixing of INFO columns for both genome and exome csv files from annovar: ", file2process.my2, " ###\n", sep=""), file2process.my2);
+  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Call the fixing of INFO columns for EXOME csv files from annovar: ", file2process.my2, " ###\n", sep=""), file2process.my2);
   
   # Fix INFO cols for exome_summary csv file
-  file_in1 = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.sum.exome_summary.csv", sep=""); 
-  file_out1 = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.sum.colsfixed.exome_summary.csv", sep="");
+  file_in1 = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.sum.my_genes.exome_summary.csv", sep=""); 
+  file_out1 = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.sum.my_genes.colsfixed.exome_summary.csv", sep="");
   fun.variant.annotation.summary.fixcolumns(file2process.my2, step.my, "EXOME", file_in1, file_out1)
+
+  # update step number
+  step.my$tmp <- step.my$tmp + 1
+  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, ". Call the fixing of INFO columns for GENOME csv files from annovar: ", file2process.my2, " ###\n", sep=""), file2process.my2);
+
+  # # We don't do check2clean here  either since we will still use the .vcf.annovar file in the next steps (filtering)
+  print_done(file2process.my2);
   
   # Fix INFO cols for genome_summary csv file
-  file_in2 = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.sum.genome_summary.csv", sep=""); 
-  file_out2 = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.sum.colsfixed.genome_summary.csv", sep="");
+  file_in2 = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.sum.my_genes.genome_summary.csv", sep=""); 
+  file_out2 = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.sum.my_genes.colsfixed.genome_summary.csv", sep="");
   fun.variant.annotation.summary.fixcolumns(file2process.my2, step.my, "GENOME", file_in2, file_out2)
   
   # # We don't do check2clean here  either since we will still use the .vcf.annovar file in the next steps (filtering)
@@ -2729,10 +2629,15 @@ fun.variant.annotation.summary.fixcolumns <- function(file2process.my2, step.my,
   ## Manual debugging
   # params$directory_out <- "/home/ueb/repo/peeva/test_out2"
   # file2process.my2 <- "sgs7a_merged12"
+  # file2process.my2 <- "00test"
+  # file_in1 = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.sum.exome_summary.csv", sep=""); 
+  # file_out1 = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.sum.colsfixed.exome_summary.csv", sep="");
+  # file_in.my <- file_in1
+  # file_out.my <- file_out1
   # step.my <- step
   # step.my$tmp <- "2"
   # params$log.folder <- params$directory_out
-  # params$startdate <- "130417"
+  # params$startdate <- "130424"
   # params$opt$label <- "foo"
   
   # update step number
@@ -2750,7 +2655,9 @@ fun.variant.annotation.summary.fixcolumns <- function(file2process.my2, step.my,
   if (length(f2p.se) > 0) {
     
     # Load the header, add missing column names with default names so far, and assign them as column names
-    f2p.se.header.ini <- readLines(file(file_in.my), 1); close(file(file_in.my))
+    con.my <- file(file_in.my)
+    f2p.se.header.ini <- readLines(con.my, 1);
+    close(con.my)
     f2p.se.header.ini <- unlist(strsplit(f2p.se.header.ini, ","))
     f2p.se.header.end <- paste("V", (length(f2p.se.header.ini)+1):length(f2p.se), sep="")
     f2p.se.header <- c(f2p.se.header.ini, f2p.se.header.end)
@@ -2830,8 +2737,8 @@ fun.grep.variants <- function(file2process.my2, step.my) {
       #######################
       # 1st part- sample.*.exome_summary.csv
       #-------------------------------
-      file_in_g_csv  = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.sum.colsfixed.genome_summary.csv", sep=""); # summarize_annovar.pl adds the extension .genome_summary.csv (hardcoded in annovar).
-      file_out_g_csv = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.sum.colsfixed.my_genes.genome_summary.csv", sep=""); 
+      file_in_g_csv  = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.sum.genome_summary.csv", sep=""); # summarize_annovar.pl adds the extension .genome_summary.csv (hardcoded in annovar).
+      file_out_g_csv = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.sum.my_genes.genome_summary.csv", sep=""); 
       command01 = "head -1";
       command02 = command00;
       options01 = paste(" ", file_in_g_csv, " > ", file_out_g_csv, sep="");
@@ -2840,8 +2747,8 @@ fun.grep.variants <- function(file2process.my2, step.my) {
       #######################
       # 2nd - sample.*.exome_summary.csv
       #-------------------------------
-      file_in_e_csv  = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.sum.colsfixed.exome_summary.csv", sep=""); # summarize_annovar.pl adds the extension .exome_summary.csv (hardcoded in annovar).
-      file_out_e_csv = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.sum.colsfixed.my_genes.exome_summary.csv", sep=""); 
+      file_in_e_csv  = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.sum.exome_summary.csv", sep=""); # summarize_annovar.pl adds the extension .exome_summary.csv (hardcoded in annovar).
+      file_out_e_csv = paste(params$directory_out, "/", file2process.my2, ".f.vcf4.sum.my_genes.exome_summary.csv", sep=""); 
       command03 = "head -1";
       command04 = command00;
       options03 = paste(" ", file_in_e_csv, " > ", file_out_e_csv, sep="");
@@ -3513,6 +3420,605 @@ fun.grep.post.snpeff.report <- function(file2process.my2, step.my) {
   
   #check2clean(file_in, file2process.my2);
   print_done(file2process.my2);
+  
+  gc() # Let's clean ouR garbage if possible
+  return(step.my) # return nothing, since results are saved on disk from the system command
+}
+
+
+########################################################################
+##
+## fun.splitAnnot
+##
+## Description:
+##
+##    Split the elements of a character vector ‘x’ into substrings according to the
+##    matches to substring ";" within them.
+##
+## Parameters:
+##
+##          x : vector of characters to be splitted.
+##    myNames : vector of characters with the names of the output columns in the new data.frame
+##
+## Details:
+##
+##    It is expected that the input character vector containing one or two ";" symbols, thereby
+##    generating a character vector with three or two components respectively. When the generated
+##    vector has two components, it will be modified to have three components by adding a NA as a
+##    first component.
+##
+## Example:
+##
+##            Generating data
+##
+##            annot.1 <- paste(sample(c("Intron", "Exon"), size = 3, replace = TRUE),
+##                             c("NM_007294.3", "NM_007297.3", "NM_007298.3"),
+##                             rep("BRCA1", 3),
+##                             sep = ";")
+##            annot.2 <- paste(c("NM_007299.3", "NM_007300.3"), rep("BRCA1", 2), sep = ";")
+##            annot.3 <- paste(sample(c("Intron", "Exon"), size = 5, replace = TRUE),
+##                             c("NM_007295.2", "NM_007296.2", "NM_007301.2", "NM_007302.2", "NM_007303.2"),
+##                             rep("BRCA1", 5),
+##                             sep = ";")
+##            annot.4 <- paste("NM_007305.2", "BRCA1", sep = ";")
+##            annot.5 <- paste(sample(c("Intron", "Exon"), size = 1), "NM_007306.2", "BRCA1", sep = ";")
+##
+##            annot <- data.frame(myData = c(annot.1, annot.2, annot.3, annot.4, annot.5))
+##            print(annot)
+##
+##            Apply fun.splitAnnot function
+##
+##            nms <- c("Location", "RefSeq", "Symbol")
+##            annot2split <- as.character(annot$myData)
+##
+##            annot.df <- splitAnnot(x = annot2split, myNames = nms)
+##
+##            print(annot.df)
+########################################################################
+
+fun.splitAnnot <- function(x, myNames) {
+  
+  x.list <- strsplit(x, split = ";")
+  head(x.list)
+  idx2change <- which(unlist(lapply(x.list, length))<3)
+  # x.list[which(unlist(lapply(x.list, length))<3)]
+  # Add NA to col5 (IDs) files when no data in any of the 3 columns
+  idx <- which(unlist(lapply(x.list, length))==0)
+  if (length(idx) > 0) {
+    x.list2change <- lapply(x.list[idx], function(y){ c(NA, NA, NA) })
+    x.list[idx] <- x.list2change
+  }
+  
+  # Add NA to col5 (IDs) files when no data in the first 2 columns (unitN or NM)
+  idx <- which(unlist(lapply(x.list, length))==1)
+  if (length(idx) > 0) {
+    x.list2change <- lapply(x.list[idx], function(y){ c(NA, NA, y) })
+    x.list[idx] <- x.list2change
+  }
+  
+  # Add NA to col5 (IDs) files when no data in the unitN or NM columns
+  idx <- which(unlist(lapply(x.list, length))==2)
+  if (length(idx) > 0) {
+    x.list2change <- lapply(x.list[idx], function(y){ c(NA, y) })
+    x.list[idx] <- x.list2change
+  }
+  
+  out <- do.call("rbind", x.list)
+  #head(f2p.cr)
+  #colnames(f2p.cr)
+  #dim(out)
+  #head(out)
+  #dim(f2p.cr)
+  #summary(out2)
+  #--------
+  
+  return(out)
+}
+
+##########################
+### FUNCTION fun.addleading0.ids
+###
+### By Josep LLuis Mosquera, UEB-VHIR. jl.mosquera at vhir.org, & 
+###    Xavier de Pedro, UEB-VHIR. xavier.depedro at vhir.org
+###
+##########################
+##
+## Description:
+##
+##   Add leading zeros to ids so that it can be sorted naturally for humans
+##
+## Parameters:
+##
+##          x   : numeric or character vector with ids nn of differnt number of characters (like string_nn) 
+##          sep : separator character to split by. E.g. "_", " ", "-" ...
+##          nd  : number of digits needed in the end after adding as many leading zeroes (o) as required (integer value: 2, 3, etc)
+##
+
+fun.addleading0.ids <- function(x, sep, nd)
+{
+  
+  # First, some data massaging...
+  out.list <- strsplit(x, split = sep)
+  out.df <- do.call("rbind", out.list)
+  out.df2 <-out.df
+  
+  # Get the indexes of values containing NA
+  idx.nona <- which(!is.na(out.df[,2]))
+  
+  # Add as many leading zeroes (0) to the left of the number to have 'nd' digits (2, 3, ...), in all numbers that are no NA
+  # so that even if those numbers were treated as characters (in the variable class in R) they would get sorted properly
+  # also as characters. And exons normally are numbered in tens or hundreds, so that nd should be 2 or 3, repectively (from 01 to 99, or from 001 to 999)
+  out.df2[idx.nona,2] <- unlist(lapply(out.df[idx.nona,2], function(x) sprintf(paste("%0", nd ,"d", sep=""), as.numeric(x) ) ) )
+  
+  # join the two parts again with the same character splitter
+  out.df2 <- paste(out.df2[,1], out.df2[,2], sep=sep)
+  # Fix NA strings (they also became NA_NA). Add other cases here when needed in the future  
+  out.df2 <- gsub("NA_NA", "NA", out.df2)
+  
+  return(out.df2)
+}
+
+
+##########################
+### FUNCTION fun.snpeff.count.reads
+###
+###   Count Reads through snpEff software [optional]
+##########################
+
+fun.snpeff.count.reads <- function(file2process.my2, step.my) {
+  # Manual debugging
+  # file2process.my2 <- "/mnt/magatzem02/tmp/run_sara_293a/dir_in_test_cr_ind1/s_1_m11_143b_merged12"
+  
+  # update step number
+  step.my$tmp <- step.my$tmp + 1
+  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "a. Count Reads using snpEff: ", file2process.my2, " ###\n", sep=""), file2process.my2);
+  
+  # If for whatever reason, the filetoprocess.my2 comes with the base path (from dir_in or dir_out) 
+  # as a prefix, remove it.
+  if ( length(grep(params$directory_in, file2process.my2)) > 0 ) {
+    file2process.my2 <- sub(paste(params$directory_in, "/", sep=""), "", file2process.my2)
+  } else if ( length(grep(params$directory_out, file2process.my2)) > 0 ) {
+    file2process.my2 <- sub(paste(params$directory_out, "/", sep=""), "", file2process.my2)
+  }
+  
+  file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.edited.bam", sep="");
+  file_out = paste(file_in, ".cr.txt", sep="");
+  file_bed.my = paste(params$log.folder,"/", params$startdate, ".", params$opt$label,".my_genes.bed", sep="")
+  
+  # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
+  file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".cr.txt", sep="");
+  
+  command00 = "java -Xmx4g -jar "; # next command.
+  #  options00 = paste(params$path_snpEff, "snpEff.jar  -c ", params$path_snpEff, "snpEff.config countReads ", params$opt$genver," ", file_in, " > ", file_out, sep="");
+  #  options00 = paste(params$path_snpEff, "snpEff.jar  countReads ", params$opt$genver," ", file_in, " > ", file_out, sep="");
+  
+  # Since April 2013, 26, count reads will count only for the inteervals of interested for the researcher (limited to the intervals providedd in the bed file) 
+  options00 = paste(params$path_snpEff, "snpEff.jar  countReads ",  
+                    # Temporarily disabled until feedback from snpEff author about potential bug here with the -i param for the bed file
+                    # " -i '", file_bed.my, "' ", 
+                    params$opt$se_db_rg, " ", file_in, " > ", file_out, " 2>> ", file_stderr, sep="");
+  command = paste(command00, " ", options00, sep="");
+  check2showcommand(params$opt$showc, command, file2process.my2);
+  system(command);
+  
+  
+  # Don't check for check2clean("$file_in") since we still need it for the variant calling
+  print_done(file2process.my2);
+  
+  # direct command line call for testing other things:
+  # java -Xmx4g -jar /home/ueb/snpEff/snpEff.jar countReads hg19 file_in.sam.sorted.fixmate.dupmarked.noDup.bam > file_in.sam.sorted.fixmate.dupmarked.noDup.bam.cr.txt
+  
+  gc() # Let's clean ouR garbage if possible
+  return(step.my) # return nothing, since results are saved on disk from the system command
+}
+
+##########################
+### FUNCTION fun.snpeff.cr.postprocess
+###
+###   Postprocess snpEff Count Reads using R [optional]
+##########################
+
+fun.snpeff.cr.postprocess <- function(file2process.my2, step.my) {
+  # Manual debugging
+  # file2process.my2 <- "/mnt/magatzem02/tmp/run_sara_293a/dir_in_test_cr_ind1/s_1_m11_143b_merged12"
+  
+  # update step number
+  step.my$tmp <- step.my$tmp + 1
+  
+  # Manual debugging XXX
+  # file2process.my2 <- "sgs7a_merged12"
+  # file_in <- "./test_out2/sgs7a_merged12.sam.sorted.edited.bam"
+  # file_out <- "./test_out2/sgs7a_merged12.sam.sorted.edited.bam.cr.txt"
+  # file_in <- "/mnt/magatzem02/tmp/run_sara_293a/dir_out_all/test_out/s_4_m11_146b_merged12.sam.sorted.edited.bam"
+  # file_out <- "/mnt/magatzem02/tmp/run_sara_293a/dir_out_all/s_4_m11_146b_merged12.sam.sorted.edited.bam.cr.txt"
+  # file2process.my2 <- "s_1_m11_143b_merged12"
+  # file_in <- "/mnt/magatzem02/tmp/run_sara_293a/dir_out_all/s_1_m11_143b_merged12.sam.sorted.edited.bam"
+  # file_out <- "/mnt/magatzem02/tmp/run_sara_293a/dir_out_all/s_1_m11_143b_merged12.sam.sorted.edited.bam.cr.txt"
+  # params$log.folder <- params$directory_out
+  
+  print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "a. Generation of cr.table.csv using R: Load .cr.txt file: ", file2process.my2, " ###\n", sep=""), file2process.my2);
+  
+  # If for whatever reason, the filetoprocess.my2 comes with the base path (from dir_in or dir_out) 
+  # as a prefix, remove it.
+  if ( length(grep(params$directory_in, file2process.my2)) > 0 ) {
+    file2process.my2 <- sub(paste(params$directory_in, "/", sep=""), "", file2process.my2)
+  } else if ( length(grep(params$directory_out, file2process.my2)) > 0 ) {
+    file2process.my2 <- sub(paste(params$directory_out, "/", sep=""), "", file2process.my2)
+  }
+  
+  file_in = paste(params$directory_out, "/", file2process.my2, ".sam.sorted.edited.bam", sep="");
+  file_out = paste(file_in, ".cr.txt", sep="");
+  
+  # DOC: file_stderr is the file to store the output of standard error from the command, where meaningful information was being shown to console only before this output was stored on disk 
+  file_stderr = paste(params$log.folder,"/log.",params$startdate, ".", params$opt$label,".", file2process.my2, ".txt", sep="");
+  
+  # Load library mmap to map the cr file on disk and use it in R memory only the pieces needed each time (not the whole file all the time)
+  if(!require(mmap)){ install.packages("mmap") }
+  library('mmap', quietly = TRUE);
+  
+  print_doc(paste("\t\t\t\t\tMemory usage (Vcell) pre-loading cr.txt file: ", gc()[2,2], " Mb\n", sep=""), file2process.my2); 
+  
+  # load the file created as file2process.countreads (aka: f2p.cr)
+  #f2p.cr <- read.table(file_out, header=T, sep="\t", stringsAsFactors = FALSE)
+  #f2p.cr <- read.table(file_out, header=T, sep="\t")
+  
+  # Read the file with mmap.csv() 
+  # mmap.csv() is meant to be the analogue of read.csv in R, with the primary difference being
+  # that data is read, by column, into memory-mapped structs on disk. 
+  f2p.cr <- mmap.csv(file_out, header=T, sep="\t")   # mmap in the csv
+  print_done(file2process.my2); # with timestamp, to indicate how long did it take this loading step
+  print_doc(paste("\t\t\t\t\tMemory usage (Vcell) after cr.txt file loaded (as mmap object): ", gc()[2,2], " Mb\n", sep=""), file2process.my2); 
+  
+  # Leftover to be removed --------------->
+  #   f2p.cr.nrows <- dim(f2p.cr)[1] 
+  #   
+  #   # Convert the object f2p.cr into a mapped file, to reduce RAM consumption (object is stored on disk, and only loaded the bits to be used when needed)
+  #   f2p.cr.mm <- as.mmap(f2p.cr, 
+  #                        struct(
+  #                           chr = char(20),
+  #                           start = int32(), 
+  #                           end = int32(), 
+  #                           type = char(20),
+  #                           IDs = char(100),
+  #                           int32(),
+  #                           int32() 
+  #                           )
+  #                        )
+  #   head(f2p.cr.mm)
+  #   str(f2p.cr.mm)
+  #   str(f2p.cr)
+  #   
+  #   myClasses <- rapply(f2p.cr, typeof)
+  #   mm2 <- as.mmap(f2p.cr, myClasses) 
+  #   
+  #   tmp <- tempfile()
+  #   write.csv(f2p.cr, tmp)
+  #   m <- mmap.csv(tmp)   # mmap in the csv
+  #   head(m)
+  # <---------- Leftover to be removed 
+  
+  
+  #------------------
+  # Tip from: 
+  # http://stackoverflow.com/questions/8005417/mmap-and-csv-files
+  #
+  #tmpDF <- read.csv(myFile, nrow = 10)
+  #myClasses <- rapply(tmpDF, typeof)
+  #Thus, you read in only a small amount of information and let R determine classes for you. You may need to address the stringsAsFactors issue, i.e. via read.csv(..., stringsAsFactors = FALSE).
+  #------------------
+  
+  # Another approach is to load the cr.txt file already as mmap object # Fails because it reads as fixed width
+  #mm <- mmap( file= file_out, mode = struct(char(20),  int32(), int32(), char(20), char(100), int32(), int32()))
+  #head(mm)
+  
+  #print_doc("Garbage collection output (R) after mmap'ing cr.txt file: \n", file2process.my2);
+  #print_mes(dimnames(gc())[[1]][2], file2process.my2); print_mes(dimnames(gc())[[2]], file2process.my2); print_mes(gc()[2,], file2process.my2)
+  
+  # ---------------
+  # NOTE: Special syntax to refer to columns in a mapped data.frame with as.mmap() 
+  # Examples Taken from: 
+  # http://stackoverflow.com/questions/8748096/access-data-frame-columns-in-r-mmap-objects
+  #
+  #   > foo <- as.mmap(mtcars)
+  #   > foo[,'mpg'] # works
+  #   mpg
+  #   1  21.0
+  #   2  21.0
+  #   3  22.8
+  #   4  21.4
+  #   5  18.7
+  #   ...
+  #   > foo$mpg #does not work
+  #   NULL
+  #   > foo[['mpg']] #also does not work
+  #   NULL
+  #   > foo[]$mpg #works
+  #   ...
+  #   > foo[][['mpg']] #also works
+  # ---------------
+  
+  # Convert IDS to character (needed for later)
+  x.my <- as.character(f2p.cr[]$IDs)
+  
+  # Do all the processing only if there is some data to process. To avoid the program to break when snpEff fails to count reads
+  # dues to the issues with "MAPQ should be zero for unmmaped reads", etc. 
+  if (length(x.my) > 0) {
+    print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "b. Split Annotation and create new columns...: ", file2process.my2, " ###\n", sep=""), file2process.my2);
+    #------------
+    print_doc(paste("\t\t\t\t\tMemory usage (Vcell): ", gc()[2,2], " Mb\n", sep=""), file2process.my2); 
+    #------------
+    # Split IDs by ; and create the new columns on the right with separated unitN, ENST (ENSEMBL Transcript) & ENSG (ensembl_gene_id) codes.
+    out.my <- fun.splitAnnot(x.my)
+    colnames(out.my) <- c("unitN", "ENST","ENSG")  # unitN stands for exonNumber or IntronNumber or similar
+    # Remove spaces in values of out.my using stringr package
+    if(!require(stringr)){ install.packages("stringr") }
+    library(stringr, quietly = TRUE)
+    out.my <- str_trim(out.my)
+    
+    ## cbind:  It doesn't work with mmapped objects!
+    #f2p.cr[] <- cbind(f2p.cr[], out.my)
+    ## from now onwards, where I was using f2p.cr[,8] I will be using out.my[,1] instead
+    
+    #head(f2p.cr[])
+    #head(f2p.cr)
+    #head(f2p.cr[]$IDs)
+    #head(x.my)
+    #head(out.my)
+    #tail(out.my)
+    
+    print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "c. Add leading zeros where needed for common # of characters...: ", file2process.my2, " ###\n", sep=""), file2process.my2);
+    #------------
+    print_doc(paste("\t\t\t\t\tMemory usage (Vcell): ", gc()[2,2], " Mb\n", sep=""), file2process.my2); 
+    #------------
+    # convert column 8 into character vectors and apply the function to add leading zeros for correct ordering as text
+    #x <- as.character(f2p.cr[,8])
+    x <- as.character(out.my[,1])
+    
+    # Add leading zeros where needed to have up to 3 digits for all numbers (from exon_001 to exon_999)
+    #f2p.cr[,8] <- fun.addleading0.ids(x, "_", 3)
+    out.my[,1] <- fun.addleading0.ids(x, "_", 3)
+    
+    print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "d. Get hgnc_symbols for the corresponding ensembl_gene_id: ", file2process.my2, " ###\n", sep=""), file2process.my2);
+    
+    # Convert ENSG (ensembl_gene_id) to Gene_symbols (hgnc_symbol) and add it as new column to f2p.cr$Gene_Symbol
+    # ------------------------------------------------------------------------------------------------------------
+    file_my_genenames = file=paste(params$log.folder,"/", params$startdate, ".", params$opt$label,".my_genes.names.txt", sep="")
+    # Command (in general)
+    # my_symbols <- df.a[ pmatch(df.b[,"ensembl_gene_id"], df.a[,2]), 1 ]
+    
+    # load the file created previously with the correspondence between hgnc_symbol and ensembl_gene_id (while working with biomaRt to generate the bed file)
+    # f2p.my_genenames
+    df.a <- read.table(file_my_genenames, header=T, sep="\t")
+    #str(df.a)
+    
+    # I skip the generation of a new object with all contents from f2p.cr since 
+    # it may mean doubling memory consumption in RAM, and f2p.cr is a already big object 
+    #df.b <- f2p.cr
+    #b <- as.character(df.b[,"ENSG"])
+    #f2p.cr[,"ENSG"] <- as.character(f2p.cr[,"ENSG"])
+    out.my[,"ENSG"] <- str_trim(as.character(out.my[,"ENSG"]))
+    # Convert matrix out.my into a data.frame
+    out.my <- as.data.frame(out.my)
+    
+    a <- as.character(df.a[,"ensembl_gene_id"])
+    # Example of match in the testset
+    # a: ENSG00000012048
+    # b: ENSG00000012048
+    ##match.b.a <- pmatch(b, a, nomatch=0)
+    #match.b.a <- pmatch(b, a, duplicates.ok=TRUE)
+    #match.b.a <- pmatch(f2p.cr[,"ENSG"], a, duplicates.ok=TRUE)
+    match.b.a <- pmatch(out.my[,"ENSG"], a, duplicates.ok=TRUE)
+    
+    # Get the vector with the hgnc_symbols corresponding to those genes. There can be some gaps, like in the case of the KIAA1462 in the testset
+    GeneSymbol <- df.a[ match.b.a, "hgnc_symbol" ]
+    # class(GeneSymbol)
+    # length(my_hgnc_symbols)
+    # dim(df.b)
+    # dim(f2p.cr)
+    #f2p.cr <- cbind(f2p.cr, GeneSymbol)
+    out.my <- cbind(out.my, GeneSymbol)
+    
+    #str(f2p.cr)
+    # --------------- end adding new column with Gene_symbols corresponding to the ENSG (ensembl_gene_id) found
+    
+    # Filter results by the genes of interest only
+    #
+    # BEWARE that subset function can lead to confusion in some cases. Subset is useful for interactive programming, not for automatic scripts.
+    # See:
+    # (1) The easy subset way: http://www.ats.ucla.edu/stat/r/faq/subset_R.htm
+    # (2) The potential problems: see 
+    #   http://stackoverflow.com/questions/9860090/in-r-why-is-better-than-subset 
+    #   https://github.com/hadley/devtools/wiki/Evaluation
+    
+    # We could use params$opt$filter.c since it's already clean (added in March 2013)
+    #  but we do clean params$opt$filter here still  
+    # ---------------------------------------------
+    # Get first the list of Gene Symbols for the "target genes" of interest for the researcher (tgenes)
+    # Split values by pipe (it will create some empty values also, but we will remove them later)
+    tgenes <- strsplit(params$opt$filter, "|", fixed=TRUE)
+    tgenes <- unlist(tgenes) # Convert those values from a list into a character vector 
+    # Remove non-intended characters (all except numbers and letters)
+    ## This could be performed with a fairly simple regular expression, such as: 
+    #tgenes <- gsub(pattern="[^A-Za-z0-9]", replacement="",  x=tgenes, fixed=FALSE)
+    ## But I'm not sure that some error would be introduced in the future by removing some otehr valid character.
+    ## Therefore, just in case, I remove the other sets of characters by steps in a FIXED form
+    
+    # Remove non-intended characters (it will create some empty values also, but we will remove them later)
+    tgenes <- gsub(pattern=":", replacement="",  x=tgenes, fixed=TRUE)
+    tgenes <- gsub(pattern="^", replacement="",  x=tgenes, fixed=TRUE)
+    tgenes <- gsub(pattern="\t", replacement="",  x=tgenes, fixed=TRUE)
+    tgenes <- gsub(pattern="\\", replacement="",  x=tgenes, fixed=TRUE)
+    tgenes <- gsub(pattern="\"", replacement="",  x=tgenes, fixed=TRUE)
+    tgenes <- gsub(pattern=" ", replacement="",  x=tgenes, fixed=TRUE)
+    
+    # Remove duplicates of GeneSymbols or ENSEMBL GENES
+    tgenes <- unique(tgenes)
+    # Remove the case of an empty value
+    tgenes <- tgenes[-match("", tgenes)]
+    # --------------------------------------------------
+    print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "e. Filter results by a subset with only target genes: ", file2process.my2, " ###\n", sep=""), file2process.my2);
+    
+    
+    ## Filter results by the genes of interest only WITH A SUBSET
+    ## Works easily with one value
+    # f2p.cr.tg <- f2p.cr[f2p.cr$GeneSymbol == "WASH7P",]
+    ## For multiple values like "1" and "4", we can use the syntax "x.sub5 <- x.df[x.df$y %in% c(1, 4), ]"
+    ## Example for a couple of gene Symbols
+    #f2p.cr.tg <- f2p.cr[f2p.cr$GeneSymbol %in% c("WASH7P", "OR4F5"), ]
+    # Do the filtering for the genes of interest (in the list of target genes: tgenes) 
+    #f2p.cr.tg <- f2p.cr[f2p.cr[]$GeneSymbol %in% tgenes, ]
+    #str(out.my)
+    #head(out.my)
+    
+    f2p.cr.tg <- out.my[out.my$GeneSymbol %in% tgenes, ]
+    
+    # for the sake of simplicity and effectiveness, we assign the subset of count reads 
+    # for the genes of interest ("target genes", aka, "tg") to the whole list of count reads in the file to process (f2p.cr)
+    #f2p.cr <- f2p.cr.tg
+    out.my <- f2p.cr.tg
+    
+    # Get the last three columns as Gene symbols and exon and intron numbers
+    #f2p.cr.genes <- f2p.cr[][,c(8,9,11)]
+    f2p.cr.genes <- out.my[,c(1,2,4)]
+    #summary(f2p.cr.genes)
+    
+    ## Convert into true/false
+    #f2p.cr.genes.tf <- suppressWarnings(is.na(as.numeric(as.character(unlist(f2p.cr.genes[2])))) )
+    
+    # We want to apply the table function to the subset of values of the data frames (since it seems to be much more complicated
+    # to create a subset of values once the object of type "table" is created)
+    # We do the subset through getting the indexes of these GeneSymbol values (and not the numbers from chromosomes) 
+    f2p.cr.genes.idx <- which(suppressWarnings(is.na(as.numeric(as.character(unlist(f2p.cr.genes["GeneSymbol"]))))) )
+    
+    # this is the list of values with gene symbols only, and not the values the chromosome number as gene symbol
+    f2p.cr.genes2 <- f2p.cr.genes[f2p.cr.genes.idx,]
+    #str(f2p.cr.genes2)
+    #summary(f2p.cr.genes[f2p.cr.genes.idx,])
+    
+    # We fix the levels of the variable Genesymbol from the data frame, which still hold bad names from chromosome numbers
+    # we can't assign the unique value of f2p.cr.genes2$GeneSymbol to the levels of f2p.cr.genes2$GeneSymbol because they differ in length
+    # therefore we apply this trick (thanks jl.moquera!)
+    f2p.cr.genes2$GeneSymbol <- as.factor(as.character(f2p.cr.genes2$GeneSymbol))
+    #str(f2p.cr.genes2)
+    
+    #    print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "b5. Apply function ftable in R: ", file2process.my2, " ###\n", sep=""), file2process.my2);
+    #    
+    #     # (Approach 1) Implementation with ftable ------------->
+    #     #startcr <- Sys.time();
+    # 
+    #     # Therefore, this (below) is the table with all values (including the wrong chromosome numbers as gene symbols by mistake)
+    #     # convert in a flat table sorting first by Gene Symbol, and then, by exon number.
+    #     f2p.cr.table <- ftable(f2p.cr.genes2, row.vars = 2:1)
+    #     #head(f2p.cr.genes2)
+    #     #str(f2p.cr.table)
+    #     #?print.ftable
+    #     
+    #     print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "f1. Convert ftable into dataframe (R): ", file2process.my2, " ###\n", sep=""), file2process.my2);
+    #     
+    #     # [SOLVED] as.data.frame.table or as.data.frame.matrix !!!!!!
+    #     f2p.cr.dft <- as.data.frame.table(f2p.cr.table)
+    #     
+    #     # Write the column names that will be used later for the sav file written on disk
+    #     col.names.my <- "\"ENST\",\"unitN\",\"GeneSymbol\",\"Count\""
+    #    
+    #     print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "f2. Re-order results in R: ", file2process.my2, " ###\n", sep=""), file2process.my2);
+    #     
+    #     # We need to re-sort in a similar way to what the ftable was
+    #     f2p.cr.dft <- f2p.cr.dft[order(f2p.cr.dft$GeneSymbol, f2p.cr.dft$unitN),]
+    #     
+    #     print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "f3. Remove zeros from counts in the data frame (R): ", file2process.my2, " ###\n", sep=""), file2process.my2);
+    #     
+    #     # And last, we remove all row with 0 in the column Counts
+    #     f2p.cr.dft <- f2p.cr.dft[!f2p.cr.dft$Freq==0,]
+    #   
+    #     #durationftable <- Sys.time() - startcr
+    #    # (Approach 1) <------ Implementation with ftable
+    
+    # (Approach 2) Implementation with aggregate ------------->
+    #startcr <- Sys.time();
+    command = paste("free -t -m -g | grep 'otal\\|Mem\\|Swap'", 
+                    " >> ", file_stderr, " 2>> ", file_stderr, sep="")
+    #check2showcommand(params$opt$showc, command, file2process.my2);
+    system(command);
+    #------------
+    print_doc(paste("\t\t\t\t\tMemory usage (Vcell): ", gc()[2,2], " Mb\n", sep=""), file2process.my2); 
+    #------------
+    
+    print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "f1. Aggregate data (R): ", file2process.my2, " ###\n", sep=""), file2process.my2);
+    f2p.cr.df2 <- aggregate(ENST ~ GeneSymbol + unitN, data=f2p.cr.genes2, FUN=length)
+    command = paste("free -t -m -g | grep 'otal\\|Mem\\|Swap'", 
+                    " >> ", file_stderr, " 2>> ", file_stderr, sep="")
+    #check2showcommand(params$opt$showc, command, file2process.my2);
+    system(command);
+    #------------
+    print_doc(paste("\t\t\t\t\tMemory usage (Vcell): ", gc()[2,2], " Mb\n", sep=""), file2process.my2); 
+    #------------
+    
+    # Write the column names that will be used later for the file written on disk
+    col.names.my <- "\"GeneSymbol\",\"unitN\",\"Count\""
+    
+    #class(f2p.cr.df2)
+    print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "f2. Reorder data (R): ", file2process.my2, " ###\n", sep=""), file2process.my2);
+    f2p.cr.df2 <- f2p.cr.df2[order(f2p.cr.df2$GeneSymbol, f2p.cr.df2$unitN),]
+    command = paste("free -t -m -g | grep 'otal\\|Mem\\|Swap'", 
+                    " >> ", file_stderr, " 2>> ", file_stderr, sep="")
+    #check2showcommand(params$opt$showc, command, file2process.my2);
+    system(command);
+    #------------
+    print_doc(paste("\t\t\t\t\tMemory usage (Vcell): ", gc()[2,2], " Mb\n", sep=""), file2process.my2); 
+    #------------
+    
+    
+    print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "f3. Remove NA (R): ", file2process.my2, " ###\n", sep=""), file2process.my2);
+    f2p.cr.df2 <- f2p.cr.df2[!f2p.cr.df2$unitN=="NA",]
+    command = paste("free -t -m -g | grep 'otal\\|Mem\\|Swap'", 
+                    " >> ", file_stderr, " 2>> ", file_stderr, sep="")
+    #check2showcommand(params$opt$showc, command, file2process.my2);
+    system(command);
+    #------------
+    print_doc(paste("\t\t\t\t\tMemory usage (Vcell): ", gc()[2,2], " Mb\n", sep=""), file2process.my2); 
+    #------------
+    
+    f2p.cr.dft <- f2p.cr.df2
+    #durationaggr <- Sys.time() - startcr
+    
+    # (Approach 2) <------ Implementation with aggregate
+    
+    print_doc(paste(" ### Step ", step.my$n, ".", step.my$tmp, "g. Write the file  cr.table.csv using R: ", file2process.my2, " ###\n", sep=""), file2process.my2);
+    
+    ## as.data.frame.matrix was useful when f2p.cr.table was another type of object, but not nowadays
+    #f2p.cr.dfm <- as.data.frame.matrix(f2p.cr.table)
+    
+    file_out.table = paste(file_in, ".cr.table.csv", sep="");
+    # Write the first line with the column names
+    write(col.names.my, file=file_out.table, append = F, sep = "")
+    #  write.table(f2p.cr.table, file=file_out.table, append=T, quote=T, sep=",", row.names=T, col.names=F)
+    
+    #tapply(as.numeric(colnames(f2p.cr.table)), 1:9, FUN=is.numeric)
+    
+    # I remove the warning messages from this call (below) because of the coercion type of message (harmless, afaik, but annoying and polluting output in log files)
+    # Write the rest: all data without column names
+    write.table(f2p.cr.dft, file=file_out.table, append=T, quote=T, sep=",", row.names=F, col.names=F)
+    #write.ftable(f2p.cr.table, file=file_out.table, append=T, quote=T)
+    
+    
+  } else {
+    print_mes("XXX Count Reads failed XXX; no results saved.", file2process.my2)
+  }
+  
+  
+  # Finally, unmap the mapped file
+  munmap(f2p.cr)
+  
+  #------------
+  print_doc(paste("\t\t\t\t\tMemory usage (Vcell) after unmapping cr.txt file: ", gc()[2,2], " Mb\n", sep=""), file2process.my2); 
+  #------------
+  
+  # Don't check for check2clean("$file_in") since we still need it for the variant calling
+  print_done(file2process.my2);
+  
+  # direct command line call for testing other things:
+  # java -Xmx4g -jar /home/ueb/snpEff/snpEff.jar countReads hg19 file_in.sam.sorted.fixmate.dupmarked.noDup.bam > file_in.sam.sorted.fixmate.dupmarked.noDup.bam.cr.txt
   
   gc() # Let's clean ouR garbage if possible
   return(step.my) # return nothing, since results are saved on disk from the system command
