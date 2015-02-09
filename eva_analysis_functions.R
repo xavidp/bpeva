@@ -2789,9 +2789,37 @@ fun.grep.variants <- function(file2process.my2, step.my) {
 ### FUNCTION fun.build.html.report
 ###
 ###   Build html report
+###   Using Noozle: a report generation toolkit for data analysis pipelines
+###   N Gehlenborg, MS Noble, G Getz, L Chin and PJ Park, "Nozzle: a report generation toolkit for data analysis pipelines", Bioinformatics 29:1089-1091 (2013)
+###   See: 
+###     * http://www.ncbi.nlm.nih.gov/pmc/articles/PMC3624805/
+###     * https://confluence.broadinstitute.org/display/GDAC/Nozzle
 ##########################
 
 fun.build.html.report <- function(file2process.my2, step.my) {
+
+  if(!require(Nozzle.R1)){ install.packages("Nozzle.R1") }
+  require( Nozzle.R1 , quietly = TRUE);
+  
+  # Phase 1: create report elements
+  r <- newCustomReport( paste0("Exome Variant Analysis (", params$p_label, ")") );
+  s <- newSection( "My Section" );
+  ss1 <- newSection( "My Subsection 1" );
+  ss2 <- newSection( "My Subsection 2" );
+  f <- newTable( iris[45:55,], "Iris data." ); # w/ caption
+  p <- newParagraph( "Some sample text." );
+  
+  # Phase 2: assemble report structure bottom-up
+  ss1 <- addTo( ss1, f ); # parent, child_1, ..., child_n 
+  ss2 <- addTo( ss2, p );
+  s <- addTo( s, ss1, ss2 );
+  r <- addTo( r, s );
+  
+  # Phase 3: render report to file
+  writeReport( r, filename="my_report" ); # w/o extension
+  
+  
+  ## Alternative way to create the report
   
   # Adding a first column with sample file name, to merge all results from all samples in one same spreadsheet and/or html report
   # Using awk or similar.
